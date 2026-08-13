@@ -242,7 +242,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 5 — vencimentos</div>
+    <div class="rail-user" style="opacity:.6">versão 6 — estratégias</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -330,6 +330,7 @@ function status(estado,txt){
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
+var ESTRAT=[["pos","Pós-fixado"],["infl","Inflação"],["pre","Pré-fixado"],["ma","Retorno Absoluto (MM)"],["rv","Renda Variável"],["intl","Internacional"],["alt","Alternativo"]];
 var IND=[["cdi","CDI"],["ipca","IPCA"],["ibov","Ibovespa"],["sp500","S&P 500"],["poup","Poupança"],["dolar","Dólar"],["ouro","Ouro"],["ifix","IFIX"]];
 var db={clientes:[],dados:{}};
 var S={cliente:null,mes:new Date().getMonth()+1,ano:new Date().getFullYear(),tab:"preencher",rasc:null,erro:null};
@@ -343,8 +344,28 @@ function brlC(v){ var a=Math.abs(v||0); if(a>=1e6) return "R$ "+(v/1e6).toLocale
 function pct(v,d){ d=d==null?2:d; return (v||0).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d})+"%"; }
 function sinal(v){ return v>0?"pos":(v<0?"neg":""); }
 function ref(m,a){ return MESES_C[m-1]+"/"+String(a).slice(2); }
+function moedaParse(str){
+  var t=String(str==null?"":str).replace(/\./g,"").replace(",",".").replace(/[^0-9.\-]/g,"");
+  var v=parseFloat(t); return isNaN(v)?0:v;
+}
+function moedaFmt(v){
+  if(!v) return "";
+  return Number(v).toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function onMoeda(el,cb){
+  var bruto=el.value, fim=(el.selectionStart===bruto.length);
+  var v=moedaParse(bruto);
+  cb(v);
+  var f=/,\d{0,2}$/.test(bruto)?bruto.replace(/[^0-9.,]/g,""):moedaFmt(v);
+  el.value=f;
+  if(fim){ try{ el.selectionStart=el.selectionEnd=el.value.length; }catch(e){} }
+}
 function contaVazia(){ return {nome:"",inst:"",saldo:0,apl:0,res:0,rendPct:0,rendRs:0}; }
-function indVazio(){ var o={}; IND.forEach(function(p){o[p[0]]=0;}); o.carta=""; o.vencimentos=[]; return o; }
+function indVazio(){ var o={}; IND.forEach(function(p){o[p[0]]=0;}); o.carta=""; o.vencimentos=[]; o.estrategias={}; ESTRAT.forEach(function(e){o.estrategias[e[0]]=0;}); return o; }
+function listaEstrat(ind){
+  var e=(ind&&ind.estrategias)||{};
+  return ESTRAT.map(function(x){ return {nome:x[1],pc:n(e[x[0]])}; }).filter(function(x){ return x.pc>0; });
+}
 function vencVazio(){ return {ativo:"",inst:"",taxa:"",data:"",valor:0}; }
 function listaVenc(ind){
   var v=(ind&&ind.vencimentos)||[];
@@ -499,6 +520,16 @@ function addConta(){ S.rasc.contas.push(contaVazia()); render(); }
 function delConta(i){ S.rasc.contas.splice(i,1); render(); }
 function setInd(k,v){ S.rasc.ind[k]=n(v); }
 function setCarta(v){ S.rasc.ind.carta=v; }
+function setEstrat(k,v){
+  if(!S.rasc.ind.estrategias) S.rasc.ind.estrategias={};
+  S.rasc.ind.estrategias[k]=n(v);
+  var soma=ESTRAT.reduce(function(a,e){return a+n(S.rasc.ind.estrategias[e[0]]);},0);
+  var el=document.getElementById("somaEstrat");
+  if(el){
+    el.textContent="Soma: "+pct(soma,1);
+    el.style.color=(soma===0||Math.abs(soma-100)<0.05)?"var(--muted)":"var(--alert)";
+  }
+}
 function setVenc(i,campo,v){
   if(!S.rasc.ind.vencimentos) S.rasc.ind.vencimentos=[];
   S.rasc.ind.vencimentos[i][campo]=(campo==="valor")?n(v):v;
@@ -549,13 +580,14 @@ function viewPreencher(){
      '<div style="overflow-x:auto"><table class="form"><thead><tr><th style="min-width:150px">Conta</th><th style="min-width:120px">Instituição</th>'+
      '<th class="num">Saldo final</th><th class="num">Aplicações</th><th class="num">Resgates</th><th class="num">Rend. R$</th><th class="num">Rend. %</th><th></th></tr></thead><tbody>';
   r.contas.forEach(function(x,i){
+    var idx=i;
     h+='<tr>'+
     '<td><input class="inp" value="'+esc(x.nome)+'" oninput="setConta('+i+',\'nome\',this.value)" placeholder="Ex.: XP"></td>'+
     '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setConta('+i+',\'inst\',this.value)" placeholder="Ex.: XP"></td>'+
-    '<td><input class="inp num" type="number" step="0.01" value="'+(x.saldo||"")+'" oninput="setConta('+i+',\'saldo\',this.value)"></td>'+
-    '<td><input class="inp num" type="number" step="0.01" value="'+(x.apl||"")+'" oninput="setConta('+i+',\'apl\',this.value)"></td>'+
-    '<td><input class="inp num" type="number" step="0.01" value="'+(x.res||"")+'" oninput="setConta('+i+',\'res\',this.value)"></td>'+
-    '<td><input class="inp num" type="number" step="0.01" value="'+(x.rendRs||"")+'" oninput="setConta('+i+',\'rendRs\',this.value)"></td>'+
+    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.saldo)+'" oninput="onMoeda(this,function(v){setConta(idx,\'saldo\',v);})"></td>'+
+    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.apl)+'" oninput="onMoeda(this,function(v){setConta(idx,\'apl\',v);})"></td>'+
+    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.res)+'" oninput="onMoeda(this,function(v){setConta(idx,\'res\',v);})"></td>'+
+    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.rendRs)+'" oninput="onMoeda(this,function(v){setConta(idx,\'rendRs\',v);})"></td>'+
     '<td><input class="inp num" id="pc'+i+'" type="number" step="0.01" value="'+(x.rendPct||"")+'" oninput="setConta('+i+',\'rendPct\',this.value)"></td>'+
     '<td><button class="xbtn" onclick="delConta('+i+')" title="Remover">&times;</button></td></tr>';
   });
@@ -565,6 +597,16 @@ function viewPreencher(){
   h+='<div class="card"><div class="sec-title">Indicadores do mês</div><div class="sec-sub">Variação percentual no mês de referência.</div><div class="grid-ind">';
   IND.forEach(function(p){ h+='<div><label>'+p[1]+' (%)</label><input class="inp num" type="number" step="0.01" value="'+(r.ind[p[0]]||"")+'" oninput="setInd(\''+p[0]+'\',this.value)"></div>'; });
   h+='</div></div>';
+  var est=S.rasc.ind.estrategias||{};
+  var somaEst=ESTRAT.reduce(function(a,e){return a+n(est[e[0]]);},0);
+  h+='<div class="card"><div class="sec-title">Alocação por estratégia</div>'+
+     '<div class="sec-sub">Opcional. Percentual da carteira em cada estratégia. Se todos ficarem zerados, a seção não aparece no relatório.</div>'+
+     '<div class="grid-ind">'+
+     ESTRAT.map(function(e){
+       return '<div><label>'+e[1]+' (%)</label><input class="inp num" type="number" step="0.01" value="'+(est[e[0]]||"")+'" oninput="setEstrat(\''+e[0]+'\',this.value)"></div>';
+     }).join("")+
+     '</div><div id="somaEstrat" style="margin-top:12px;font-size:12.5px;color:'+((somaEst===0||Math.abs(somaEst-100)<0.05)?'var(--muted)':'var(--alert)')+'">Soma: '+pct(somaEst,1)+'</div></div>';
+
   var vencs=S.rasc.ind.vencimentos||[];
   h+='<div class="card"><div class="sec-title">Próximos vencimentos</div>'+
      '<div class="sec-sub">Opcional. Se ficar em branco, a seção não aparece no relatório.</div>'+
@@ -573,12 +615,13 @@ function viewPreencher(){
      '<th style="min-width:110px">Taxa</th><th style="min-width:140px">Vencimento</th>'+
      '<th class="num">Valor aproximado</th><th></th></tr></thead><tbody>'+
      (vencs.length?vencs.map(function(x,i){
+       var vi=i;
        return '<tr>'+
        '<td><input class="inp" value="'+esc(x.ativo)+'" oninput="setVenc('+i+',\'ativo\',this.value)" placeholder="Ex.: CDB Banco XYZ"></td>'+
        '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setVenc('+i+',\'inst\',this.value)" placeholder="Ex.: XP"></td>'+
        '<td><input class="inp" value="'+esc(x.taxa)+'" oninput="setVenc('+i+',\'taxa\',this.value)" placeholder="Ex.: 112% do CDI"></td>'+
        '<td><input class="inp" type="date" value="'+esc(x.data)+'" oninput="setVenc('+i+',\'data\',this.value)"></td>'+
-       '<td><input class="inp num" type="number" step="0.01" value="'+(x.valor||"")+'" oninput="setVenc('+i+',\'valor\',this.value)"></td>'+
+       '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.valor)+'" oninput="onMoeda(this,function(v){setVenc(vi,\'valor\',v);})"></td>'+
        '<td><button class="xbtn" onclick="delVenc('+i+')" title="Remover">&times;</button></td></tr>';
      }).join(""):'<tr><td colspan="6" style="color:var(--muted);font-size:12.5px">Nenhum vencimento informado.</td></tr>')+
      '</tbody></table></div>'+
@@ -706,6 +749,8 @@ function blocoRetornos(id){
 
 /* ============ view: relatório ============ */
 function marca(){ return '<div class="pg-mark"><b>ADAMI</b><span>WEALTH</span></div>'; }
+var SNUM=0;
+function nx(){ SNUM++; return String(SNUM).padStart(2,"0"); }
 function shead(num,titulo,cap){
   return '<div class="shead"><span class="n">'+num+'</span><h2>'+titulo+'</h2>'+(cap?'<span class="cap">'+cap+'</span>':'')+'</div>';
 }
@@ -715,6 +760,7 @@ function viewRelatorio(){
   var r=reg(c.id,S.mes,S.ano);
   if(!r) return '<div class="card empty"><h2>Sem dados em '+MESES[S.mes-1]+'/'+S.ano+'</h2><p>Preencha o mês na aba “Preencher” para gerar o relatório.</p></div>';
 
+  SNUM=0;
   var t=totais(r), serie=serieAno(c.id,S.ano,S.mes), inst=porInstituicao(r);
   var cdi=n(r.ind.cdi), doCdi=cdi>0?(t.rendPct/cdi)*100:null;
   var anoPct=comp(serie.map(function(s){return s.rendPct;}));
@@ -761,10 +807,19 @@ function viewRelatorio(){
      '<div class="kbox"><div class="l">Resultado no ano</div><div class="v '+sinal(anoRs)+'">'+brl(anoRs)+'</div><div class="s">'+serie.length+(serie.length===1?" mês":" meses")+' em '+S.ano+'</div></div>'+
      '</div>';
 
-  h+=shead("01","Rendimento mês a mês","carteira contra o CDI")+
-     '<div class="panel">'+chartCarteiraCdi(serie)+'</div>';
+  var estr=listaEstrat(r.ind);
+  if(estr.length){
+    var somaE=estr.reduce(function(a,x){return a+x.pc;},0);
+    h+=shead(nx(),"Alocação por estratégia","% da carteira")+
+       '<div class="panel" style="text-align:center">'+pizza(estr.map(function(x){return {nome:x.nome,valor:x.pc};}))+
+       '<div class="dn-leg">'+estr.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+'</div>'+
+       '<table class="rt" style="margin-top:8px;text-align:left"><thead><tr><th>Estratégia</th><th class="n">% da carteira</th><th class="n">Valor estimado</th></tr></thead><tbody>'+
+       estr.map(function(x){return '<tr><td>'+esc(x.nome)+'</td><td class="n">'+pct(x.pc,1)+'</td><td class="n">'+brl(t.pl*x.pc/100)+'</td></tr>';}).join("")+
+       '<tr class="tot"><td>Total</td><td class="n">'+pct(somaE,1)+'</td><td class="n">'+brl(t.pl*somaE/100)+'</td></tr>'+
+       '</tbody></table></div>';
+  }
 
-  h+=shead("02","Distribuição por instituição","saldos de "+ref(S.mes,S.ano))+
+  h+=shead(nx(),"Distribuição por instituição","saldos de "+ref(S.mes,S.ano))+
      '<div class="panel" style="text-align:center">'+pizza(inst)+'<div class="dn-total">total <b>'+brl(t.pl)+'</b></div>'+
      '<div class="dn-leg">'+inst.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+'</div>'+
      '<div class="dn-rows">'+inst.map(function(x){return '<div><span>'+esc(x.nome)+'</span><b>'+brl(x.valor)+'</b></div>';}).join("")+'</div>'+
@@ -774,10 +829,10 @@ function viewRelatorio(){
   /* --- página de tabelas --- */
   pg++;
   h+='<div class="pg">'+marca()+
-     shead("03","Retornos mensais","carteira contra o CDI")+
+     shead(nx(),"Retornos mensais","carteira contra o CDI")+
      '<div class="panel tint">'+blocoRetornos(c.id)+'</div>';
 
-  h+=shead("04","Desempenho por conta","")+
+  h+=shead(nx(),"Desempenho por conta","")+
      '<div class="panel"><table class="rt"><thead><tr><th>Conta</th><th class="n">Saldo</th><th class="n">% da carteira</th><th class="n">Último mês</th><th class="n">No ano</th><th class="n">12 meses</th></tr></thead><tbody>'+
      r.contas.map(function(x){
        var noAno=contaAcum(c.id,x.nome,S.mes,S.ano,S.mes), m12=contaAcum(c.id,x.nome,S.mes,S.ano,12);
@@ -790,7 +845,7 @@ function viewRelatorio(){
      '<tr class="tot"><td>Total</td><td class="n">'+brl(t.pl)+'</td><td class="n">100,0%</td><td class="n">'+pct(t.rendPct)+'</td><td class="n">'+pct(anoPct)+'</td><td class="n">—</td></tr>'+
      '</tbody></table></div>';
 
-  h+=shead("05","Evolução do patrimônio",serie.length+(serie.length===1?" mês":" meses")+" com saldo")+
+  h+=shead(nx(),"Evolução do patrimônio",serie.length+(serie.length===1?" mês":" meses")+" com saldo")+
      '<div class="panel tint">'+
      '<p class="foot-note" style="margin:0 0 18px">Patrimônio de <b>'+brl(t.pl)+'</b> em '+ref(S.mes,S.ano)+'.'+(serie.length<2?' A comparação entre meses aparece a partir do segundo mês lançado.':'')+'</p>'+
      chartEvolucao(serie)+
@@ -809,7 +864,7 @@ function viewRelatorio(){
   var venc=listaVenc(r.ind);
   h+='<div class="pg">'+marca()+
      (venc.length?
-       shead("06","Próximos vencimentos","valores aproximados")+
+       shead(nx(),"Próximos vencimentos","valores aproximados")+
        '<div class="panel"><table class="rt"><thead><tr><th>Ativo</th><th>Instituição</th><th>Taxa</th><th class="n">Vencimento</th><th class="n">Valor aproximado</th></tr></thead><tbody>'+
        venc.map(function(v){
          return '<tr><td>'+esc(v.ativo||"—")+'</td><td>'+esc(v.inst||"—")+'</td><td>'+esc(v.taxa||"—")+'</td>'+
@@ -846,7 +901,7 @@ function viewLogin(erro){
     '<label>E-mail</label><input type="email" id="lgEmail" autocomplete="username" placeholder="seu@email.com">'+
     '<label>Senha</label><input type="password" id="lgSenha" autocomplete="current-password" placeholder="••••••••">'+
     '<button id="lgBtn" onclick="fazerLogin()">Entrar</button>'+
-    '<div class="pe">Acesso restrito.<br>versão 5 — vencimentos</div>'+
+    '<div class="pe">Acesso restrito.<br>versão 6 — estratégias</div>'+
     '</div></div>';
 }
 function fazerLogin(){
