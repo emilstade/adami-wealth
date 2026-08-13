@@ -1,425 +1,415 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adami Wealth - Gestão de Investimentos</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background: #f5f5f5;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            padding: 20px;
-        }
-
-        .header h1 {
-            max-width: 1200px;
-            margin: 0 auto;
-            font-size: 24px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-
-        .controls {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .controls label {
-            display: block;
-            font-size: 12px;
-            color: #666;
-            font-weight: bold;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
-
-        .controls select, .controls input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        button {
-            padding: 12px 30px;
-            background: #1e3c72;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
-        }
-
-        button:hover {
-            background: #0f2847;
-        }
-
-        .capa {
-            background: #1e3c72;
-            color: white;
-            padding: 60px 40px;
-            border-radius: 8px;
-            text-align: center;
-            margin-bottom: 40px;
-        }
-
-        .capa h1 {
-            font-size: 40px;
-            margin: 20px 0;
-        }
-
-        .kpis {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 40px;
-        }
-
-        .kpi {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            border-top: 3px solid #1e3c72;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .kpi-label {
-            font-size: 11px;
-            color: #999;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
-        .kpi-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #1e3c72;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        thead {
-            background: #f9f9f9;
-            border-bottom: 2px solid #1e3c72;
-        }
-
-        th {
-            padding: 12px;
-            text-align: left;
-            color: #1e3c72;
-            font-weight: bold;
-            font-size: 12px;
-        }
-
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            font-size: 12px;
-        }
-
-        h2 {
-            color: #1e3c72;
-            margin-bottom: 15px;
-            margin-top: 30px;
-        }
-
-        .error {
-            background: #fee;
-            color: #c33;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-        }
-
-        .info {
-            background: #e3f2fd;
-            color: #0d47a1;
-            padding: 20px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            border-left: 4px solid #1e3c72;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adami Wealth — Consolidado de Carteiras</title>
+<style>
+:root{
+  --ink:#111C2B; --ink-2:#39485C; --muted:#6B7A8D;
+  --paper:#EDF0F4; --surface:#FFFFFF; --line:#D9E0E8; --line-2:#E9EDF2;
+  --blue:#123A63; --blue-pale:#EBF1F8; --blue-2:#3D6D9E; --blue-3:#8AA8C6;
+  --brass:#A8791B; --alert:#A03A2B; --green:#0A7344; --sand:#C4A96B;
+  --display:Constantia,Cambria,"Palatino Linotype",Georgia,serif;
+  --body:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --rail:280px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--body);color:var(--ink);background:var(--paper);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;font-size:13px;cursor:pointer}
+h1,h2,h3{margin:0;font-weight:600}
+table{border-collapse:collapse;width:100%}
+input,select{font-family:inherit;font-size:13px}
+.rail{position:fixed;top:0;left:0;bottom:0;width:var(--rail);background:var(--ink);color:#C7D3E0;padding:22px 18px;overflow-y:auto}
+.rail-brand{font-family:var(--display);font-size:19px;color:#fff;line-height:1.2}
+.rail-brand span{display:block;font-family:var(--body);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-3);margin-top:7px}
+.rail-block{margin-top:24px}
+.rail-label{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:#7A8DA3;margin-bottom:9px}
+.rail select,.rail input[type=text]{width:100%;background:#16283C;color:#EAF1EF;border:1px solid #27394F;border-radius:3px;padding:8px 9px}
+.cli-list{margin:0;padding:0;list-style:none}
+.cli-list li{padding:9px 10px;border-radius:3px;cursor:pointer;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.cli-list li:hover{background:#1B2E44}
+.cli-list li.on{background:var(--blue);color:#fff}
+.cli-list li b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cli-list li i{font-style:normal;font-size:11px;color:#8AA8C6}
+.rail button{width:100%;background:#1B2E44;color:#DCE7F1;border:1px solid #2B3F57;border-radius:3px;padding:9px;margin-top:8px}
+.rail button:hover{background:#22374F}
+.rail .mini{font-size:11.5px;color:#7A8DA3;margin-top:14px;line-height:1.5}
+.main{margin-left:var(--rail);padding:26px 30px 70px}
+.topbar{display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap}
+.tabs{display:flex;gap:2px;background:#DFE5EC;padding:3px;border-radius:4px}
+.tabs button{border:0;background:transparent;padding:8px 18px;border-radius:3px;color:var(--ink-2);font-weight:500}
+.tabs button.on{background:#fff;color:var(--blue);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.spacer{flex:1}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:9px 16px;border-radius:3px}
+.btn:hover{background:#F6F8FA}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.pri:hover{background:#0E2F51}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:22px;margin-bottom:18px}
+.sec-title{font-family:var(--display);font-size:17px;color:var(--blue);margin-bottom:4px}
+.sec-sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+th{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:8px;border-bottom:1px solid var(--line)}
+td{padding:7px 8px;border-bottom:1px solid var(--line-2);font-size:13px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:#FAFBFD}
+tfoot td{font-weight:600;border-top:1px solid var(--line);border-bottom:0;background:#F7F9FB}
+.inp{width:100%;border:1px solid var(--line);border-radius:3px;padding:6px 7px;background:#fff}
+.inp:focus{outline:0;border-color:var(--blue-2);box-shadow:0 0 0 2px var(--blue-pale)}
+.inp.num{text-align:right}
+.grid-ind{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px}
+.grid-ind label{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.xbtn{border:0;background:transparent;color:var(--alert);font-size:15px;padding:2px 6px}
+.note{background:var(--blue-pale);border-left:3px solid var(--blue-2);padding:12px 14px;font-size:12.5px;color:var(--ink-2);border-radius:0 3px 3px 0;margin-bottom:16px}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty h2{font-family:var(--display);color:var(--blue);margin-bottom:8px}
+.cover{background:var(--ink);color:#fff;padding:64px 46px;border-radius:4px;margin-bottom:20px}
+.cover .eyebrow{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--blue-3)}
+.cover h1{font-family:var(--display);font-size:34px;margin:14px 0 6px;font-weight:500;line-height:1.15}
+.cover .cli{font-size:15px;color:#C7D3E0}
+.cover hr{border:0;border-top:1px solid #2B3F57;margin:26px 0}
+.cover .ref{font-size:13px;color:#C7D3E0}
+.cover .brand{margin-top:44px;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--sand)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid var(--line);border-top:2px solid var(--blue);border-radius:4px;padding:18px}
+.kpi .l{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-family:var(--display);font-size:26px;margin-top:8px;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi.pos .v{color:var(--green)} .kpi.neg .v{color:var(--alert)}
+.donut-wrap{display:flex;gap:34px;align-items:center;flex-wrap:wrap}
+.legend{list-style:none;margin:0;padding:0;min-width:230px}
+.legend li{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:13px}
+.legend .sw{width:11px;height:11px;border-radius:2px;flex:none}
+.legend .pc{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--muted)}
+.pos{color:var(--green)} .neg{color:var(--alert)}
+.disc{font-size:11.5px;color:var(--muted);line-height:1.65}
+@media print{
+  .rail,.topbar,.no-print{display:none!important}
+  .main{margin:0;padding:0}
+  body{background:#fff}
+  .card{border:0;padding:0 0 18px;break-inside:avoid}
+  .cover{break-after:page}
+}
+@media(max-width:820px){
+  :root{--rail:0px}
+  .rail{position:static;width:auto;bottom:auto}
+  .main{margin:0;padding:18px}
+}
+</style>
 </head>
 <body>
-    <div class="header">
-        <h1>🏛️ Adami Wealth - Gestão de Investimentos</h1>
+
+<nav class="rail">
+  <div class="rail-brand">Adami Wealth<span>Consolidado de carteiras</span></div>
+  <div class="rail-block">
+    <div class="rail-label">Clientes</div>
+    <ul class="cli-list" id="cliList"></ul>
+    <button onclick="novoCliente()">+ Novo cliente</button>
+  </div>
+  <div class="rail-block">
+    <div class="rail-label">Mês de referência</div>
+    <select id="selMes" onchange="mudarRef()"></select>
+    <select id="selAno" onchange="mudarRef()" style="margin-top:8px"></select>
+  </div>
+  <div class="rail-block">
+    <div class="rail-label">Backup</div>
+    <button onclick="exportar()">Baixar backup (.json)</button>
+    <button onclick="document.getElementById('fileImp').click()">Restaurar backup</button>
+    <input type="file" id="fileImp" accept=".json" style="display:none" onchange="importar(this)">
+    <div class="mini">Os dados ficam salvos neste navegador. Use o backup para levar para outro computador ou compartilhar com a equipe.</div>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="topbar">
+    <div class="tabs">
+      <button id="tabP" class="on" onclick="setTab('preencher')">Preencher</button>
+      <button id="tabR" onclick="setTab('relatorio')">Relatório</button>
     </div>
+    <div class="spacer"></div>
+    <button class="btn" id="btnPdf" onclick="window.print()" style="display:none">Imprimir / Salvar PDF</button>
+  </div>
+  <div id="view"></div>
+</main>
 
-    <div class="container">
-        <div class="controls">
-            <div>
-                <label>Cliente</label>
-                <select id="cliente">
-                    <option value="">Carregando clientes...</option>
-                </select>
-            </div>
-            <div>
-                <label>Mês</label>
-                <select id="mes">
-                    <option value="">Selecione um mês...</option>
-                    <option value="Janeiro">Janeiro</option>
-                    <option value="Fevereiro">Fevereiro</option>
-                    <option value="Março">Março</option>
-                    <option value="Abril">Abril</option>
-                    <option value="Maio">Maio</option>
-                    <option value="Junho">Junho</option>
-                    <option value="Julho">Julho</option>
-                    <option value="Agosto">Agosto</option>
-                    <option value="Setembro">Setembro</option>
-                    <option value="Outubro">Outubro</option>
-                    <option value="Novembro">Novembro</option>
-                    <option value="Dezembro">Dezembro</option>
-                </select>
-            </div>
-            <div style="display: flex; align-items: flex-end;">
-                <button onclick="gerarRelatorio()">📊 Gerar Relatório</button>
-            </div>
-        </div>
+<script>
+var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+var MESES_C=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+var CORES=["#123A63","#3D6D9E","#8AA8C6","#A8791B","#0A7344","#5D7186","#C4A96B","#A03A2B","#2E6E8E","#7E6BA8"];
+var IND=[["cdi","CDI"],["ipca","IPCA"],["ibov","Ibovespa"],["sp500","S&P 500"],["poup","Poupança"],["dolar","Dólar"],["ouro","Ouro"],["ifix","IFIX"]];
+var KEY="adami_wealth_db_v1";
+var db={clientes:[],dados:{}};
+var S={cliente:null,mes:new Date().getMonth()+1,ano:new Date().getFullYear(),tab:"preencher",rasc:null};
 
-        <div id="relatorio"></div>
-    </div>
+function carregar(){ try{var r=localStorage.getItem(KEY); if(r) db=JSON.parse(r);}catch(e){} if(!db.clientes)db.clientes=[]; if(!db.dados)db.dados={}; }
+function salvarDB(){ try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){alert("Não foi possível salvar: "+e.message);} }
+function chave(id,mes,ano){ return id+"|"+ano+"-"+String(mes).padStart(2,"0"); }
+function uid(){ return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+function n(v){ var x=parseFloat(String(v).replace(",",".")); return isNaN(x)?0:x; }
+function brl(v){ return "R$ "+(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function brlC(v){ var a=Math.abs(v||0); if(a>=1e6) return "R$ "+(v/1e6).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+" mi"; if(a>=1e3) return "R$ "+(v/1e3).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+" mil"; return brl(v); }
+function pct(v,d){ d=d==null?2:d; return (v||0).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d})+"%"; }
+function sinal(v){ return v>0?"pos":(v<0?"neg":""); }
+function contaVazia(){ return {nome:"",inst:"",saldo:0,apl:0,res:0,rendPct:0,rendRs:0}; }
+function indVazio(){ var o={}; IND.forEach(function(p){o[p[0]]=0;}); return o; }
+function reg(id,mes,ano){ return db.dados[chave(id,mes,ano)]||null; }
+function anterior(mes,ano){ return mes===1?{mes:12,ano:ano-1}:{mes:mes-1,ano:ano}; }
 
-    <script>
-        let SHEET_ID = localStorage.getItem('SHEET_ID') || '';
-        const API_KEY = 'AIzaSyAkIcwSALXa5MsJz90sI_f6gG5pz-6fNJQ';
-        let dadosSheet = [];
+function montarRascunho(){
+  var id=S.cliente; if(!id){S.rasc=null;return;}
+  var r=reg(id,S.mes,S.ano);
+  if(r){ S.rasc=JSON.parse(JSON.stringify(r)); S.rasc._novo=false; return; }
+  var p=anterior(S.mes,S.ano),ant=null,t=0;
+  while(t<24&&!ant){ ant=reg(id,p.mes,p.ano); if(!ant)p=anterior(p.mes,p.ano); t++; }
+  if(ant){
+    S.rasc={_novo:true,_herdado:true,contas:ant.contas.map(function(c){return {nome:c.nome,inst:c.inst,saldo:n(c.saldo),apl:0,res:0,rendPct:0,rendRs:0};}),ind:indVazio()};
+  }else{
+    S.rasc={_novo:true,_herdado:false,contas:[contaVazia(),contaVazia()],ind:indVazio()};
+  }
+}
+function totais(r){
+  if(!r) return {pl:0,rendRs:0,rendPct:0,apl:0,res:0};
+  var pl=0,rs=0,apl=0,res=0;
+  r.contas.forEach(function(c){ pl+=n(c.saldo); rs+=n(c.rendRs); apl+=n(c.apl); res+=n(c.res); });
+  var base=pl-rs-apl+res;
+  return {pl:pl,rendRs:rs,rendPct:base>0?(rs/base)*100:0,apl:apl,res:res};
+}
+function serieAno(id,ano){
+  var out=[];
+  for(var m=1;m<=12;m++){ var r=reg(id,m,ano); if(!r) continue; var t=totais(r);
+    out.push({mes:m,pl:t.pl,rendPct:t.rendPct,rendRs:t.rendRs,cdi:n(r.ind&&r.ind.cdi)}); }
+  return out;
+}
+function acumulado(serie,campo){ var f=1; serie.forEach(function(s){ f*=(1+(campo==="cdi"?s.cdi:s.rendPct)/100); }); return (f-1)*100; }
+function porInstituicao(r){
+  var map={},tot=0;
+  r.contas.forEach(function(c){
+    var k=((c.inst||"").trim())||"Sem instituição";
+    if(!map[k]) map[k]={nome:k,valor:0,rendRs:0};
+    map[k].valor+=n(c.saldo); map[k].rendRs+=n(c.rendRs); tot+=n(c.saldo);
+  });
+  return Object.keys(map).map(function(k){var o=map[k];o.pc=tot>0?o.valor/tot*100:0;return o;}).sort(function(a,b){return b.valor-a.valor;});
+}
 
-        async function carregarDados() {
-            if (!SHEET_ID) {
-                document.getElementById('relatorio').innerHTML = `
-                    <div class="info">
-                        <strong>📋 Como usar:</strong><br>
-                        1. Crie um Google Sheet com abas por cliente<br>
-                        2. Preencha as colunas: Mês | Conta | Instituição | Saldo | Rend % | Rend R$<br>
-                        3. Publique o sheet (File → Share → Anyone with the link)<br>
-                        4. Copie o Sheet ID da URL (entre /d/ e /edit)<br>
-                        5. Cole aqui:
-                        <br><br>
-                        <input type="text" id="sheetId" placeholder="Cole o Google Sheet ID aqui">
-                        <button onclick="salvarSheetId()">Conectar Google Sheet</button>
-                    </div>
-                `;
-                return;
-            }
+function renderRail(){
+  var ul=document.getElementById("cliList");
+  if(!db.clientes.length){ ul.innerHTML='<li style="color:#7A8DA3;cursor:default">Nenhum cliente ainda</li>'; }
+  else{
+    ul.innerHTML=db.clientes.map(function(c){
+      var r=reg(c.id,S.mes,S.ano),t=r?totais(r):null;
+      return '<li class="'+(S.cliente===c.id?"on":"")+'" onclick="selCliente(\''+c.id+'\')"><b>'+esc(c.nome)+'</b><i>'+(t?brlC(t.pl):"—")+'</i></li>';
+    }).join("");
+  }
+  var sm=document.getElementById("selMes");
+  if(!sm.options.length){
+    sm.innerHTML=MESES.map(function(m,i){return '<option value="'+(i+1)+'">'+m+'</option>';}).join("");
+    var y=new Date().getFullYear(),o="";
+    for(var a=y+1;a>=y-6;a--) o+='<option value="'+a+'">'+a+'</option>';
+    document.getElementById("selAno").innerHTML=o;
+  }
+  sm.value=S.mes; document.getElementById("selAno").value=S.ano;
+}
 
-            try {
-                const url = \`https://sheets.googleapis.com/v4/spreadsheets/\${SHEET_ID}?key=\${API_KEY}&includeGridData=true\`;
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error('Sheet ID inválido ou sheet não é público');
-                }
+function novoCliente(){ var nome=prompt("Nome do cliente:"); if(!nome) return; var c={id:uid(),nome:nome.trim()}; db.clientes.push(c); salvarDB(); S.cliente=c.id; montarRascunho(); render(); }
+function renomear(){ var c=cli(); if(!c) return; var nome=prompt("Nome do cliente:",c.nome); if(!nome) return; c.nome=nome.trim(); salvarDB(); render(); }
+function excluirCliente(){
+  var c=cli(); if(!c) return;
+  if(!confirm("Excluir "+c.nome+" e todos os meses lançados? Não é possível desfazer.")) return;
+  db.clientes=db.clientes.filter(function(x){return x.id!==c.id;});
+  Object.keys(db.dados).forEach(function(k){ if(k.indexOf(c.id+"|")===0) delete db.dados[k]; });
+  salvarDB(); S.cliente=db.clientes.length?db.clientes[0].id:null; montarRascunho(); render();
+}
+function selCliente(id){ S.cliente=id; montarRascunho(); render(); }
+function mudarRef(){ S.mes=parseInt(document.getElementById("selMes").value,10); S.ano=parseInt(document.getElementById("selAno").value,10); montarRascunho(); render(); }
+function setTab(t){ S.tab=t; render(); }
+function cli(){ var id=S.cliente; return db.clientes.filter(function(c){return c.id===id;})[0]||null; }
+function setConta(i,campo,v){
+  var c=S.rasc.contas[i];
+  if(campo==="nome"||campo==="inst") c[campo]=v; else c[campo]=n(v);
+  if(campo==="rendRs"||campo==="saldo"||campo==="apl"||campo==="res"){
+    var base=n(c.saldo)-n(c.rendRs)-n(c.apl)+n(c.res);
+    c.rendPct=base>0?(n(c.rendRs)/base)*100:0;
+    var e=document.getElementById("pc"+i); if(e) e.value=c.rendPct?c.rendPct.toFixed(4):"";
+  }
+  atualizarResumo();
+}
+function addConta(){ S.rasc.contas.push(contaVazia()); render(); }
+function delConta(i){ S.rasc.contas.splice(i,1); render(); }
+function setInd(k,v){ S.rasc.ind[k]=n(v); }
+function salvarMes(){
+  if(!S.cliente){ alert("Selecione um cliente."); return; }
+  var contas=S.rasc.contas.filter(function(c){return (c.nome||"").trim()||n(c.saldo);});
+  if(!contas.length){ alert("Informe ao menos uma conta com nome ou saldo."); return; }
+  db.dados[chave(S.cliente,S.mes,S.ano)]={contas:contas,ind:S.rasc.ind};
+  salvarDB(); montarRascunho(); S.tab="relatorio"; render();
+}
+function excluirMes(){
+  if(!confirm("Excluir os dados de "+MESES[S.mes-1]+"/"+S.ano+"?")) return;
+  delete db.dados[chave(S.cliente,S.mes,S.ano)]; salvarDB(); montarRascunho(); render();
+}
+function exportar(){
+  var b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(b);
+  a.download="adami-wealth-backup-"+new Date().toISOString().slice(0,10)+".json";
+  a.click();
+}
+function importar(inp){
+  var f=inp.files[0]; if(!f) return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{
+      var d=JSON.parse(fr.result);
+      if(!d.clientes||!d.dados) throw new Error("Arquivo fora do formato esperado.");
+      if(!confirm("Substituir os dados atuais pelos do backup?")) return;
+      db=d; salvarDB(); S.cliente=db.clientes.length?db.clientes[0].id:null; montarRascunho(); render(); alert("Backup restaurado.");
+    }catch(e){ alert("Erro ao ler o arquivo: "+e.message); }
+    inp.value="";
+  };
+  fr.readAsText(f);
+}
 
-                processarDados(data);
-                preencherClientes();
-            } catch (error) {
-                document.getElementById('relatorio').innerHTML = \`
-                    <div class="error">
-                        ⚠️ Erro ao carregar dados: \${error.message}<br>
-                        <button onclick="resetarSheetId()" style="margin-top: 10px;">🔄 Tentar outro Sheet ID</button>
-                    </div>
-                \`;
-            }
-        }
+function viewPreencher(){
+  var c=cli();
+  if(!c) return '<div class="card empty"><h2>Comece cadastrando um cliente</h2><p>Use o botão “+ Novo cliente” no menu lateral.</p></div>';
+  var r=S.rasc,t=totais(r),h="";
+  h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">'+
+     '<div><div class="sec-title">'+esc(c.nome)+'</div><div class="sec-sub">Lançamento de '+MESES[S.mes-1]+' de '+S.ano+'</div></div>'+
+     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="renomear()">Renomear</button>'+
+     (reg(c.id,S.mes,S.ano)?'<button class="btn" onclick="excluirMes()">Excluir mês</button>':'')+
+     '<button class="btn" onclick="excluirCliente()">Excluir cliente</button></div></div></div>';
+  if(r._herdado) h+='<div class="note"><b>Dados herdados do mês anterior.</b> Contas e saldos vieram do último mês lançado. Atualize os saldos e informe o resultado do mês — nada é gravado até você clicar em “Salvar mês”.</div>';
+  h+='<div class="card"><div class="sec-title">Contas</div><div class="sec-sub">Saldo de fechamento, movimentações e resultado do mês. A rentabilidade % é calculada automaticamente.</div>'+
+     '<div style="overflow-x:auto"><table><thead><tr><th style="min-width:150px">Conta</th><th style="min-width:120px">Instituição</th>'+
+     '<th class="num">Saldo final</th><th class="num">Aplicações</th><th class="num">Resgates</th><th class="num">Rend. R$</th><th class="num">Rend. %</th><th></th></tr></thead><tbody>';
+  r.contas.forEach(function(x,i){
+    h+='<tr>'+
+    '<td><input class="inp" value="'+esc(x.nome)+'" oninput="setConta('+i+',\'nome\',this.value)" placeholder="Ex.: XP Investimentos"></td>'+
+    '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setConta('+i+',\'inst\',this.value)" placeholder="Ex.: XP"></td>'+
+    '<td><input class="inp num" type="number" step="0.01" value="'+(x.saldo||"")+'" oninput="setConta('+i+',\'saldo\',this.value)"></td>'+
+    '<td><input class="inp num" type="number" step="0.01" value="'+(x.apl||"")+'" oninput="setConta('+i+',\'apl\',this.value)"></td>'+
+    '<td><input class="inp num" type="number" step="0.01" value="'+(x.res||"")+'" oninput="setConta('+i+',\'res\',this.value)"></td>'+
+    '<td><input class="inp num" type="number" step="0.01" value="'+(x.rendRs||"")+'" oninput="setConta('+i+',\'rendRs\',this.value)"></td>'+
+    '<td><input class="inp num" id="pc'+i+'" type="number" step="0.0001" value="'+(x.rendPct?x.rendPct.toFixed(4):"")+'" oninput="setConta('+i+',\'rendPct\',this.value)"></td>'+
+    '<td><button class="xbtn" onclick="delConta('+i+')" title="Remover">&times;</button></td></tr>';
+  });
+  h+='</tbody><tfoot><tr><td colspan="2">Total</td><td class="num" id="ftPl">'+brl(t.pl)+'</td><td class="num" id="ftApl">'+brl(t.apl)+'</td>'+
+     '<td class="num" id="ftRes">'+brl(t.res)+'</td><td class="num" id="ftRs">'+brl(t.rendRs)+'</td><td class="num" id="ftPc">'+pct(t.rendPct)+'</td><td></td></tr></tfoot></table></div>'+
+     '<button class="btn" style="margin-top:14px" onclick="addConta()">+ Adicionar conta</button></div>';
+  h+='<div class="card"><div class="sec-title">Indicadores do mês</div><div class="sec-sub">Variação percentual no mês de referência.</div><div class="grid-ind">';
+  IND.forEach(function(p){ h+='<div><label>'+p[1]+' (%)</label><input class="inp num" type="number" step="0.01" value="'+(r.ind[p[0]]||"")+'" oninput="setInd(\''+p[0]+'\',this.value)"></div>'; });
+  h+='</div></div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn pri" onclick="salvarMes()">Salvar mês e ver relatório</button>'+
+     '<span style="font-size:12.5px;color:var(--muted)" id="resumoMini">Carteira: '+pct(t.rendPct)+' • '+brl(t.rendRs)+'</span></div>';
+  return h;
+}
+function atualizarResumo(){
+  var t=totais(S.rasc),set=function(id,v){var e=document.getElementById(id); if(e)e.textContent=v;};
+  set("ftPl",brl(t.pl)); set("ftApl",brl(t.apl)); set("ftRes",brl(t.res)); set("ftRs",brl(t.rendRs)); set("ftPc",pct(t.rendPct));
+  set("resumoMini","Carteira: "+pct(t.rendPct)+" • "+brl(t.rendRs));
+}
 
-        function salvarSheetId() {
-            const id = document.getElementById('sheetId').value.trim();
-            if (id) {
-                localStorage.setItem('SHEET_ID', id);
-                SHEET_ID = id;
-                location.reload();
-            }
-        }
+function donut(items){
+  var R=76,r=48,cx=100,cy=100,ang=-Math.PI/2,out="";
+  var tot=items.reduce(function(a,b){return a+b.valor;},0);
+  if(tot<=0) return '<svg viewBox="0 0 200 200" width="200" height="200"></svg>';
+  items.forEach(function(it,i){
+    var a2=ang+(it.valor/tot)*Math.PI*2,big=(a2-ang)>Math.PI?1:0;
+    var x1=cx+R*Math.cos(ang),y1=cy+R*Math.sin(ang),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
+    var x3=cx+r*Math.cos(a2),y3=cy+r*Math.sin(a2),x4=cx+r*Math.cos(ang),y4=cy+r*Math.sin(ang);
+    out+='<path d="M'+x1+' '+y1+' A'+R+' '+R+' 0 '+big+' 1 '+x2+' '+y2+' L'+x3+' '+y3+' A'+r+' '+r+' 0 '+big+' 0 '+x4+' '+y4+' Z" fill="'+CORES[i%CORES.length]+'"/>';
+    ang=a2;
+  });
+  return '<svg viewBox="0 0 200 200" width="200" height="200">'+out+'</svg>';
+}
+function barras(serie){
+  if(!serie.length) return "";
+  var W=Math.max(360,serie.length*84),H=200,pb=28,pt=22;
+  var max=Math.max.apply(null,serie.map(function(s){return s.pl;}))||1;
+  var slot=(W-20)/serie.length,bw=Math.min(52,slot-14),out="";
+  serie.forEach(function(s,i){
+    var hh=(s.pl/max)*(H-pt-pb),x=10+i*slot+(slot-bw)/2,y=H-pb-hh;
+    out+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" fill="#3D6D9E" rx="2"/>'+
+         '<text x="'+(x+bw/2)+'" y="'+(y-6)+'" text-anchor="middle" font-size="10" fill="#6B7A8D">'+brlC(s.pl).replace("R$ ","")+'</text>'+
+         '<text x="'+(x+bw/2)+'" y="'+(H-9)+'" text-anchor="middle" font-size="11" fill="#39485C">'+MESES_C[s.mes-1]+'</text>';
+  });
+  return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'">'+out+'</svg></div>';
+}
 
-        function resetarSheetId() {
-            localStorage.removeItem('SHEET_ID');
-            SHEET_ID = '';
-            location.reload();
-        }
+function viewRelatorio(){
+  var c=cli();
+  if(!c) return '<div class="card empty"><h2>Nenhum cliente selecionado</h2></div>';
+  var r=reg(c.id,S.mes,S.ano);
+  if(!r) return '<div class="card empty"><h2>Sem dados em '+MESES[S.mes-1]+'/'+S.ano+'</h2><p>Preencha o mês na aba “Preencher” para gerar o relatório.</p></div>';
+  var t=totais(r),serie=serieAno(c.id,S.ano),inst=porInstituicao(r);
+  var cdi=n(r.ind.cdi),doCdi=cdi>0?(t.rendPct/cdi)*100:0,h="";
 
-        function processarDados(data) {
-            dadosSheet = [];
-            const sheets = data.sheets || [];
-            
-            sheets.forEach(sheet => {
-                const nomeCliente = sheet.properties.title;
-                if (!sheet.data || !sheet.data[0]) return;
-                
-                const grid = sheet.data[0];
-                const rows = grid.rowData || [];
-                if (rows.length < 2) return;
-                
-                const headers = [];
-                if (rows[0].values) {
-                    rows[0].values.forEach(cell => {
-                        headers.push(cell.userEnteredValue?.stringValue || '');
-                    });
-                }
-                
-                for (let i = 1; i < rows.length; i++) {
-                    if (!rows[i].values) continue;
-                    const rowData = {};
-                    rows[i].values.forEach((cell, idx) => {
-                        const value = cell.userEnteredValue?.stringValue || 
-                                    cell.userEnteredValue?.numberValue || '';
-                        rowData[headers[idx]] = value;
-                    });
-                    
-                    if (rowData.Mês) {
-                        rowData.Cliente = nomeCliente;
-                        dadosSheet.push(rowData);
-                    }
-                }
-            });
-        }
+  h+='<div class="cover"><div class="eyebrow">Relatório mensal</div><h1>Consolidado de Investimentos</h1>'+
+     '<div class="cli">'+esc(c.nome)+'</div><hr><div class="ref">'+MESES[S.mes-1]+' de '+S.ano+'</div>'+
+     '<div class="brand">Adami Wealth</div></div>';
 
-        function preencherClientes() {
-            const clientes = [...new Set(dadosSheet.map(d => d.Cliente))];
-            const select = document.getElementById('cliente');
-            select.innerHTML = '<option value="">Selecione um cliente...</option>';
-            
-            clientes.forEach(cliente => {
-                const option = document.createElement('option');
-                option.value = cliente;
-                option.textContent = cliente;
-                select.appendChild(option);
-            });
-        }
+  h+='<div class="kpis">'+
+     '<div class="kpi"><div class="l">Patrimônio</div><div class="v">'+brlC(t.pl)+'</div></div>'+
+     '<div class="kpi '+sinal(t.rendPct)+'"><div class="l">Rentabilidade no mês</div><div class="v">'+pct(t.rendPct)+'</div></div>'+
+     '<div class="kpi '+sinal(t.rendRs)+'"><div class="l">Resultado no mês</div><div class="v">'+brlC(t.rendRs)+'</div></div>'+
+     '<div class="kpi"><div class="l">% do CDI</div><div class="v">'+(cdi>0?pct(doCdi,1):"—")+'</div></div></div>';
 
-        function gerarRelatorio() {
-            const cliente = document.getElementById('cliente').value;
-            const mes = document.getElementById('mes').value;
-            
-            if (!cliente || !mes) {
-                document.getElementById('relatorio').innerHTML = 
-                    '<div class="error">⚠️ Selecione cliente e mês!</div>';
-                return;
-            }
-            
-            const dados = dadosSheet.filter(d => d.Cliente === cliente && d.Mês === mes);
-            
-            if (dados.length === 0) {
-                document.getElementById('relatorio').innerHTML = 
-                    '<div class="error">⚠️ Nenhum dado encontrado para este cliente e mês!</div>';
-                return;
-            }
-            
-            const plTotal = dados.reduce((sum, d) => sum + (parseFloat(d.Saldo) || 0), 0);
-            const rendTotal = dados.reduce((sum, d) => sum + (parseFloat(d['Rend R$']) || 0), 0);
-            const rendPct = plTotal > 0 ? (rendTotal / plTotal) * 100 : 0;
-            
-            let html = \`
-                <div class="capa">
-                    <p>Relatório</p>
-                    <h1>Relatório Consolidado de Investimentos</h1>
-                    <p>\${cliente}</p>
-                    <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.3); margin: 30px 0;">
-                    <p>\${mes} 2025</p>
-                    <p style="margin-top: 60px; font-size: 12px;">🏛️ ADAMI WEALTH</p>
-                </div>
-                
-                <div class="kpis">
-                    <div class="kpi">
-                        <div class="kpi-label">Patrimônio</div>
-                        <div class="kpi-value">R$ \${(plTotal / 1000000).toFixed(2)}M</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Rentabilidade</div>
-                        <div class="kpi-value">\${rendPct.toFixed(2)}%</div>
-                    </div>
-                    <div class="kpi">
-                        <div class="kpi-label">Resultado</div>
-                        <div class="kpi-value">R$ \${rendTotal.toLocaleString('pt-BR')}</div>
-                    </div>
-                </div>
-                
-                <h2>Contas</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Conta</th>
-                            <th>Instituição</th>
-                            <th style="text-align: right;">Saldo</th>
-                            <th style="text-align: right;">Rend %</th>
-                            <th style="text-align: right;">Rend R$</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            \`;
-            
-            dados.forEach(d => {
-                html += \`
-                    <tr>
-                        <td>\${d.Conta || '-'}</td>
-                        <td>\${d.Instituição || '-'}</td>
-                        <td style="text-align: right;">R$ \${parseFloat(d.Saldo || 0).toLocaleString('pt-BR')}</td>
-                        <td style="text-align: right;">\${d['Rend %'] || '-'}%</td>
-                        <td style="text-align: right;">R$ \${parseFloat(d['Rend R$'] || 0).toLocaleString('pt-BR')}</td>
-                    </tr>
-                \`;
-            });
-            
-            html += \`
-                    </tbody>
-                </table>
-                <div class="btn-group">
-                    <button onclick="alert('📥 PDF - Em breve!')">📥 Baixar PDF</button>
-                </div>
-            \`;
-            
-            document.getElementById('relatorio').innerHTML = html;
-        }
+  h+='<div class="card"><div class="sec-title">01&nbsp;&nbsp;Rendimento mês a mês</div><div class="sec-sub">Carteira comparada ao CDI em '+S.ano+'.</div>';
+  if(serie.length){
+    h+='<div style="overflow-x:auto"><table><thead><tr><th>Indicador</th>'+serie.map(function(s){return '<th class="num">'+MESES_C[s.mes-1]+'</th>';}).join("")+'<th class="num">Acum.</th></tr></thead><tbody>'+
+       '<tr><td>Carteira</td>'+serie.map(function(s){return '<td class="num '+sinal(s.rendPct)+'">'+pct(s.rendPct)+'</td>';}).join("")+'<td class="num '+sinal(acumulado(serie,"c"))+'"><b>'+pct(acumulado(serie,"c"))+'</b></td></tr>'+
+       '<tr><td>CDI</td>'+serie.map(function(s){return '<td class="num">'+pct(s.cdi)+'</td>';}).join("")+'<td class="num"><b>'+pct(acumulado(serie,"cdi"))+'</b></td></tr>'+
+       '<tr><td>% do CDI</td>'+serie.map(function(s){return '<td class="num">'+(s.cdi>0?pct(s.rendPct/s.cdi*100,0):"—")+'</td>';}).join("")+
+       '<td class="num"><b>'+(acumulado(serie,"cdi")>0?pct(acumulado(serie,"c")/acumulado(serie,"cdi")*100,0):"—")+'</b></td></tr></tbody></table></div>';
+  } else h+='<p class="disc">Sem histórico no ano.</p>';
+  h+='</div>';
 
-        window.addEventListener('load', carregarDados);
-    </script>
+  h+='<div class="card"><div class="sec-title">02&nbsp;&nbsp;Distribuição por instituição</div><div class="sec-sub">Participação de cada instituição no patrimônio total.</div>'+
+     '<div class="donut-wrap">'+donut(inst)+'<ul class="legend">'+
+     inst.map(function(x,i){return '<li><span class="sw" style="background:'+CORES[i%CORES.length]+'"></span>'+esc(x.nome)+'<span class="pc">'+pct(x.pc,1)+'</span></li>';}).join("")+'</ul></div>'+
+     '<table style="margin-top:18px"><thead><tr><th>Instituição</th><th class="num">Saldo</th><th class="num">% da carteira</th><th class="num">Resultado no mês</th></tr></thead><tbody>'+
+     inst.map(function(x){return '<tr><td>'+esc(x.nome)+'</td><td class="num">'+brl(x.valor)+'</td><td class="num">'+pct(x.pc,1)+'</td><td class="num '+sinal(x.rendRs)+'">'+brl(x.rendRs)+'</td></tr>';}).join("")+
+     '</tbody><tfoot><tr><td>Total</td><td class="num">'+brl(t.pl)+'</td><td class="num">100,0%</td><td class="num">'+brl(t.rendRs)+'</td></tr></tfoot></table>';
+  if(inst.length) h+='<p class="disc" style="margin-top:14px">Maior concentração em <b>'+esc(inst[0].nome)+'</b>, com '+pct(inst[0].pc,1)+' do patrimônio'+(inst.length>1?', seguida por '+esc(inst[1].nome)+' ('+pct(inst[1].pc,1)+')':'')+'.</p>';
+  h+='</div>';
+
+  h+='<div class="card"><div class="sec-title">03&nbsp;&nbsp;Desempenho por conta</div><div class="sec-sub">Resultado individual em '+MESES[S.mes-1]+'.</div>'+
+     '<div style="overflow-x:auto"><table><thead><tr><th>Conta</th><th>Instituição</th><th class="num">Saldo</th><th class="num">% da carteira</th><th class="num">Aplicações</th><th class="num">Resgates</th><th class="num">Rend. R$</th><th class="num">Rend. %</th></tr></thead><tbody>'+
+     r.contas.map(function(x){
+       return '<tr><td>'+esc(x.nome||"—")+'</td><td>'+esc(x.inst||"—")+'</td><td class="num">'+brl(n(x.saldo))+'</td>'+
+       '<td class="num">'+pct(t.pl>0?n(x.saldo)/t.pl*100:0,1)+'</td><td class="num">'+brl(n(x.apl))+'</td><td class="num">'+brl(n(x.res))+'</td>'+
+       '<td class="num '+sinal(n(x.rendRs))+'">'+brl(n(x.rendRs))+'</td><td class="num '+sinal(n(x.rendPct))+'">'+pct(n(x.rendPct))+'</td></tr>';
+     }).join("")+
+     '</tbody><tfoot><tr><td colspan="2">Total</td><td class="num">'+brl(t.pl)+'</td><td class="num">100,0%</td><td class="num">'+brl(t.apl)+'</td><td class="num">'+brl(t.res)+'</td><td class="num">'+brl(t.rendRs)+'</td><td class="num">'+pct(t.rendPct)+'</td></tr></tfoot></table></div></div>';
+
+  h+='<div class="card"><div class="sec-title">04&nbsp;&nbsp;Evolução do patrimônio</div><div class="sec-sub">Saldo consolidado ao fim de cada mês de '+S.ano+'.</div>'+barras(serie)+
+     (serie.length?'<table style="margin-top:14px"><thead><tr><th>Mês</th><th class="num">Patrimônio</th><th class="num">Resultado</th><th class="num">Rentabilidade</th></tr></thead><tbody>'+
+     serie.map(function(s){return '<tr><td>'+MESES[s.mes-1]+'</td><td class="num">'+brl(s.pl)+'</td><td class="num '+sinal(s.rendRs)+'">'+brl(s.rendRs)+'</td><td class="num '+sinal(s.rendPct)+'">'+pct(s.rendPct)+'</td></tr>';}).join("")+'</tbody></table>':'')+'</div>';
+
+  h+='<div class="card"><div class="sec-title">05&nbsp;&nbsp;Indicadores de mercado</div><div class="sec-sub">Variação em '+MESES[S.mes-1]+' de '+S.ano+'.</div>'+
+     '<table><thead><tr><th>Indicador</th><th class="num">No mês</th></tr></thead><tbody>'+
+     IND.map(function(p){var v=n(r.ind[p[0]]);return '<tr><td>'+p[1]+'</td><td class="num '+sinal(v)+'">'+pct(v)+'</td></tr>';}).join("")+
+     '<tr><td><b>Carteira</b></td><td class="num '+sinal(t.rendPct)+'"><b>'+pct(t.rendPct)+'</b></td></tr></tbody></table></div>';
+
+  h+='<div class="card"><div class="sec-title">06&nbsp;&nbsp;Informações importantes</div>'+
+     '<p class="disc">Este relatório tem caráter meramente informativo e foi elaborado com base em informações fornecidas pelas instituições custodiantes na data de referência. Rentabilidade passada não representa garantia de rentabilidade futura. Os valores apresentados são brutos, salvo indicação em contrário, e não consideram eventuais tributos incidentes no resgate. Antes de investir, avalie seus objetivos, sua situação financeira e seu perfil de risco. Este material não constitui oferta, recomendação ou análise de valores mobiliários.</p>'+
+     '<p class="disc" style="margin-top:10px">Documento gerado em '+new Date().toLocaleDateString("pt-BR")+' — Adami Wealth.</p></div>';
+  return h;
+}
+
+function render(){
+  renderRail();
+  document.getElementById("tabP").className=S.tab==="preencher"?"on":"";
+  document.getElementById("tabR").className=S.tab==="relatorio"?"on":"";
+  document.getElementById("btnPdf").style.display=S.tab==="relatorio"?"":"none";
+  document.getElementById("view").innerHTML=S.tab==="preencher"?viewPreencher():viewRelatorio();
+  window.scrollTo(0,0);
+}
+
+carregar();
+if(db.clientes.length) S.cliente=db.clientes[0].id;
+montarRascunho();
+render();
+</script>
 </body>
 </html>
