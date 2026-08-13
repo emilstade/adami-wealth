@@ -97,6 +97,22 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .form tfoot td{font-weight:600;border-top:1px solid var(--line);border-bottom:0;background:#F7F9FB;font-family:var(--mono)}
 .num{text-align:right}
 
+/* ---------- editor da carta ---------- */
+.tb{display:flex;flex-wrap:wrap;gap:4px;border:1px solid var(--line);border-bottom:0;border-radius:3px 3px 0 0;padding:7px;background:#F7F9FB}
+.tb button{border:1px solid transparent;background:transparent;border-radius:3px;padding:6px 10px;color:var(--ink-2);min-width:34px}
+.tb button:hover{background:#fff;border-color:var(--line)}
+.tb .sep{width:1px;background:var(--line);margin:2px 4px}
+.tb select{border:1px solid var(--line);border-radius:3px;padding:5px 7px;background:#fff}
+.ed{border:1px solid var(--line);border-radius:0 0 3px 3px;padding:22px 24px;min-height:320px;background:#fff;
+    font-size:13.5px;line-height:1.75;color:var(--ink-2);overflow-wrap:anywhere}
+.ed:focus{outline:0;border-color:var(--blue-2);box-shadow:0 0 0 2px #EBF1F8}
+.ed:empty:before{content:attr(data-ph);color:#AAB4C0}
+.ed p{margin:0 0 12px}
+.ed h3{font-family:var(--display);font-size:17px;color:var(--navy);margin:18px 0 10px}
+.ed img{max-width:100%;height:auto;display:block;margin:14px 0;border-radius:2px}
+.ed ul,.ed ol{margin:0 0 12px;padding-left:22px}
+.salvo{font-size:12.5px;color:var(--muted)}
+
 /* ================= RELATÓRIO ================= */
 .doc{max-width:880px;margin:0 auto}
 .pg td,.pg th,.pg p,.pg .dn-rows div{overflow-wrap:anywhere}
@@ -182,6 +198,10 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .carta .sub{font-style:italic;color:var(--ink-2);font-size:13px;margin-bottom:16px}
 .carta p{margin:0 0 13px;font-size:12.8px;line-height:1.72;color:var(--ink-2);text-align:justify;overflow-wrap:anywhere;word-break:break-word}
 .carta .sig{margin-top:20px;font-size:12.5px;color:var(--ink-2)}
+.carta img{max-width:100%;height:auto;display:block;margin:14px auto;border-radius:2px}
+.carta h3.tit{font-family:var(--display);font-size:16px;color:var(--navy);margin:16px 0 9px;text-align:left}
+.carta ul,.carta ol{margin:0 0 13px;padding-left:22px;font-size:12.8px;line-height:1.72;color:var(--ink-2)}
+.carta b,.carta strong{color:var(--ink)}
 
 .disc p{font-size:11.6px;color:var(--ink-2);line-height:1.72;margin:0 0 13px;text-align:justify}
 
@@ -248,7 +268,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 8</div>
+    <div class="rail-user" style="opacity:.6">versão 9 — carta do mês</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -258,6 +278,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
   <div class="topbar">
     <div class="tabs">
       <button id="tabP" class="on" onclick="setTab('preencher')">Preencher</button>
+      <button id="tabC" onclick="setTab('carta')">Carta do mês</button>
       <button id="tabR" onclick="setTab('relatorio')">Relatório</button>
     </div>
     <div class="spacer"></div>
@@ -338,10 +359,12 @@ var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
 var ESTRAT=[["pos","Pós-fixado"],["infl","Inflação"],["pre","Pré-fixado"],["ma","Retorno Absoluto (MM)"],["rv","Renda Variável"],["intl","Internacional"],["alt","Alternativo"]];
 var IND=[["cdi","CDI"],["ipca","IPCA"],["ibov","Ibovespa"],["sp500","S&P 500"],["poup","Poupança"],["dolar","Dólar"],["ouro","Ouro"],["ifix","IFIX"]];
-var db={clientes:[],dados:{}};
+var db={clientes:[],dados:{},cartas:{}};
 var S={cliente:null,mes:new Date().getMonth()+1,ano:new Date().getFullYear(),tab:"preencher",rasc:null,erro:null};
 
 function chave(id,mes,ano){ return id+"|"+ano+"-"+String(mes).padStart(2,"0"); }
+function chaveCarta(mes,ano){ return ano+"-"+String(mes).padStart(2,"0"); }
+function cartaDoMes(mes,ano){ return (db.cartas&&db.cartas[chaveCarta(mes,ano)])||""; }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
 function n(v){ var x=parseFloat(String(v).replace(",",".")); return isNaN(x)?0:x; }
 function brl(v){ return "R$ "+Math.round(v||0).toLocaleString("pt-BR"); }
@@ -392,13 +415,16 @@ function carregar(){
   status("wait","Carregando…");
   return Promise.all([
     api("clientes?select=id,nome&order=nome.asc"),
-    api("lancamentos?select=cliente_id,mes,ano,contas,indicadores")
+    api("lancamentos?select=cliente_id,mes,ano,contas,indicadores"),
+    api("cartas?select=mes,ano,conteudo").catch(function(){ return []; })
   ]).then(function(r){
     db.clientes=r[0]||[];
     db.dados={};
     (r[1]||[]).forEach(function(l){
       db.dados[chave(l.cliente_id,l.mes,l.ano)]={contas:l.contas||[],ind:l.indicadores||indVazio()};
     });
+    db.cartas={};
+    (r[2]||[]).forEach(function(k){ db.cartas[chaveCarta(k.mes,k.ano)]=k.conteudo||""; });
     S.erro=null; status("ok","Sincronizado");
   }).catch(function(e){ S.erro=e.message; status("err","Sem conexão"); });
 }
@@ -545,6 +571,49 @@ function addVenc(){
   S.rasc.ind.vencimentos.push(vencVazio()); render();
 }
 function delVenc(i){ S.rasc.ind.vencimentos.splice(i,1); render(); }
+function salvarCarta(){
+  var ed=document.getElementById("edCarta"); if(!ed) return;
+  var conteudo=ed.innerHTML.trim();
+  var b=document.getElementById("btnCarta"); if(b){b.disabled=true;b.textContent="Salvando…";}
+  status("wait","Salvando…");
+  api("cartas?on_conflict=mes,ano",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",
+    body:{mes:S.mes,ano:S.ano,conteudo:conteudo,atualizado_em:new Date().toISOString()}})
+    .then(function(){
+      db.cartas[chaveCarta(S.mes,S.ano)]=conteudo;
+      status("ok","Sincronizado");
+      if(b){b.disabled=false;b.textContent="Salvar carta";}
+      var av=document.getElementById("avisoCarta");
+      if(av){ av.textContent="Carta salva. Todos os relatórios de "+MESES[S.mes-1]+" de "+S.ano+" já usam este texto."; }
+    })
+    .catch(function(e){
+      if(b){b.disabled=false;b.textContent="Salvar carta";}
+      if(String(e.message).indexOf("cartas")>=0||String(e.message).indexOf("42P01")>=0){
+        falha(new Error("A tabela de cartas ainda não existe no banco. Rode o arquivo supabase-carta-mensal.sql no SQL Editor do Supabase."));
+      } else falha(e);
+    });
+}
+function cmd(c,v){ document.execCommand(c,false,v||null); document.getElementById("edCarta").focus(); }
+function cmdBloco(sel){ if(sel.value) document.execCommand("formatBlock",false,sel.value); document.getElementById("edCarta").focus(); sel.selectedIndex=0; }
+function inserirImagem(inp){
+  var f=inp.files[0]; if(!f) return;
+  if(f.size>8*1024*1024){ alert("Imagem muito grande. Use um arquivo de até 8 MB."); inp.value=""; return; }
+  var fr=new FileReader();
+  fr.onload=function(){
+    var img=new Image();
+    img.onload=function(){
+      var max=900, esc2=Math.min(1,max/img.width);
+      var cv=document.createElement("canvas");
+      cv.width=Math.round(img.width*esc2); cv.height=Math.round(img.height*esc2);
+      cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
+      var dados=cv.toDataURL("image/jpeg",0.82);
+      document.getElementById("edCarta").focus();
+      document.execCommand("insertImage",false,dados);
+    };
+    img.src=fr.result;
+  };
+  fr.readAsDataURL(f);
+  inp.value="";
+}
 function exportar(){
   var b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
   var a=document.createElement("a"); a.href=URL.createObjectURL(b);
@@ -633,10 +702,40 @@ function viewPreencher(){
      '</tbody></table></div>'+
      '<button class="btn" style="margin-top:14px" onclick="addVenc()">+ Adicionar vencimento</button></div>';
 
-  h+='<div class="card"><div class="sec-title">Carta do gestor</div><div class="sec-sub">Opcional. Se ficar em branco, a página não aparece no relatório. Separe os parágrafos com uma linha em branco.</div>'+
-     '<textarea class="inp" oninput="setCarta(this.value)" placeholder="Caros clientes e amigos, ...">'+esc(r.ind.carta||"")+'</textarea></div>';
   h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnSalvar" onclick="salvarMes()">Salvar mês e ver relatório</button>'+
      '<span style="font-size:12.5px;color:var(--muted)" id="resumoMini">Carteira: '+pct(t.rendPct)+' • '+brl2(t.rendRs)+'</span></div>';
+  return h;
+}
+function viewCarta(){
+  var atual=cartaDoMes(S.mes,S.ano);
+  var h='';
+  if(S.erro) h+='<div class="note err"><b>Sem conexão com o servidor.</b> '+esc(S.erro)+'</div>';
+  h+='<div class="card"><div class="sec-title">Carta do gestor — '+MESES[S.mes-1]+' de '+S.ano+'</div>'+
+     '<div class="sec-sub" id="avisoCarta">Escrita uma única vez por mês. Todos os relatórios deste mês, de todos os clientes, usam este texto automaticamente. Para trocar o mês, use o seletor no menu lateral.</div>'+
+     '<div class="tb">'+
+     '<button onclick="cmd(\'bold\')" title="Negrito"><b>N</b></button>'+
+     '<button onclick="cmd(\'italic\')" title="Itálico"><i>I</i></button>'+
+     '<button onclick="cmd(\'underline\')" title="Sublinhado"><u>S</u></button>'+
+     '<span class="sep"></span>'+
+     '<select onchange="cmdBloco(this)" title="Tamanho do texto">'+
+       '<option value="">Tamanho</option>'+
+       '<option value="h3">Título</option>'+
+       '<option value="p">Texto normal</option>'+
+     '</select>'+
+     '<span class="sep"></span>'+
+     '<button onclick="cmd(\'insertUnorderedList\')" title="Lista">• Lista</button>'+
+     '<button onclick="cmd(\'justifyLeft\')" title="Alinhar à esquerda">⇤</button>'+
+     '<button onclick="cmd(\'justifyFull\')" title="Justificar">≡</button>'+
+     '<span class="sep"></span>'+
+     '<button onclick="document.getElementById(\'imgCarta\').click()" title="Inserir imagem">Imagem</button>'+
+     '<input type="file" id="imgCarta" accept="image/*" style="display:none" onchange="inserirImagem(this)">'+
+     '<button onclick="cmd(\'removeFormat\')" title="Limpar formatação">Limpar</button>'+
+     '</div>'+
+     '<div class="ed" id="edCarta" contenteditable="true" data-ph="Caros clientes e amigos, ...">'+atual+'</div>'+
+     '<div style="display:flex;gap:12px;align-items:center;margin-top:16px;flex-wrap:wrap">'+
+     '<button class="btn pri" id="btnCarta" onclick="salvarCarta()">Salvar carta</button>'+
+     '<span class="salvo">'+(atual?"Já existe carta salva para este mês.":"Nenhuma carta salva para este mês ainda.")+'</span>'+
+     '</div></div>';
   return h;
 }
 function atualizarResumo(){
@@ -773,7 +872,10 @@ function viewRelatorio(){
   var anoCdi=comp(serie.map(function(s){return s.cdi;}));
   var anoRs=serie.reduce(function(a,s){return a+s.rendRs;},0);
   var anoDoCdi=anoCdi>0?(anoPct/anoCdi)*100:null;
-  var carta=(r.ind.carta||"").trim();
+  var carta=(cartaDoMes(S.mes,S.ano)||"").trim();
+  if(!carta && (r.ind.carta||"").trim()){
+    carta="<p>"+esc(r.ind.carta.trim()).split(/\n\s*\n/).join("</p><p>").replace(/\n/g,"<br>")+"</p>";
+  }
   var temCarta=!!carta;
   var totPg=temCarta?5:4, pg=0;
   var h='<div class="doc">';
@@ -795,7 +897,7 @@ function viewRelatorio(){
     h+='<div class="pg">'+marca()+
        '<div class="dash"><i>—</i><h2>Carta do gestor</h2></div>'+
        '<div class="carta"><h3>Carta Mensal de Investimentos — '+MESES[S.mes-1]+' de '+S.ano+'</h3>'+
-       carta.split(/\n\s*\n/).map(function(p){return '<p>'+esc(p.trim()).replace(/\n/g,"<br>")+'</p>';}).join("")+
+       carta+
        '</div><div class="pg-num">'+pg+' de '+totPg+'</div></div>';
   }
 
@@ -908,7 +1010,7 @@ function viewLogin(erro){
     '<label>Senha</label><div class="campo"><input type="password" id="lgSenha" autocomplete="current-password" placeholder="••••••••">'+
     '<button type="button" class="olho" id="lgOlho" onclick="verSenha()" aria-label="Mostrar senha" title="Mostrar senha">'+iconeOlho(false)+'</button></div>'+
     '<button id="lgBtn" onclick="fazerLogin()">Entrar</button>'+
-    '<div class="pe">Acesso restrito.<br>versão 8</div>'+
+    '<div class="pe">Acesso restrito.<br>versão 9 — carta do mês</div>'+
     '</div></div>';
 }
 function iconeOlho(aberto){
@@ -964,9 +1066,11 @@ function render(){
   renderRail();
   var ru=document.getElementById("railUser"); if(ru) ru.textContent=SESSAO.email||"";
   document.getElementById("tabP").className=S.tab==="preencher"?"on":"";
+  document.getElementById("tabC").className=S.tab==="carta"?"on":"";
   document.getElementById("tabR").className=S.tab==="relatorio"?"on":"";
   document.getElementById("btnPdf").style.display=S.tab==="relatorio"?"":"none";
-  document.getElementById("view").innerHTML=S.tab==="preencher"?viewPreencher():viewRelatorio();
+  document.getElementById("view").innerHTML=
+    S.tab==="preencher"?viewPreencher():(S.tab==="carta"?viewCarta():viewRelatorio());
   window.scrollTo(0,0);
 }
 
