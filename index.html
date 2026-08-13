@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, max-age=0">
 <title>Adami Wealth — Consolidado de Carteiras</title>
 <style>
 :root{
@@ -241,6 +242,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
+    <div class="rail-user" style="opacity:.6">versão 4 — com login</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -794,7 +796,7 @@ function viewLogin(erro){
     '<label>E-mail</label><input type="email" id="lgEmail" autocomplete="username" placeholder="seu@email.com">'+
     '<label>Senha</label><input type="password" id="lgSenha" autocomplete="current-password" placeholder="••••••••">'+
     '<button id="lgBtn" onclick="fazerLogin()">Entrar</button>'+
-    '<div class="pe">Acesso restrito. Esqueceu a senha? Redefina no painel do Supabase.</div>'+
+    '<div class="pe">Acesso restrito.<br>versão 4 — com login</div>'+
     '</div></div>';
 }
 function fazerLogin(){
