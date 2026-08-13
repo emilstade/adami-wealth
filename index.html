@@ -137,6 +137,14 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 
 /* donut */
 .dn{display:block;margin:0 auto}
+.dn-total{font-size:11.5px;color:var(--muted);margin-top:6px}
+.dn-total b{font-family:var(--mono);color:var(--navy);font-weight:400;font-size:13px}
+.rt.compact th{padding:8px 6px;font-size:9.5px;letter-spacing:.06em}
+.rt.compact td{padding:8px 6px;font-size:11px}
+.rt.compact tr.ano td{font-weight:600;background:#F4F7FA}
+.rt.compact tr.ano td:first-child{font-family:var(--display);font-size:13px;color:var(--navy)}
+.rt.compact tr.sep td{border-bottom:1px solid var(--line)}
+.rt.compact td:first-child,.rt.compact th:first-child{white-space:nowrap}
 .dn-leg{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 22px;margin:18px 0 6px;font-size:11.5px;color:var(--ink-2)}
 .dn-leg span{display:inline-flex;align-items:center;gap:6px}
 .dn-leg i{width:9px;height:9px;border-radius:2px;display:inline-block}
@@ -291,12 +299,20 @@ function montarRascunho(){
 }
 
 /* ============ cálculos ============ */
+/* saldo de abertura de uma conta = saldo final - rendimento - aplicações + resgates */
+function abertura(c){
+  var b=n(c.saldo)-n(c.rendRs)-n(c.apl)+n(c.res);
+  return b>0?b:n(c.saldo);
+}
 function totais(r){
   if(!r) return {pl:0,rendRs:0,rendPct:0,apl:0,res:0,base:0};
-  var pl=0,rs=0,apl=0,res=0;
-  r.contas.forEach(function(c){ pl+=n(c.saldo); rs+=n(c.rendRs); apl+=n(c.apl); res+=n(c.res); });
-  var base=pl-rs-apl+res;
-  return {pl:pl,rendRs:rs,rendPct:base>0?(rs/base)*100:0,apl:apl,res:res,base:base};
+  var pl=0,rs=0,apl=0,res=0,peso=0,pond=0;
+  r.contas.forEach(function(c){
+    pl+=n(c.saldo); rs+=n(c.rendRs); apl+=n(c.apl); res+=n(c.res);
+    var b=abertura(c);
+    if(b>0){ peso+=b; pond+=n(c.rendPct)*b; }
+  });
+  return {pl:pl,rendRs:rs,rendPct:peso>0?pond/peso:0,apl:apl,res:res,base:peso};
 }
 function serieAno(id,ano,ateMes){
   var out=[],lim=ateMes||12;
@@ -379,11 +395,6 @@ function setTab(t){ S.tab=t; render(); }
 function setConta(i,campo,v){
   var c=S.rasc.contas[i];
   if(campo==="nome"||campo==="inst") c[campo]=v; else c[campo]=n(v);
-  if(campo!=="rendPct"&&campo!=="nome"&&campo!=="inst"){
-    var base=n(c.saldo)-n(c.rendRs)-n(c.apl)+n(c.res);
-    c.rendPct=base>0?(n(c.rendRs)/base)*100:0;
-    var e=document.getElementById("pc"+i); if(e) e.value=c.rendPct?c.rendPct.toFixed(4):"";
-  }
   atualizarResumo();
 }
 function addConta(){ S.rasc.contas.push(contaVazia()); render(); }
@@ -427,7 +438,7 @@ function viewPreencher(){
      (reg(c.id,S.mes,S.ano)?'<button class="btn" onclick="excluirMes()">Excluir mês</button>':'')+
      '<button class="btn" onclick="excluirCliente()">Excluir cliente</button></div></div></div>';
   if(r._herdado) h+='<div class="note"><b>Dados herdados do mês anterior.</b> Contas e saldos vieram do último mês lançado. Atualize os saldos e informe o resultado do mês — nada é gravado até você clicar em “Salvar mês”.</div>';
-  h+='<div class="card"><div class="sec-title">Contas</div><div class="sec-sub">Saldo de fechamento, movimentações e resultado do mês. A rentabilidade % é calculada sobre o saldo de abertura.</div>'+
+  h+='<div class="card"><div class="sec-title">Contas</div><div class="sec-sub">Rend. R$ é o resultado do mês em reais; Rend. % é a rentabilidade informada pela instituição. Os dois campos são independentes. O percentual da carteira é a média ponderada pelo saldo de abertura de cada conta.</div>'+
      '<div style="overflow-x:auto"><table class="form"><thead><tr><th style="min-width:150px">Conta</th><th style="min-width:120px">Instituição</th>'+
      '<th class="num">Saldo final</th><th class="num">Aplicações</th><th class="num">Resgates</th><th class="num">Rend. R$</th><th class="num">Rend. %</th><th></th></tr></thead><tbody>';
   r.contas.forEach(function(x,i){
@@ -438,7 +449,7 @@ function viewPreencher(){
     '<td><input class="inp num" type="number" step="0.01" value="'+(x.apl||"")+'" oninput="setConta('+i+',\'apl\',this.value)"></td>'+
     '<td><input class="inp num" type="number" step="0.01" value="'+(x.res||"")+'" oninput="setConta('+i+',\'res\',this.value)"></td>'+
     '<td><input class="inp num" type="number" step="0.01" value="'+(x.rendRs||"")+'" oninput="setConta('+i+',\'rendRs\',this.value)"></td>'+
-    '<td><input class="inp num" id="pc'+i+'" type="number" step="0.0001" value="'+(x.rendPct?x.rendPct.toFixed(4):"")+'" oninput="setConta('+i+',\'rendPct\',this.value)"></td>'+
+    '<td><input class="inp num" id="pc'+i+'" type="number" step="0.01" value="'+(x.rendPct||"")+'" oninput="setConta('+i+',\'rendPct\',this.value)"></td>'+
     '<td><button class="xbtn" onclick="delConta('+i+')" title="Remover">&times;</button></td></tr>';
   });
   h+='</tbody><tfoot><tr><td colspan="2" style="font-family:var(--body)">Total</td><td class="num" id="ftPl">'+brl2(t.pl)+'</td><td class="num" id="ftApl">'+brl2(t.apl)+'</td>'+
@@ -487,20 +498,21 @@ function chartCarteiraCdi(serie){
   return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:'+W+'px;display:block;margin:0 auto">'+out+'</svg></div>'+
          '<div class="dn-leg" style="margin-top:14px"><span><i style="background:#1B3A5F"></i>Rendimento da carteira</span><span><i style="background:#C0A265"></i>CDI</span></div>';
 }
-function donut(items,total){
-  var R=74,r=48,cx=100,cy=100,ang=-Math.PI/2,out="";
+function pizza(items){
+  var R=88,cx=100,cy=100,ang=-Math.PI/2,out="";
   var tot=items.reduce(function(a,b){return a+b.valor;},0);
   if(tot<=0) return "";
-  items.forEach(function(it,i){
-    var a2=ang+(it.valor/tot)*Math.PI*2,big=(a2-ang)>Math.PI?1:0;
-    var x1=cx+R*Math.cos(ang),y1=cy+R*Math.sin(ang),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
-    var x3=cx+r*Math.cos(a2),y3=cy+r*Math.sin(a2),x4=cx+r*Math.cos(ang),y4=cy+r*Math.sin(ang);
-    out+='<path d="M'+x1+' '+y1+' A'+R+' '+R+' 0 '+big+' 1 '+x2+' '+y2+' L'+x3+' '+y3+' A'+r+' '+r+' 0 '+big+' 0 '+x4+' '+y4+' Z" fill="'+CORES[i%CORES.length]+'"/>';
-    ang=a2;
-  });
-  out+='<text x="100" y="95" text-anchor="middle" font-size="8" fill="#9AA6B5">total</text>'+
-       '<text x="100" y="110" text-anchor="middle" font-size="11" fill="#1B3A5F" font-family="Consolas, Menlo, monospace">'+brl(total)+'</text>';
-  return '<svg class="dn" viewBox="0 0 200 200" width="200" height="200">'+out+'</svg>';
+  if(items.length===1){
+    out='<circle cx="100" cy="100" r="88" fill="'+CORES[0]+'"/>';
+  }else{
+    items.forEach(function(it,i){
+      var a2=ang+(it.valor/tot)*Math.PI*2,big=(a2-ang)>Math.PI?1:0;
+      var x1=cx+R*Math.cos(ang),y1=cy+R*Math.sin(ang),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2);
+      out+='<path d="M'+cx+' '+cy+' L'+x1+' '+y1+' A'+R+' '+R+' 0 '+big+' 1 '+x2+' '+y2+' Z" fill="'+CORES[i%CORES.length]+'" stroke="#fff" stroke-width="1.5"/>';
+      ang=a2;
+    });
+  }
+  return '<svg class="dn" viewBox="0 0 200 200" width="210" height="210">'+out+'</svg>';
 }
 function chartEvolucao(serie){
   if(!serie.length) return "";
@@ -516,6 +528,54 @@ function chartEvolucao(serie){
   });
   out+='<line x1="52" y1="'+(H-pb)+'" x2="'+(W-8)+'" y2="'+(H-pb)+'" stroke="#DCE2EA"/>';
   return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:'+W+'px;display:block;margin:0 auto">'+out+'</svg></div>';
+}
+
+/* tabela de retornos por ano (carteira x CDI) */
+function tabelaRetornos(id){
+  var anos=[];
+  Object.keys(db.dados).forEach(function(k){
+    if(k.indexOf(id+"|")===0){
+      var y=parseInt(k.split("|")[1].slice(0,4),10);
+      if(anos.indexOf(y)<0) anos.push(y);
+    }
+  });
+  anos.sort(function(a,b){return a-b;});
+  var fc=1,fd=1,linhas=[];
+  anos.forEach(function(y){
+    var meses=[];
+    for(var m=1;m<=12;m++){
+      var r=reg(id,m,y);
+      meses.push(r?{p:totais(r).rendPct,c:n(r.ind&&r.ind.cdi)}:null);
+    }
+    var vivos=meses.filter(function(x){return x;});
+    var noAnoP=comp(vivos.map(function(x){return x.p;}));
+    var noAnoC=comp(vivos.map(function(x){return x.c;}));
+    fc*=(1+noAnoP/100); fd*=(1+noAnoC/100);
+    linhas.push({ano:y,meses:meses,noAnoP:noAnoP,noAnoC:noAnoC,accP:(fc-1)*100,accC:(fd-1)*100});
+  });
+  return linhas.reverse();
+}
+function blocoRetornos(id){
+  var linhas=tabelaRetornos(id);
+  if(!linhas.length) return '<p class="foot-note">Sem histórico lançado.</p>';
+  var cab='<tr><th>Retorno mensal (%)</th>'+
+    MESES_C.map(function(m){return '<th class="n">'+m.charAt(0).toUpperCase()+m.slice(1)+'</th>';}).join("")+
+    '<th class="n">No ano</th><th class="n">Acum.</th></tr>';
+  var corpo=linhas.map(function(L){
+    var cel=function(v,d){ return v==null?'<td class="n" style="color:#B7C0CB">–</td>':'<td class="n">'+pct(v,d==null?2:d)+'</td>'; };
+    var r1='<tr class="ano"><td>'+L.ano+'</td>'+L.meses.map(function(x){return cel(x?x.p:null);}).join("")+
+           cel(L.noAnoP)+cel(L.accP)+'</tr>';
+    var r2='<tr><td>CDI</td>'+L.meses.map(function(x){return cel(x?x.c:null);}).join("")+
+           cel(L.noAnoC)+cel(L.accC)+'</tr>';
+    var r3='<tr class="sep"><td>% do CDI</td>'+L.meses.map(function(x){
+             return (x&&x.c>0)?'<td class="n">'+pct(x.p/x.c*100,0)+'</td>':'<td class="n" style="color:#B7C0CB">–</td>';
+           }).join("")+
+           (L.noAnoC>0?'<td class="n">'+pct(L.noAnoP/L.noAnoC*100,0)+'</td>':'<td class="n" style="color:#B7C0CB">–</td>')+
+           (L.accC>0?'<td class="n">'+pct(L.accP/L.accC*100,0)+'</td>':'<td class="n" style="color:#B7C0CB">–</td>')+'</tr>';
+    return r1+r2+r3;
+  }).join("");
+  return '<div style="overflow-x:auto"><table class="rt compact"><thead>'+cab+'</thead><tbody>'+corpo+'</tbody></table></div>'+
+    '<p class="foot-note">Rentabilidade da carteira ponderada pelo saldo de abertura de cada conta. “No ano” e “Acumulado” são compostos pelos meses lançados; o acumulado considera todo o histórico até o fim de cada ano.</p>';
 }
 
 /* ============ view: relatório ============ */
@@ -579,7 +639,7 @@ function viewRelatorio(){
      '<div class="panel">'+chartCarteiraCdi(serie)+'</div>';
 
   h+=shead("02","Distribuição por instituição","saldos de "+ref(S.mes,S.ano))+
-     '<div class="panel">'+donut(inst,t.pl)+
+     '<div class="panel" style="text-align:center">'+pizza(inst)+'<div class="dn-total">total <b>'+brl(t.pl)+'</b></div>'+
      '<div class="dn-leg">'+inst.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+'</div>'+
      '<div class="dn-rows">'+inst.map(function(x){return '<div><span>'+esc(x.nome)+'</span><b>'+brl(x.valor)+'</b></div>';}).join("")+'</div>'+
      (inst.length?'<p class="foot-note">Maior exposição: '+esc(inst[0].nome)+' com '+brl(inst[0].valor)+', '+pct(inst[0].pc,1)+' do total de '+brl(t.pl)+'.</p>':'')+
@@ -588,15 +648,8 @@ function viewRelatorio(){
   /* --- página de tabelas --- */
   pg++;
   h+='<div class="pg">'+marca()+
-     shead("03","Resultados mês a mês",String(S.ano))+
-     '<div class="panel tint"><table class="rt"><thead><tr><th>Mês</th><th class="n">Carteira</th><th class="n">CDI</th><th class="n">% do CDI</th><th class="n">Resultado</th></tr></thead><tbody>'+
-     serie.map(function(s){
-       return '<tr><td>'+MESES[s.mes-1]+'</td><td class="n '+sinal(s.rendPct)+'">'+pct(s.rendPct)+'</td><td class="n">'+pct(s.cdi)+'</td>'+
-       '<td class="n">'+(s.cdi>0?pct(s.rendPct/s.cdi*100,0):"—")+'</td><td class="n '+sinal(s.rendRs)+'">'+brl(s.rendRs)+'</td></tr>';
-     }).join("")+
-     '<tr class="tot"><td>Total '+S.ano+'</td><td class="n">'+pct(anoPct)+'</td><td class="n">'+pct(anoCdi)+'</td>'+
-     '<td class="n">'+(anoDoCdi!=null?pct(anoDoCdi,0):"—")+'</td><td class="n">'+brl(anoRs)+'</td></tr>'+
-     '</tbody></table><p class="foot-note">Rentabilidade da carteira ponderada pelo saldo de abertura de cada conta. O resultado em reais é o rendimento sobre esse saldo, sem misturar aporte com rendimento.</p></div>';
+     shead("03","Retornos mensais","carteira contra o CDI")+
+     '<div class="panel tint">'+blocoRetornos(c.id)+'</div>';
 
   h+=shead("04","Desempenho por conta","")+
      '<div class="panel"><table class="rt"><thead><tr><th>Conta</th><th class="n">Saldo</th><th class="n">% da carteira</th><th class="n">Último mês</th><th class="n">No ano</th><th class="n">12 meses</th></tr></thead><tbody>'+
