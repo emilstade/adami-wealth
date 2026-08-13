@@ -374,7 +374,7 @@ function salvarMes(){
   if(!contas.length){ alert("Informe ao menos uma conta com nome ou saldo."); return; }
   var b=document.getElementById("btnSalvar"); if(b){b.disabled=true;b.textContent="Salvando…";}
   status("wait","Salvando…");
-  api("lancamentos",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",
+  api("lancamentos?on_conflict=cliente_id,mes,ano",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",
     body:{cliente_id:S.cliente,mes:S.mes,ano:S.ano,contas:contas,indicadores:S.rasc.ind,atualizado_em:new Date().toISOString()}})
     .then(function(){
       db.dados[chave(S.cliente,S.mes,S.ano)]={contas:contas,ind:S.rasc.ind};
