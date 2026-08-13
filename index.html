@@ -43,6 +43,22 @@ input,select,textarea{font-family:inherit;font-size:13px}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex:none}
 .dot.err{background:var(--alert)} .dot.wait{background:var(--gold)}
 
+/* ---------- login ---------- */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);padding:24px}
+.login{background:#fff;border-radius:4px;padding:44px 40px;width:100%;max-width:390px;box-shadow:0 18px 60px rgba(0,0,0,.28)}
+.login .brand{text-align:center;margin-bottom:30px}
+.login .brand b{display:block;font-family:var(--display);font-size:27px;color:var(--navy);letter-spacing:.04em}
+.login .brand span{display:block;font-size:9px;letter-spacing:.4em;color:var(--gold);margin-top:6px}
+.login label{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.login input{width:100%;border:1px solid var(--line);border-radius:3px;padding:11px 12px;margin-bottom:16px;font-size:14px}
+.login input:focus{outline:0;border-color:var(--navy);box-shadow:0 0 0 2px #EBF1F8}
+.login button{width:100%;background:var(--navy);color:#fff;border:0;border-radius:3px;padding:12px;font-weight:600;letter-spacing:.02em}
+.login button:hover{background:var(--navy-d)}
+.login button[disabled]{opacity:.6}
+.login .erro{background:#FBEDEB;color:var(--alert);font-size:12.5px;padding:10px 12px;border-radius:3px;margin-bottom:16px}
+.login .pe{text-align:center;font-size:11.5px;color:var(--muted);margin-top:18px;line-height:1.6}
+.rail-user{font-size:11.5px;color:#8AA8C6;margin-top:10px;overflow:hidden;text-overflow:ellipsis}
+
 /* ---------- main ---------- */
 .main{margin-left:var(--rail);padding:26px 30px 70px}
 .topbar{display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap}
@@ -223,6 +239,8 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <div class="rail-label">Dados</div>
     <button onclick="recarregar()">Atualizar da nuvem</button>
     <button onclick="exportar()">Baixar backup (.json)</button>
+    <button onclick="sair()">Sair da conta</button>
+    <div class="rail-user" id="railUser"></div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -241,15 +259,60 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 </main>
 
 <script>
-/* ============ conexão ============ */
+/* ============ conexão e sessão ============ */
 var SB_URL="https://mqhqbqiyrtlhhzjfuqxs.supabase.co";
 var SB_KEY="sb_publishable_7CLSR1wwXFAD2y-it_bo9A_GtjAUnm3";
-function api(path,opts){
+var SESSAO=null;
+try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
+
+function guardarSessao(d){
+  SESSAO={access_token:d.access_token,refresh_token:d.refresh_token,email:(d.user&&d.user.email)||""};
+  try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){}
+}
+function limparSessao(){
+  SESSAO=null;
+  try{ localStorage.removeItem("aw_sessao"); }catch(e){}
+}
+function entrar(email,senha){
+  return fetch(SB_URL+"/auth/v1/token?grant_type=password",{
+    method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({email:email,password:senha})
+  }).then(function(res){
+    return res.json().then(function(d){
+      if(!res.ok) throw new Error(d.error_description||d.msg||d.message||"E-mail ou senha incorretos.");
+      guardarSessao(d);
+    });
+  });
+}
+function renovar(){
+  if(!SESSAO||!SESSAO.refresh_token) return Promise.reject(new Error("sem sessão"));
+  return fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{
+    method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({refresh_token:SESSAO.refresh_token})
+  }).then(function(res){
+    if(!res.ok) throw new Error("sessão expirada");
+    return res.json().then(guardarSessao);
+  });
+}
+function sair(){
+  if(!confirm("Sair da conta?")) return;
+  var tk=SESSAO&&SESSAO.access_token;
+  limparSessao();
+  if(tk) fetch(SB_URL+"/auth/v1/logout",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+tk}}).catch(function(){});
+  db={clientes:[],dados:{}}; S.cliente=null; S.rasc=null;
+  render();
+}
+function api(path,opts,jaTentou){
   opts=opts||{};
-  var h={"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json"};
+  var tk=(SESSAO&&SESSAO.access_token)||SB_KEY;
+  var h={"apikey":SB_KEY,"Authorization":"Bearer "+tk,"Content-Type":"application/json"};
   if(opts.prefer) h["Prefer"]=opts.prefer;
   return fetch(SB_URL+"/rest/v1/"+path,{method:opts.method||"GET",headers:h,body:opts.body?JSON.stringify(opts.body):undefined})
     .then(function(res){
+      if(res.status===401&&SESSAO&&!jaTentou){
+        return renovar().then(function(){ return api(path,opts,true); })
+          .catch(function(){ limparSessao(); render(); throw new Error("Sua sessão expirou. Entre novamente."); });
+      }
       if(!res.ok) return res.text().then(function(t){ throw new Error(t||("HTTP "+res.status)); });
       return res.status===204?null:res.json();
     });
@@ -724,8 +787,51 @@ function imprimir(){
   }
   window.print();
 }
+function viewLogin(erro){
+  return '<div class="login-wrap"><div class="login">'+
+    '<div class="brand"><b>ADAMI</b><span>WEALTH</span></div>'+
+    (erro?'<div class="erro">'+esc(erro)+'</div>':'')+
+    '<label>E-mail</label><input type="email" id="lgEmail" autocomplete="username" placeholder="seu@email.com">'+
+    '<label>Senha</label><input type="password" id="lgSenha" autocomplete="current-password" placeholder="••••••••">'+
+    '<button id="lgBtn" onclick="fazerLogin()">Entrar</button>'+
+    '<div class="pe">Acesso restrito. Esqueceu a senha? Redefina no painel do Supabase.</div>'+
+    '</div></div>';
+}
+function fazerLogin(){
+  var e=document.getElementById("lgEmail").value.trim();
+  var p=document.getElementById("lgSenha").value;
+  if(!e||!p){ document.getElementById("view").innerHTML=viewLogin("Preencha e-mail e senha."); return; }
+  var b=document.getElementById("lgBtn"); b.disabled=true; b.textContent="Entrando…";
+  entrar(e,p).then(function(){
+    return carregar().then(function(){
+      if(db.clientes.length) S.cliente=db.clientes[0].id;
+      S.tab="preencher"; montarRascunho(); render();
+    });
+  }).catch(function(err){
+    document.getElementById("view").innerHTML=viewLogin(err.message);
+  });
+}
 function render(){
+  var logado=!!(SESSAO&&SESSAO.access_token);
+  document.querySelector(".rail").style.display=logado?"":"none";
+  document.querySelector(".topbar").style.display=logado?"":"none";
+  if(!logado){
+    document.querySelector(".main").style.margin="0";
+    document.querySelector(".main").style.padding="0";
+    document.getElementById("view").innerHTML=viewLogin(null);
+    setTimeout(function(){
+      var i=document.getElementById("lgEmail"); if(i) i.focus();
+      ["lgEmail","lgSenha"].forEach(function(id){
+        var el=document.getElementById(id);
+        if(el) el.addEventListener("keydown",function(ev){ if(ev.key==="Enter") fazerLogin(); });
+      });
+    },30);
+    return;
+  }
+  document.querySelector(".main").style.margin="";
+  document.querySelector(".main").style.padding="";
   renderRail();
+  var ru=document.getElementById("railUser"); if(ru) ru.textContent=SESSAO.email||"";
   document.getElementById("tabP").className=S.tab==="preencher"?"on":"";
   document.getElementById("tabR").className=S.tab==="relatorio"?"on":"";
   document.getElementById("btnPdf").style.display=S.tab==="relatorio"?"":"none";
@@ -733,10 +839,14 @@ function render(){
   window.scrollTo(0,0);
 }
 
-carregar().then(function(){
-  if(db.clientes.length) S.cliente=db.clientes[0].id;
-  montarRascunho(); render();
-});
+if(SESSAO&&SESSAO.access_token){
+  carregar().then(function(){
+    if(db.clientes.length) S.cliente=db.clientes[0].id;
+    montarRascunho(); render();
+  });
+}else{
+  render();
+}
 </script>
 </body>
 </html>
