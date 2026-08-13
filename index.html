@@ -26,7 +26,7 @@ input,select{font-family:inherit;font-size:13px}
 .rail-brand span{display:block;font-family:var(--body);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--blue-3);margin-top:7px}
 .rail-block{margin-top:24px}
 .rail-label{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:#7A8DA3;margin-bottom:9px}
-.rail select,.rail input[type=text]{width:100%;background:#16283C;color:#EAF1EF;border:1px solid #27394F;border-radius:3px;padding:8px 9px}
+.rail select{width:100%;background:#16283C;color:#EAF1EF;border:1px solid #27394F;border-radius:3px;padding:8px 9px}
 .cli-list{margin:0;padding:0;list-style:none}
 .cli-list li{padding:9px 10px;border-radius:3px;cursor:pointer;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:6px}
 .cli-list li:hover{background:#1B2E44}
@@ -36,6 +36,9 @@ input,select{font-family:inherit;font-size:13px}
 .rail button{width:100%;background:#1B2E44;color:#DCE7F1;border:1px solid #2B3F57;border-radius:3px;padding:9px;margin-top:8px}
 .rail button:hover{background:#22374F}
 .rail .mini{font-size:11.5px;color:#7A8DA3;margin-top:14px;line-height:1.5}
+.sync{display:flex;align-items:center;gap:7px;font-size:11.5px;color:#8AA8C6;margin-top:16px}
+.dot{width:8px;height:8px;border-radius:50%;background:#0A7344;flex:none}
+.dot.err{background:#A03A2B} .dot.wait{background:#A8791B}
 .main{margin-left:var(--rail);padding:26px 30px 70px}
 .topbar{display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap}
 .tabs{display:flex;gap:2px;background:#DFE5EC;padding:3px;border-radius:4px}
@@ -46,6 +49,7 @@ input,select{font-family:inherit;font-size:13px}
 .btn:hover{background:#F6F8FA}
 .btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
 .btn.pri:hover{background:#0E2F51}
+.btn[disabled]{opacity:.5;cursor:default}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:22px;margin-bottom:18px}
 .sec-title{font-family:var(--display);font-size:17px;color:var(--blue);margin-bottom:4px}
 .sec-sub{font-size:12px;color:var(--muted);margin-bottom:16px}
@@ -61,6 +65,7 @@ tfoot td{font-weight:600;border-top:1px solid var(--line);border-bottom:0;backgr
 .grid-ind label{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
 .xbtn{border:0;background:transparent;color:var(--alert);font-size:15px;padding:2px 6px}
 .note{background:var(--blue-pale);border-left:3px solid var(--blue-2);padding:12px 14px;font-size:12.5px;color:var(--ink-2);border-radius:0 3px 3px 0;margin-bottom:16px}
+.note.err{background:#FBEDEB;border-left-color:var(--alert)}
 .empty{text-align:center;padding:60px 20px;color:var(--muted)}
 .empty h2{font-family:var(--display);color:var(--blue);margin-bottom:8px}
 .cover{background:var(--ink);color:#fff;padding:64px 46px;border-radius:4px;margin-bottom:20px}
@@ -111,11 +116,11 @@ tfoot td{font-weight:600;border-top:1px solid var(--line);border-bottom:0;backgr
     <select id="selAno" onchange="mudarRef()" style="margin-top:8px"></select>
   </div>
   <div class="rail-block">
-    <div class="rail-label">Backup</div>
+    <div class="rail-label">Dados</div>
+    <button onclick="recarregar()">Atualizar da nuvem</button>
     <button onclick="exportar()">Baixar backup (.json)</button>
-    <button onclick="document.getElementById('fileImp').click()">Restaurar backup</button>
-    <input type="file" id="fileImp" accept=".json" style="display:none" onchange="importar(this)">
-    <div class="mini">Os dados ficam salvos neste navegador. Use o backup para levar para outro computador ou compartilhar com a equipe.</div>
+    <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
+    <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras, sempre atualizadas.</div>
   </div>
 </nav>
 
@@ -128,22 +133,40 @@ tfoot td{font-weight:600;border-top:1px solid var(--line);border-bottom:0;backgr
     <div class="spacer"></div>
     <button class="btn" id="btnPdf" onclick="window.print()" style="display:none">Imprimir / Salvar PDF</button>
   </div>
-  <div id="view"></div>
+  <div id="view"><div class="card empty"><h2>Carregando…</h2></div></div>
 </main>
 
 <script>
+/* ============ conexão ============ */
+var SB_URL="https://mqhqbqiyrtlhhzjfuqxs.supabase.co";
+var SB_KEY="sb_publishable_7CLSR1wwXFAD2y-it_bo9A_GtjAUnm3";
+
+function api(path,opts){
+  opts=opts||{};
+  var h={"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json"};
+  if(opts.prefer) h["Prefer"]=opts.prefer;
+  return fetch(SB_URL+"/rest/v1/"+path,{method:opts.method||"GET",headers:h,body:opts.body?JSON.stringify(opts.body):undefined})
+    .then(function(res){
+      if(!res.ok) return res.text().then(function(t){ throw new Error(t||("HTTP "+res.status)); });
+      return res.status===204?null:res.json();
+    });
+}
+function status(estado,txt){
+  var d=document.getElementById("dot"),t=document.getElementById("syncTxt");
+  if(!d) return;
+  d.className="dot"+(estado==="err"?" err":(estado==="wait"?" wait":""));
+  t.textContent=txt;
+}
+
+/* ============ estado ============ */
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 var CORES=["#123A63","#3D6D9E","#8AA8C6","#A8791B","#0A7344","#5D7186","#C4A96B","#A03A2B","#2E6E8E","#7E6BA8"];
 var IND=[["cdi","CDI"],["ipca","IPCA"],["ibov","Ibovespa"],["sp500","S&P 500"],["poup","Poupança"],["dolar","Dólar"],["ouro","Ouro"],["ifix","IFIX"]];
-var KEY="adami_wealth_db_v1";
 var db={clientes:[],dados:{}};
-var S={cliente:null,mes:new Date().getMonth()+1,ano:new Date().getFullYear(),tab:"preencher",rasc:null};
+var S={cliente:null,mes:new Date().getMonth()+1,ano:new Date().getFullYear(),tab:"preencher",rasc:null,erro:null};
 
-function carregar(){ try{var r=localStorage.getItem(KEY); if(r) db=JSON.parse(r);}catch(e){} if(!db.clientes)db.clientes=[]; if(!db.dados)db.dados={}; }
-function salvarDB(){ try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){alert("Não foi possível salvar: "+e.message);} }
 function chave(id,mes,ano){ return id+"|"+ano+"-"+String(mes).padStart(2,"0"); }
-function uid(){ return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
 function n(v){ var x=parseFloat(String(v).replace(",",".")); return isNaN(x)?0:x; }
 function brl(v){ return "R$ "+(v||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -154,19 +177,50 @@ function contaVazia(){ return {nome:"",inst:"",saldo:0,apl:0,res:0,rendPct:0,ren
 function indVazio(){ var o={}; IND.forEach(function(p){o[p[0]]=0;}); return o; }
 function reg(id,mes,ano){ return db.dados[chave(id,mes,ano)]||null; }
 function anterior(mes,ano){ return mes===1?{mes:12,ano:ano-1}:{mes:mes-1,ano:ano}; }
+function cli(){ var id=S.cliente; return db.clientes.filter(function(c){return c.id===id;})[0]||null; }
+
+/* ============ carga ============ */
+function carregar(){
+  status("wait","Carregando…");
+  return Promise.all([
+    api("clientes?select=id,nome&order=nome.asc"),
+    api("lancamentos?select=cliente_id,mes,ano,contas,indicadores")
+  ]).then(function(r){
+    db.clientes=r[0]||[];
+    db.dados={};
+    (r[1]||[]).forEach(function(l){
+      db.dados[chave(l.cliente_id,l.mes,l.ano)]={contas:l.contas||[],ind:l.indicadores||indVazio()};
+    });
+    S.erro=null;
+    status("ok","Sincronizado");
+  }).catch(function(e){
+    S.erro=e.message;
+    status("err","Sem conexão");
+  });
+}
+function recarregar(){
+  var atual=S.cliente;
+  carregar().then(function(){
+    var existe=db.clientes.some(function(c){return c.id===atual;});
+    S.cliente=existe?atual:(db.clientes.length?db.clientes[0].id:null);
+    montarRascunho(); render();
+  });
+}
 
 function montarRascunho(){
   var id=S.cliente; if(!id){S.rasc=null;return;}
   var r=reg(id,S.mes,S.ano);
-  if(r){ S.rasc=JSON.parse(JSON.stringify(r)); S.rasc._novo=false; return; }
+  if(r){ S.rasc=JSON.parse(JSON.stringify(r)); S.rasc._herdado=false; return; }
   var p=anterior(S.mes,S.ano),ant=null,t=0;
   while(t<24&&!ant){ ant=reg(id,p.mes,p.ano); if(!ant)p=anterior(p.mes,p.ano); t++; }
   if(ant){
-    S.rasc={_novo:true,_herdado:true,contas:ant.contas.map(function(c){return {nome:c.nome,inst:c.inst,saldo:n(c.saldo),apl:0,res:0,rendPct:0,rendRs:0};}),ind:indVazio()};
+    S.rasc={_herdado:true,contas:ant.contas.map(function(c){return {nome:c.nome,inst:c.inst,saldo:n(c.saldo),apl:0,res:0,rendPct:0,rendRs:0};}),ind:indVazio()};
   }else{
-    S.rasc={_novo:true,_herdado:false,contas:[contaVazia(),contaVazia()],ind:indVazio()};
+    S.rasc={_herdado:false,contas:[contaVazia(),contaVazia()],ind:indVazio()};
   }
 }
+
+/* ============ cálculos ============ */
 function totais(r){
   if(!r) return {pl:0,rendRs:0,rendPct:0,apl:0,res:0};
   var pl=0,rs=0,apl=0,res=0;
@@ -191,6 +245,81 @@ function porInstituicao(r){
   return Object.keys(map).map(function(k){var o=map[k];o.pc=tot>0?o.valor/tot*100:0;return o;}).sort(function(a,b){return b.valor-a.valor;});
 }
 
+/* ============ ações ============ */
+function novoCliente(){
+  var nome=prompt("Nome do cliente:"); if(!nome) return;
+  status("wait","Salvando…");
+  api("clientes",{method:"POST",prefer:"return=representation",body:{nome:nome.trim()}})
+    .then(function(r){ var c=r[0]; db.clientes.push({id:c.id,nome:c.nome});
+      db.clientes.sort(function(a,b){return a.nome.localeCompare(b.nome);});
+      S.cliente=c.id; status("ok","Sincronizado"); montarRascunho(); render(); })
+    .catch(falha);
+}
+function renomear(){
+  var c=cli(); if(!c) return;
+  var nome=prompt("Nome do cliente:",c.nome); if(!nome) return;
+  status("wait","Salvando…");
+  api("clientes?id=eq."+c.id,{method:"PATCH",body:{nome:nome.trim()}})
+    .then(function(){ c.nome=nome.trim(); status("ok","Sincronizado"); render(); }).catch(falha);
+}
+function excluirCliente(){
+  var c=cli(); if(!c) return;
+  if(!confirm("Excluir "+c.nome+" e todos os meses lançados? Não é possível desfazer.")) return;
+  status("wait","Excluindo…");
+  api("clientes?id=eq."+c.id,{method:"DELETE"})
+    .then(function(){
+      db.clientes=db.clientes.filter(function(x){return x.id!==c.id;});
+      Object.keys(db.dados).forEach(function(k){ if(k.indexOf(c.id+"|")===0) delete db.dados[k]; });
+      S.cliente=db.clientes.length?db.clientes[0].id:null;
+      status("ok","Sincronizado"); montarRascunho(); render();
+    }).catch(falha);
+}
+function salvarMes(){
+  if(!S.cliente){ alert("Selecione um cliente."); return; }
+  var contas=S.rasc.contas.filter(function(c){return (c.nome||"").trim()||n(c.saldo);});
+  if(!contas.length){ alert("Informe ao menos uma conta com nome ou saldo."); return; }
+  var b=document.getElementById("btnSalvar"); if(b){b.disabled=true;b.textContent="Salvando…";}
+  status("wait","Salvando…");
+  api("lancamentos",{method:"POST",prefer:"resolution=merge-duplicates,return=representation",
+    body:{cliente_id:S.cliente,mes:S.mes,ano:S.ano,contas:contas,indicadores:S.rasc.ind,atualizado_em:new Date().toISOString()}})
+    .then(function(){
+      db.dados[chave(S.cliente,S.mes,S.ano)]={contas:contas,ind:S.rasc.ind};
+      status("ok","Sincronizado"); montarRascunho(); S.tab="relatorio"; render();
+    }).catch(function(e){ falha(e); if(b){b.disabled=false;b.textContent="Salvar mês e ver relatório";} });
+}
+function excluirMes(){
+  if(!confirm("Excluir os dados de "+MESES[S.mes-1]+"/"+S.ano+"?")) return;
+  status("wait","Excluindo…");
+  api("lancamentos?cliente_id=eq."+S.cliente+"&mes=eq."+S.mes+"&ano=eq."+S.ano,{method:"DELETE"})
+    .then(function(){ delete db.dados[chave(S.cliente,S.mes,S.ano)]; status("ok","Sincronizado"); montarRascunho(); render(); })
+    .catch(falha);
+}
+function falha(e){ status("err","Erro ao salvar"); alert("Não foi possível concluir:\n\n"+e.message); }
+function selCliente(id){ S.cliente=id; montarRascunho(); render(); }
+function mudarRef(){ S.mes=parseInt(document.getElementById("selMes").value,10); S.ano=parseInt(document.getElementById("selAno").value,10); montarRascunho(); render(); }
+function setTab(t){ S.tab=t; render(); }
+function setConta(i,campo,v){
+  var c=S.rasc.contas[i];
+  if(campo==="nome"||campo==="inst") c[campo]=v; else c[campo]=n(v);
+  if(campo!=="rendPct"&&campo!=="nome"&&campo!=="inst"){
+    var base=n(c.saldo)-n(c.rendRs)-n(c.apl)+n(c.res);
+    c.rendPct=base>0?(n(c.rendRs)/base)*100:0;
+    var e=document.getElementById("pc"+i); if(e) e.value=c.rendPct?c.rendPct.toFixed(4):"";
+  }
+  atualizarResumo();
+}
+function addConta(){ S.rasc.contas.push(contaVazia()); render(); }
+function delConta(i){ S.rasc.contas.splice(i,1); render(); }
+function setInd(k,v){ S.rasc.ind[k]=n(v); }
+function exportar(){
+  var b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(b);
+  a.download="adami-wealth-backup-"+new Date().toISOString().slice(0,10)+".json";
+  a.click();
+}
+
+/* ============ views ============ */
 function renderRail(){
   var ul=document.getElementById("cliList");
   if(!db.clientes.length){ ul.innerHTML='<li style="color:#7A8DA3;cursor:default">Nenhum cliente ainda</li>'; }
@@ -209,70 +338,12 @@ function renderRail(){
   }
   sm.value=S.mes; document.getElementById("selAno").value=S.ano;
 }
-
-function novoCliente(){ var nome=prompt("Nome do cliente:"); if(!nome) return; var c={id:uid(),nome:nome.trim()}; db.clientes.push(c); salvarDB(); S.cliente=c.id; montarRascunho(); render(); }
-function renomear(){ var c=cli(); if(!c) return; var nome=prompt("Nome do cliente:",c.nome); if(!nome) return; c.nome=nome.trim(); salvarDB(); render(); }
-function excluirCliente(){
-  var c=cli(); if(!c) return;
-  if(!confirm("Excluir "+c.nome+" e todos os meses lançados? Não é possível desfazer.")) return;
-  db.clientes=db.clientes.filter(function(x){return x.id!==c.id;});
-  Object.keys(db.dados).forEach(function(k){ if(k.indexOf(c.id+"|")===0) delete db.dados[k]; });
-  salvarDB(); S.cliente=db.clientes.length?db.clientes[0].id:null; montarRascunho(); render();
-}
-function selCliente(id){ S.cliente=id; montarRascunho(); render(); }
-function mudarRef(){ S.mes=parseInt(document.getElementById("selMes").value,10); S.ano=parseInt(document.getElementById("selAno").value,10); montarRascunho(); render(); }
-function setTab(t){ S.tab=t; render(); }
-function cli(){ var id=S.cliente; return db.clientes.filter(function(c){return c.id===id;})[0]||null; }
-function setConta(i,campo,v){
-  var c=S.rasc.contas[i];
-  if(campo==="nome"||campo==="inst") c[campo]=v; else c[campo]=n(v);
-  if(campo==="rendRs"||campo==="saldo"||campo==="apl"||campo==="res"){
-    var base=n(c.saldo)-n(c.rendRs)-n(c.apl)+n(c.res);
-    c.rendPct=base>0?(n(c.rendRs)/base)*100:0;
-    var e=document.getElementById("pc"+i); if(e) e.value=c.rendPct?c.rendPct.toFixed(4):"";
-  }
-  atualizarResumo();
-}
-function addConta(){ S.rasc.contas.push(contaVazia()); render(); }
-function delConta(i){ S.rasc.contas.splice(i,1); render(); }
-function setInd(k,v){ S.rasc.ind[k]=n(v); }
-function salvarMes(){
-  if(!S.cliente){ alert("Selecione um cliente."); return; }
-  var contas=S.rasc.contas.filter(function(c){return (c.nome||"").trim()||n(c.saldo);});
-  if(!contas.length){ alert("Informe ao menos uma conta com nome ou saldo."); return; }
-  db.dados[chave(S.cliente,S.mes,S.ano)]={contas:contas,ind:S.rasc.ind};
-  salvarDB(); montarRascunho(); S.tab="relatorio"; render();
-}
-function excluirMes(){
-  if(!confirm("Excluir os dados de "+MESES[S.mes-1]+"/"+S.ano+"?")) return;
-  delete db.dados[chave(S.cliente,S.mes,S.ano)]; salvarDB(); montarRascunho(); render();
-}
-function exportar(){
-  var b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
-  var a=document.createElement("a");
-  a.href=URL.createObjectURL(b);
-  a.download="adami-wealth-backup-"+new Date().toISOString().slice(0,10)+".json";
-  a.click();
-}
-function importar(inp){
-  var f=inp.files[0]; if(!f) return;
-  var fr=new FileReader();
-  fr.onload=function(){
-    try{
-      var d=JSON.parse(fr.result);
-      if(!d.clientes||!d.dados) throw new Error("Arquivo fora do formato esperado.");
-      if(!confirm("Substituir os dados atuais pelos do backup?")) return;
-      db=d; salvarDB(); S.cliente=db.clientes.length?db.clientes[0].id:null; montarRascunho(); render(); alert("Backup restaurado.");
-    }catch(e){ alert("Erro ao ler o arquivo: "+e.message); }
-    inp.value="";
-  };
-  fr.readAsText(f);
-}
-
 function viewPreencher(){
+  var h="";
+  if(S.erro) h+='<div class="note err"><b>Sem conexão com o servidor.</b> '+esc(S.erro)+'</div>';
   var c=cli();
-  if(!c) return '<div class="card empty"><h2>Comece cadastrando um cliente</h2><p>Use o botão “+ Novo cliente” no menu lateral.</p></div>';
-  var r=S.rasc,t=totais(r),h="";
+  if(!c) return h+'<div class="card empty"><h2>Comece cadastrando um cliente</h2><p>Use o botão “+ Novo cliente” no menu lateral.</p></div>';
+  var r=S.rasc,t=totais(r);
   h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">'+
      '<div><div class="sec-title">'+esc(c.nome)+'</div><div class="sec-sub">Lançamento de '+MESES[S.mes-1]+' de '+S.ano+'</div></div>'+
      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="renomear()">Renomear</button>'+
@@ -299,7 +370,7 @@ function viewPreencher(){
   h+='<div class="card"><div class="sec-title">Indicadores do mês</div><div class="sec-sub">Variação percentual no mês de referência.</div><div class="grid-ind">';
   IND.forEach(function(p){ h+='<div><label>'+p[1]+' (%)</label><input class="inp num" type="number" step="0.01" value="'+(r.ind[p[0]]||"")+'" oninput="setInd(\''+p[0]+'\',this.value)"></div>'; });
   h+='</div></div>';
-  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn pri" onclick="salvarMes()">Salvar mês e ver relatório</button>'+
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnSalvar" onclick="salvarMes()">Salvar mês e ver relatório</button>'+
      '<span style="font-size:12.5px;color:var(--muted)" id="resumoMini">Carteira: '+pct(t.rendPct)+' • '+brl(t.rendRs)+'</span></div>';
   return h;
 }
@@ -308,7 +379,6 @@ function atualizarResumo(){
   set("ftPl",brl(t.pl)); set("ftApl",brl(t.apl)); set("ftRes",brl(t.res)); set("ftRs",brl(t.rendRs)); set("ftPc",pct(t.rendPct));
   set("resumoMini","Carteira: "+pct(t.rendPct)+" • "+brl(t.rendRs));
 }
-
 function donut(items){
   var R=76,r=48,cx=100,cy=100,ang=-Math.PI/2,out="";
   var tot=items.reduce(function(a,b){return a+b.valor;},0);
@@ -335,7 +405,6 @@ function barras(serie){
   });
   return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'">'+out+'</svg></div>';
 }
-
 function viewRelatorio(){
   var c=cli();
   if(!c) return '<div class="card empty"><h2>Nenhum cliente selecionado</h2></div>';
@@ -343,17 +412,14 @@ function viewRelatorio(){
   if(!r) return '<div class="card empty"><h2>Sem dados em '+MESES[S.mes-1]+'/'+S.ano+'</h2><p>Preencha o mês na aba “Preencher” para gerar o relatório.</p></div>';
   var t=totais(r),serie=serieAno(c.id,S.ano),inst=porInstituicao(r);
   var cdi=n(r.ind.cdi),doCdi=cdi>0?(t.rendPct/cdi)*100:0,h="";
-
   h+='<div class="cover"><div class="eyebrow">Relatório mensal</div><h1>Consolidado de Investimentos</h1>'+
      '<div class="cli">'+esc(c.nome)+'</div><hr><div class="ref">'+MESES[S.mes-1]+' de '+S.ano+'</div>'+
      '<div class="brand">Adami Wealth</div></div>';
-
   h+='<div class="kpis">'+
      '<div class="kpi"><div class="l">Patrimônio</div><div class="v">'+brlC(t.pl)+'</div></div>'+
      '<div class="kpi '+sinal(t.rendPct)+'"><div class="l">Rentabilidade no mês</div><div class="v">'+pct(t.rendPct)+'</div></div>'+
      '<div class="kpi '+sinal(t.rendRs)+'"><div class="l">Resultado no mês</div><div class="v">'+brlC(t.rendRs)+'</div></div>'+
      '<div class="kpi"><div class="l">% do CDI</div><div class="v">'+(cdi>0?pct(doCdi,1):"—")+'</div></div></div>';
-
   h+='<div class="card"><div class="sec-title">01&nbsp;&nbsp;Rendimento mês a mês</div><div class="sec-sub">Carteira comparada ao CDI em '+S.ano+'.</div>';
   if(serie.length){
     h+='<div style="overflow-x:auto"><table><thead><tr><th>Indicador</th>'+serie.map(function(s){return '<th class="num">'+MESES_C[s.mes-1]+'</th>';}).join("")+'<th class="num">Acum.</th></tr></thead><tbody>'+
@@ -363,7 +429,6 @@ function viewRelatorio(){
        '<td class="num"><b>'+(acumulado(serie,"cdi")>0?pct(acumulado(serie,"c")/acumulado(serie,"cdi")*100,0):"—")+'</b></td></tr></tbody></table></div>';
   } else h+='<p class="disc">Sem histórico no ano.</p>';
   h+='</div>';
-
   h+='<div class="card"><div class="sec-title">02&nbsp;&nbsp;Distribuição por instituição</div><div class="sec-sub">Participação de cada instituição no patrimônio total.</div>'+
      '<div class="donut-wrap">'+donut(inst)+'<ul class="legend">'+
      inst.map(function(x,i){return '<li><span class="sw" style="background:'+CORES[i%CORES.length]+'"></span>'+esc(x.nome)+'<span class="pc">'+pct(x.pc,1)+'</span></li>';}).join("")+'</ul></div>'+
@@ -372,7 +437,6 @@ function viewRelatorio(){
      '</tbody><tfoot><tr><td>Total</td><td class="num">'+brl(t.pl)+'</td><td class="num">100,0%</td><td class="num">'+brl(t.rendRs)+'</td></tr></tfoot></table>';
   if(inst.length) h+='<p class="disc" style="margin-top:14px">Maior concentração em <b>'+esc(inst[0].nome)+'</b>, com '+pct(inst[0].pc,1)+' do patrimônio'+(inst.length>1?', seguida por '+esc(inst[1].nome)+' ('+pct(inst[1].pc,1)+')':'')+'.</p>';
   h+='</div>';
-
   h+='<div class="card"><div class="sec-title">03&nbsp;&nbsp;Desempenho por conta</div><div class="sec-sub">Resultado individual em '+MESES[S.mes-1]+'.</div>'+
      '<div style="overflow-x:auto"><table><thead><tr><th>Conta</th><th>Instituição</th><th class="num">Saldo</th><th class="num">% da carteira</th><th class="num">Aplicações</th><th class="num">Resgates</th><th class="num">Rend. R$</th><th class="num">Rend. %</th></tr></thead><tbody>'+
      r.contas.map(function(x){
@@ -381,22 +445,18 @@ function viewRelatorio(){
        '<td class="num '+sinal(n(x.rendRs))+'">'+brl(n(x.rendRs))+'</td><td class="num '+sinal(n(x.rendPct))+'">'+pct(n(x.rendPct))+'</td></tr>';
      }).join("")+
      '</tbody><tfoot><tr><td colspan="2">Total</td><td class="num">'+brl(t.pl)+'</td><td class="num">100,0%</td><td class="num">'+brl(t.apl)+'</td><td class="num">'+brl(t.res)+'</td><td class="num">'+brl(t.rendRs)+'</td><td class="num">'+pct(t.rendPct)+'</td></tr></tfoot></table></div></div>';
-
   h+='<div class="card"><div class="sec-title">04&nbsp;&nbsp;Evolução do patrimônio</div><div class="sec-sub">Saldo consolidado ao fim de cada mês de '+S.ano+'.</div>'+barras(serie)+
      (serie.length?'<table style="margin-top:14px"><thead><tr><th>Mês</th><th class="num">Patrimônio</th><th class="num">Resultado</th><th class="num">Rentabilidade</th></tr></thead><tbody>'+
      serie.map(function(s){return '<tr><td>'+MESES[s.mes-1]+'</td><td class="num">'+brl(s.pl)+'</td><td class="num '+sinal(s.rendRs)+'">'+brl(s.rendRs)+'</td><td class="num '+sinal(s.rendPct)+'">'+pct(s.rendPct)+'</td></tr>';}).join("")+'</tbody></table>':'')+'</div>';
-
   h+='<div class="card"><div class="sec-title">05&nbsp;&nbsp;Indicadores de mercado</div><div class="sec-sub">Variação em '+MESES[S.mes-1]+' de '+S.ano+'.</div>'+
      '<table><thead><tr><th>Indicador</th><th class="num">No mês</th></tr></thead><tbody>'+
      IND.map(function(p){var v=n(r.ind[p[0]]);return '<tr><td>'+p[1]+'</td><td class="num '+sinal(v)+'">'+pct(v)+'</td></tr>';}).join("")+
      '<tr><td><b>Carteira</b></td><td class="num '+sinal(t.rendPct)+'"><b>'+pct(t.rendPct)+'</b></td></tr></tbody></table></div>';
-
   h+='<div class="card"><div class="sec-title">06&nbsp;&nbsp;Informações importantes</div>'+
      '<p class="disc">Este relatório tem caráter meramente informativo e foi elaborado com base em informações fornecidas pelas instituições custodiantes na data de referência. Rentabilidade passada não representa garantia de rentabilidade futura. Os valores apresentados são brutos, salvo indicação em contrário, e não consideram eventuais tributos incidentes no resgate. Antes de investir, avalie seus objetivos, sua situação financeira e seu perfil de risco. Este material não constitui oferta, recomendação ou análise de valores mobiliários.</p>'+
      '<p class="disc" style="margin-top:10px">Documento gerado em '+new Date().toLocaleDateString("pt-BR")+' — Adami Wealth.</p></div>';
   return h;
 }
-
 function render(){
   renderRail();
   document.getElementById("tabP").className=S.tab==="preencher"?"on":"";
@@ -406,10 +466,11 @@ function render(){
   window.scrollTo(0,0);
 }
 
-carregar();
-if(db.clientes.length) S.cliente=db.clientes[0].id;
-montarRascunho();
-render();
+carregar().then(function(){
+  if(db.clientes.length) S.cliente=db.clientes[0].id;
+  montarRascunho();
+  render();
+});
 </script>
 </body>
 </html>
