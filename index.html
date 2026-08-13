@@ -242,7 +242,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 4 — com login</div>
+    <div class="rail-user" style="opacity:.6">versão 5 — vencimentos</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -344,7 +344,18 @@ function pct(v,d){ d=d==null?2:d; return (v||0).toLocaleString("pt-BR",{minimumF
 function sinal(v){ return v>0?"pos":(v<0?"neg":""); }
 function ref(m,a){ return MESES_C[m-1]+"/"+String(a).slice(2); }
 function contaVazia(){ return {nome:"",inst:"",saldo:0,apl:0,res:0,rendPct:0,rendRs:0}; }
-function indVazio(){ var o={}; IND.forEach(function(p){o[p[0]]=0;}); o.carta=""; return o; }
+function indVazio(){ var o={}; IND.forEach(function(p){o[p[0]]=0;}); o.carta=""; o.vencimentos=[]; return o; }
+function vencVazio(){ return {ativo:"",inst:"",taxa:"",data:"",valor:0}; }
+function listaVenc(ind){
+  var v=(ind&&ind.vencimentos)||[];
+  return v.filter(function(x){ return (x.ativo||"").trim()||n(x.valor)||x.data; })
+          .sort(function(a,b){ return (a.data||"9999").localeCompare(b.data||"9999"); });
+}
+function dataBR(d){
+  if(!d) return "—";
+  var p=String(d).split("-");
+  return p.length===3?(p[2]+"/"+p[1]+"/"+p[0]):d;
+}
 function reg(id,mes,ano){ return db.dados[chave(id,mes,ano)]||null; }
 function anterior(mes,ano){ return mes===1?{mes:12,ano:ano-1}:{mes:mes-1,ano:ano}; }
 function cli(){ var id=S.cliente; return db.clientes.filter(function(c){return c.id===id;})[0]||null; }
@@ -488,6 +499,15 @@ function addConta(){ S.rasc.contas.push(contaVazia()); render(); }
 function delConta(i){ S.rasc.contas.splice(i,1); render(); }
 function setInd(k,v){ S.rasc.ind[k]=n(v); }
 function setCarta(v){ S.rasc.ind.carta=v; }
+function setVenc(i,campo,v){
+  if(!S.rasc.ind.vencimentos) S.rasc.ind.vencimentos=[];
+  S.rasc.ind.vencimentos[i][campo]=(campo==="valor")?n(v):v;
+}
+function addVenc(){
+  if(!S.rasc.ind.vencimentos) S.rasc.ind.vencimentos=[];
+  S.rasc.ind.vencimentos.push(vencVazio()); render();
+}
+function delVenc(i){ S.rasc.ind.vencimentos.splice(i,1); render(); }
 function exportar(){
   var b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
   var a=document.createElement("a"); a.href=URL.createObjectURL(b);
@@ -545,6 +565,25 @@ function viewPreencher(){
   h+='<div class="card"><div class="sec-title">Indicadores do mês</div><div class="sec-sub">Variação percentual no mês de referência.</div><div class="grid-ind">';
   IND.forEach(function(p){ h+='<div><label>'+p[1]+' (%)</label><input class="inp num" type="number" step="0.01" value="'+(r.ind[p[0]]||"")+'" oninput="setInd(\''+p[0]+'\',this.value)"></div>'; });
   h+='</div></div>';
+  var vencs=S.rasc.ind.vencimentos||[];
+  h+='<div class="card"><div class="sec-title">Próximos vencimentos</div>'+
+     '<div class="sec-sub">Opcional. Se ficar em branco, a seção não aparece no relatório.</div>'+
+     '<div style="overflow-x:auto"><table class="form"><thead><tr>'+
+     '<th style="min-width:170px">Ativo</th><th style="min-width:120px">Instituição</th>'+
+     '<th style="min-width:110px">Taxa</th><th style="min-width:140px">Vencimento</th>'+
+     '<th class="num">Valor aproximado</th><th></th></tr></thead><tbody>'+
+     (vencs.length?vencs.map(function(x,i){
+       return '<tr>'+
+       '<td><input class="inp" value="'+esc(x.ativo)+'" oninput="setVenc('+i+',\'ativo\',this.value)" placeholder="Ex.: CDB Banco XYZ"></td>'+
+       '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setVenc('+i+',\'inst\',this.value)" placeholder="Ex.: XP"></td>'+
+       '<td><input class="inp" value="'+esc(x.taxa)+'" oninput="setVenc('+i+',\'taxa\',this.value)" placeholder="Ex.: 112% do CDI"></td>'+
+       '<td><input class="inp" type="date" value="'+esc(x.data)+'" oninput="setVenc('+i+',\'data\',this.value)"></td>'+
+       '<td><input class="inp num" type="number" step="0.01" value="'+(x.valor||"")+'" oninput="setVenc('+i+',\'valor\',this.value)"></td>'+
+       '<td><button class="xbtn" onclick="delVenc('+i+')" title="Remover">&times;</button></td></tr>';
+     }).join(""):'<tr><td colspan="6" style="color:var(--muted);font-size:12.5px">Nenhum vencimento informado.</td></tr>')+
+     '</tbody></table></div>'+
+     '<button class="btn" style="margin-top:14px" onclick="addVenc()">+ Adicionar vencimento</button></div>';
+
   h+='<div class="card"><div class="sec-title">Carta do gestor</div><div class="sec-sub">Opcional. Se ficar em branco, a página não aparece no relatório. Separe os parágrafos com uma linha em branco.</div>'+
      '<textarea class="inp" oninput="setCarta(this.value)" placeholder="Caros clientes e amigos, ...">'+esc(r.ind.carta||"")+'</textarea></div>';
   h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnSalvar" onclick="salvarMes()">Salvar mês e ver relatório</button>'+
@@ -767,8 +806,19 @@ function viewRelatorio(){
 
   /* --- informações importantes --- */
   pg++;
+  var venc=listaVenc(r.ind);
   h+='<div class="pg">'+marca()+
-     '<div class="dash"><i>—</i><h2>Informações importantes</h2></div>'+
+     (venc.length?
+       shead("06","Próximos vencimentos","valores aproximados")+
+       '<div class="panel"><table class="rt"><thead><tr><th>Ativo</th><th>Instituição</th><th>Taxa</th><th class="n">Vencimento</th><th class="n">Valor aproximado</th></tr></thead><tbody>'+
+       venc.map(function(v){
+         return '<tr><td>'+esc(v.ativo||"—")+'</td><td>'+esc(v.inst||"—")+'</td><td>'+esc(v.taxa||"—")+'</td>'+
+         '<td class="n">'+dataBR(v.data)+'</td><td class="n">'+(n(v.valor)?brl(n(v.valor)):"—")+'</td></tr>';
+       }).join("")+
+       '<tr class="tot"><td colspan="4">Total</td><td class="n">'+brl(venc.reduce(function(a,v){return a+n(v.valor);},0))+'</td></tr>'+
+       '</tbody></table><p class="foot-note">Valores estimados na data de referência, sujeitos a marcação a mercado e à incidência de tributos no resgate.</p></div>'
+     :'')+
+     '<div class="dash" style="margin-top:'+(venc.length?'30px':'0')+'"><i>—</i><h2>Informações importantes</h2></div>'+
      '<div class="panel disc">'+
      '<p>Este material foi preparado com finalidade exclusivamente informativa e não constitui oferta, recomendação individualizada de investimento, análise de valores mobiliários ou solicitação de compra ou venda de qualquer ativo.</p>'+
      '<p>As posições e os saldos aqui apresentados refletem as informações fornecidas pelas instituições custodiantes na data de referência e podem divergir dos extratos oficiais em razão de prazos de atualização, marcação a mercado, provisionamento de proventos e eventos societários. Em caso de divergência, prevalece sempre o extrato da instituição custodiante.</p>'+
@@ -796,7 +846,7 @@ function viewLogin(erro){
     '<label>E-mail</label><input type="email" id="lgEmail" autocomplete="username" placeholder="seu@email.com">'+
     '<label>Senha</label><input type="password" id="lgSenha" autocomplete="current-password" placeholder="••••••••">'+
     '<button id="lgBtn" onclick="fazerLogin()">Entrar</button>'+
-    '<div class="pe">Acesso restrito.<br>versão 4 — com login</div>'+
+    '<div class="pe">Acesso restrito.<br>versão 5 — vencimentos</div>'+
     '</div></div>';
 }
 function fazerLogin(){
