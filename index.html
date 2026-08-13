@@ -17,7 +17,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{font-family:var(--body);color:var(--ink);background:var(--paper);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{font-family:var(--body);color:var(--ink);background:var(--paper);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 button{font-family:inherit;font-size:13px;cursor:pointer}
 h1,h2,h3{margin:0;font-weight:600}
 table{border-collapse:collapse;width:100%}
@@ -76,6 +76,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 
 /* ================= RELATÓRIO ================= */
 .doc{max-width:880px;margin:0 auto}
+.pg td,.pg th,.pg p,.pg .dn-rows div{overflow-wrap:anywhere}
 .pg{background:#fff;border:1px solid var(--line);border-radius:2px;padding:52px 56px 40px;margin-bottom:22px;position:relative;min-height:560px}
 .pg-mark{position:absolute;top:34px;right:52px;text-align:right;line-height:1}
 .pg-mark b{display:block;font-family:var(--display);font-size:17px;color:var(--navy);font-weight:600;letter-spacing:.02em}
@@ -156,23 +157,32 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .carta{border:1px solid var(--line);border-radius:3px;padding:32px 34px;background:#fff}
 .carta h3{font-size:13.5px;color:var(--navy);margin-bottom:12px}
 .carta .sub{font-style:italic;color:var(--ink-2);font-size:13px;margin-bottom:16px}
-.carta p{margin:0 0 13px;font-size:12.8px;line-height:1.72;color:var(--ink-2);text-align:justify}
+.carta p{margin:0 0 13px;font-size:12.8px;line-height:1.72;color:var(--ink-2);text-align:justify;overflow-wrap:anywhere;word-break:break-word}
 .carta .sig{margin-top:20px;font-size:12.5px;color:var(--ink-2)}
 
 .disc p{font-size:11.6px;color:var(--ink-2);line-height:1.72;margin:0 0 13px;text-align:justify}
 
 @media print{
   .rail,.topbar,.no-print{display:none!important}
+  html,body{background:#fff;width:100%}
   .main{margin:0;padding:0}
-  body{background:#fff}
-  .doc{max-width:none}
-  .pg{border:0;margin:0;padding:34px 30px;min-height:0;break-after:page;page-break-after:always;border-radius:0}
+  .doc{max-width:none;margin:0}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pg{border:0;margin:0;padding:0;min-height:0;border-radius:0;break-after:page;page-break-after:always}
   .pg:last-child{break-after:auto;page-break-after:auto}
-  .cover{padding:80px 44px 44px;min-height:0;height:96vh}
-  .panel,.rt,.carta,.shead{break-inside:avoid}
-  @page{size:A4;margin:10mm}
+  .pg-mark{top:0;right:0}
+  .pg-num{bottom:-4px;right:0}
+  .cover{padding:0;min-height:0;height:247mm;display:flex;flex-direction:column;justify-content:flex-start;
+         background:var(--navy)!important;border-radius:0;
+         margin:-14mm -14mm 0;padding:44mm 22mm 18mm;width:auto}
+  .cover h1{font-size:32pt}
+  .panel,.carta,.rt,.shead,.dash,.kgrid,.pat{break-inside:avoid}
+  .rt.compact td,.rt.compact th{padding:5px 4px;font-size:8.5pt}
+  .rt td,.rt th{padding:7px 8px}
+  .shead{margin:22px 0 14px}
+  @page{size:A4;margin:14mm}
 }
-@media(max-width:900px){
+@media screen and (max-width:900px){
   :root{--rail:0px}
   .rail{position:static;width:auto;bottom:auto}
   .main{margin:0;padding:18px}
@@ -213,7 +223,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
       <button id="tabR" onclick="setTab('relatorio')">Relatório</button>
     </div>
     <div class="spacer"></div>
-    <button class="btn" id="btnPdf" onclick="window.print()" style="display:none">Imprimir / Salvar PDF</button>
+    <button class="btn pri" id="btnPdf" onclick="imprimir()" style="display:none">Imprimir / Salvar PDF</button>
   </div>
   <div id="view"><div class="card empty"><h2>Carregando…</h2></div></div>
 </main>
@@ -579,7 +589,7 @@ function blocoRetornos(id){
 }
 
 /* ============ view: relatório ============ */
-function marca(){ return '<div class="pg-mark"><b>Adami Wealth</b><span>WEALTH</span></div>'; }
+function marca(){ return '<div class="pg-mark"><b>ADAMI</b><span>WEALTH</span></div>'; }
 function shead(num,titulo,cap){
   return '<div class="shead"><span class="n">'+num+'</span><h2>'+titulo+'</h2>'+(cap?'<span class="cap">'+cap+'</span>':'')+'</div>';
 }
@@ -694,6 +704,14 @@ function viewRelatorio(){
   return h;
 }
 
+var avisoImpressao=true;
+function imprimir(){
+  if(avisoImpressao){
+    avisoImpressao=false;
+    alert("Na janela de impressão que vai abrir:\n\n1. Destino: Salvar como PDF\n2. Margens: Padrão\n3. Desmarque \u201cCabeçalhos e rodapés\u201d\n4. Marque \u201cGráficos de segundo plano\u201d\n\nSem esses dois últimos ajustes a capa sai branca e aparece a data e o endereço do arquivo no topo.");
+  }
+  window.print();
+}
 function render(){
   renderRail();
   document.getElementById("tabP").className=S.tab==="preencher"?"on":"";
