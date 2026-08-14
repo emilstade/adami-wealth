@@ -175,12 +175,14 @@
     .layout { grid-template-columns: 1fr; display: block; }
     .report-pane { max-height: none; overflow: visible; padding: 0; }
     body { background: white; }
-    .trigger-card, .section-block { break-inside: avoid; border: 1px solid #ccc; }
+    .trigger-card, .section-block { break-inside: avoid; border: 1px solid #E3E7EE; }
+    .section-block { padding: 16px 18px; margin-bottom: 16px; }
 
     .print-cover {
       display: flex; flex-direction: column; align-items: flex-start;
       background: var(--navy) !important; color: #fff;
-      height: 297mm; width: auto; margin: -15mm -14mm 0; padding: 46mm 22mm 20mm;
+      height: 261mm; width: auto; margin: -18mm -16mm 0; padding: 46mm 22mm 20mm;
+      overflow: hidden;
       page-break-after: always; break-after: page;
       -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
@@ -205,7 +207,7 @@
     .page-break { page-break-before: always; }
     .disclaimer-page { page-break-before: always; padding-top: 40px; }
     @page { size: A4; margin: 0; }
-    .report-pane { padding: 15mm 14mm 12mm; }
+    .report-pane { padding: 18mm 16mm 15mm; }
   }
 </style>
 <script>
