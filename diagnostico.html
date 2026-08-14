@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnóstico Patrimonial — Adami Wealth</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --navy-light: #3D5178;
+    --navy-pale: #EDF0F5;
+    --gold: #C9A24B;
+    --gold-light: #E4C878;
+    --gold-pale: #F7EFDC;
+    --cream: #F7F4EE;
+    --ink: #26313F;
+    --muted: #8A93A6;
+    --red: #B5563A;
+    --green: #5C7A5C;
+    --white: #FFFFFF;
+    --serif: Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--sans); color: var(--ink); background: var(--navy-pale); }
+
+  header.top {
+    background: var(--navy); color: var(--white); padding: 18px 28px;
+    display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  header.top .brand { font-family: var(--serif); font-weight: bold; font-size: 20px; letter-spacing: 0.5px; }
+  header.top .brand span { color: var(--gold); }
+  header.top .subtitle { font-size: 13px; color: #C7CEDC; }
+
+  .layout { display: grid; grid-template-columns: minmax(340px, 460px) 1fr; gap: 0; align-items: start; min-height: calc(100vh - 64px); }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .form-pane { padding: 24px; background: var(--white); border-right: 1px solid #E3E7EE; max-height: calc(100vh - 64px); overflow-y: auto; }
+  @media (max-width: 900px) { .form-pane { max-height: none; } }
+
+  .form-section { margin-bottom: 10px; border: 1px solid #E3E7EE; border-radius: 10px; overflow: hidden; }
+  .form-section summary {
+    cursor: pointer; list-style: none; padding: 14px 16px; background: var(--cream);
+    font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: 10px; font-size: 14.5px;
+  }
+  .form-section summary::-webkit-details-marker { display: none; }
+  .form-section summary .num {
+    display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
+    border-radius: 50%; background: var(--navy); color: var(--gold); font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .form-section summary .chev { margin-left: auto; color: var(--muted); transition: transform 0.15s ease; font-size: 12px; }
+  .form-section[open] summary .chev { transform: rotate(90deg); }
+  .form-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12.5px; font-weight: 600; color: var(--navy-light); }
+  .field .hint { font-size: 11px; color: var(--muted); font-weight: 400; margin-top: -2px; }
+  .field input[type="text"], .field input[type="number"], .field select {
+    border: 1px solid #D4D9E2; border-radius: 7px; padding: 9px 10px; font-size: 13.5px;
+    font-family: var(--sans); color: var(--ink); background: var(--white);
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,162,75,0.18); }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .row3 { display: grid; grid-template-columns: 1.6fr 1fr 0.9fr; gap: 8px; }
+
+  .toggle-group { display: flex; gap: 8px; }
+  .toggle-btn {
+    flex: 1; padding: 9px 8px; border-radius: 7px; border: 1px solid #D4D9E2; background: var(--white);
+    font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; text-align: center; transition: all 0.12s ease;
+  }
+  .toggle-btn.active { background: var(--navy); border-color: var(--navy); color: var(--white); }
+
+  .conditional-block { display: none; flex-direction: column; gap: 12px; padding-top: 8px; border-top: 1px dashed #E3E7EE; margin-top: 4px; }
+  .conditional-block.show { display: flex; }
+
+  .dynamic-list { display: flex; flex-direction: column; gap: 6px; }
+  .dynamic-row { display: flex; gap: 6px; align-items: center; }
+  .dynamic-row input { flex: 1; min-width: 0; }
+  .dynamic-row button { background: none; border: none; color: var(--red); cursor: pointer; font-size: 16px; line-height: 1; padding: 4px 6px; flex-shrink: 0; }
+  .add-row-btn {
+    align-self: flex-start; background: var(--gold-pale); color: var(--navy); border: 1px dashed var(--gold);
+    border-radius: 7px; padding: 7px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+
+  .alocacao-grid { display: flex; flex-direction: column; gap: 8px; }
+  .alocacao-row { display: flex; align-items: center; gap: 8px; }
+  .alocacao-row label { flex: 1; font-size: 12.5px; color: var(--ink); font-weight: 500; }
+  .alocacao-row input { width: 68px; text-align: right; }
+  .alocacao-total { font-size: 12px; font-weight: 700; text-align: right; padding-top: 6px; border-top: 1px solid #E3E7EE; }
+  .alocacao-total.ok { color: var(--green); }
+  .alocacao-total.bad { color: var(--red); }
+
+  .toolbar { display: flex; gap: 8px; margin-top: 14px; }
+  .btn { flex: 1; padding: 11px; border-radius: 8px; border: none; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+  .btn-primary { background: var(--gold); color: var(--navy); }
+  .btn-secondary { background: var(--white); color: var(--muted); border: 1px solid #D4D9E2; }
+
+  .report-pane { padding: 28px 32px 60px; max-height: calc(100vh - 64px); overflow-y: auto; }
+  @media (max-width: 900px) { .report-pane { max-height: none; } }
+
+  .print-cover { display: none; }
+
+  .report-header {
+    display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid var(--navy);
+    padding-bottom: 14px; margin-bottom: 22px; flex-wrap: wrap; gap: 10px;
+  }
+  .report-header h1 { font-family: var(--serif); color: var(--navy); font-size: 26px; margin: 0 0 4px; }
+  .report-header .client-name { color: var(--gold); }
+  .report-header .meta { font-size: 12.5px; color: var(--muted); }
+  .report-header .date { font-size: 12px; color: var(--muted); text-align: right; }
+
+  .summary-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat-box { background: var(--white); border-radius: 10px; padding: 14px 16px; border: 1px solid #E3E7EE; }
+  .stat-box .stat-value { font-family: var(--serif); font-size: 21px; font-weight: bold; color: var(--navy); }
+  .stat-box .stat-value.accent { color: var(--gold); }
+  .stat-box .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-top: 2px; }
+
+  .section-block { background: var(--white); border-radius: 14px; border: 1px solid #E3E7EE; margin-bottom: 20px; padding: 20px 22px; }
+  .section-block h2 { font-family: var(--serif); color: var(--navy); font-size: 17px; margin: 0 0 4px; }
+  .section-block .subtext { font-size: 12.5px; color: var(--muted); margin: 0 0 14px; }
+  .section-block .head-row { display:flex; align-items:center; gap:10px; margin-bottom:2px; }
+  .section-block .head-row .icon-circle {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--gold-pale);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  .chart-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 10px; font-size: 12px; }
+  .chart-legend .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
+  .chart-legend .dash { display:inline-block; width:14px; height:2px; margin-right:5px; vertical-align:middle; }
+
+  .insight-box {
+    background: var(--gold-pale); border-left: 3px solid var(--gold); border-radius: 8px;
+    padding: 10px 14px; font-size: 12px; color: var(--ink); margin-top: 12px; line-height: 1.5;
+  }
+  .insight-box strong { color: var(--navy); }
+
+  .trigger-card { background: var(--white); border-radius: 14px; border: 1px solid #E3E7EE; margin-bottom: 20px; overflow: hidden; opacity: 1; transition: opacity 0.2s ease; }
+  .trigger-card.inactive { opacity: 0.55; }
+  .trigger-card .card-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px; background: var(--navy); color: var(--white); }
+  .trigger-card .card-head .icon-badge {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--gold);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .trigger-card .card-head .icon-badge svg { width: 18px; height: 18px; }
+  .trigger-card .card-head h2 { font-family: var(--serif); font-size: 16.5px; margin: 0; }
+  .trigger-card .card-head .tag {
+    margin-left: auto; font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 20px; letter-spacing: 0.3px;
+  }
+  .tag.hot { background: var(--gold); color: var(--navy); }
+  .tag.cold { background: rgba(255,255,255,0.15); color: #C7CEDC; }
+  .card-body { padding: 20px; }
+
+  .kpi-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .kpi-number { font-family: var(--serif); font-size: 28px; font-weight: bold; color: var(--gold); }
+  .kpi-caption { font-size: 12.5px; color: var(--muted); }
+
+  .card-body p.narrative, .section-block p.narrative { font-size: 13.5px; line-height: 1.55; color: var(--ink); margin: 0 0 12px; }
+
+  table.mini-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 6px; }
+  table.mini-table th { text-align: left; background: var(--navy); color: var(--white); padding: 7px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
+  table.mini-table td { padding: 7px 10px; border-bottom: 1px solid #EDEFF3; }
+  table.mini-table tr:last-child td { border-bottom: none; }
+  table.mini-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.mini-table tr.total-row td { background: var(--gold-pale); font-weight: 700; color: var(--navy); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state h3 { font-family: var(--serif); color: var(--navy); }
+
+  .disclaimer { font-size: 11px; color: var(--muted); border-top: 1px solid #E3E7EE; padding-top: 14px; margin-top: 10px; line-height: 1.5; }
+
+  @media print {
+    header.top, .form-pane, .toolbar { display: none !important; }
+    .layout { grid-template-columns: 1fr; display: block; }
+    .report-pane { max-height: none; overflow: visible; padding: 0; }
+    body { background: white; }
+    .trigger-card, .section-block { break-inside: avoid; border: 1px solid #ccc; }
+
+    .print-cover {
+      display: flex; flex-direction: column; justify-content: flex-end;
+      background: var(--navy); color: white; height: 100vh; padding: 60px;
+      page-break-after: always; margin: 0;
+    }
+    .print-cover .brand { font-family: var(--serif); font-weight: bold; font-size: 22px; color: var(--gold); letter-spacing: 1px; margin-bottom: 60px; }
+    .print-cover h1 { font-family: var(--serif); font-size: 40px; margin: 0 0 6px; }
+    .print-cover h1 .accent { color: var(--gold); }
+    .print-cover .sub { font-size: 14px; color: #C7CEDC; margin-top: 16px; }
+    .print-cover .rule { border: none; border-top: 1px solid rgba(201,162,75,0.5); margin: 24px 0; }
+
+    .report-header { page-break-before: auto; }
+    .page-break { page-break-before: always; }
+    .disclaimer-page { page-break-before: always; padding-top: 40px; }
+  }
+</style>
+<script>
+/* --- acesso restrito: exige sessão iniciada no portal --- */
+(function(){
+  var ok=false;
+  try{ var s=JSON.parse(localStorage.getItem("aw_sessao")||"null"); ok=!!(s&&s.access_token); }catch(e){}
+  if(!ok){ location.replace("index.html"); }
+})();
+</script>
+<style>
+#awVoltar{position:fixed;top:14px;left:14px;z-index:99999;background:#1B3A5F;color:#fff;border:0;
+  border-radius:3px;padding:9px 15px;font:500 13px "Segoe UI",system-ui,Arial,sans-serif;cursor:pointer;
+  box-shadow:0 2px 10px rgba(0,0,0,.18)}
+#awVoltar:hover{background:#132B47}
+@media print{#awVoltar{display:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <img id="topLogo" alt="Adami Wealth" style="height:24px;width:auto;display:block;margin-bottom:5px;">
+    <div class="subtitle">Reunião de Planejamento Patrimonial</div>
+  </div>
+  <div class="subtitle">Ferramenta interna · preencha ao vivo ou antes da reunião</div>
+</header>
+
+<div class="layout">
+
+  <!-- ============ FORM PANE ============ -->
+  <div class="form-pane">
+
+    <details class="form-section" open>
+      <summary><span class="num">1</span> Dados do Cliente <span class="chev">&#9656;</span></summary>
+      <div class="form-body">
+        <div class="field">
+          <label for="nome">Nome do cliente</label>
+          <input type="text" id="nome" placeholder="Ex: Ricardo Almeida" oninput="render()">
+        </div>
+        <div class="row2">
+          <div class="field"><label for="idade">Idade atual</label><input type="number" id="idade" min="18" max="100" oninput="render()"></div>
+          <div class="field"><label for="idadeAposentadoria">Idade p/ aposentar</label><input type="number" id="idadeAposentadoria" min="30" max="100" value="65" oninput="render()"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="profissao">Profissão</label><input type="text" id="profissao" placeholder="Ex: Empresário(a)" oninput="render()"></div>
+          <div class="field">
+            <label for="uf">Estado (UF)</label>
+            <select id="uf" onchange="render()">
+              <option value="">Selecione</option>
+              <option>AC</option><option>AL</option><option>AP</option><option>AM</option>
+              <option>BA</option><option>CE</option><option>DF</option><option>ES</option>
+              <option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+              <option>MG</option><option>PA</option><option>PB</option><option>PR</option>
+              <option>PE</option><option>PI</option><option>RJ</option><option>RN</option>
+              <option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+              <option selected>SP</option><option>SE</option><option>TO</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Estado civil</label>
+          <div class="toggle-group" id="estadoCivilGroup">
+            <div class="toggle-btn" data-val="solteiro" onclick="selectToggle('estadoCivilGroup', this, render)">Solteiro(a)</div>
+            <div class="toggle-btn active" data-val="casado" onclick="selectToggle('estadoCivilGroup', this, render)">Casado(a)/União</div>
+            <div class="toggle-btn" data-val="divorciado" onclick="selectToggle('estadoCivilGroup', this, render)">Divorciado(a)</div>
+            <div class="toggle-btn" data-val="viuvo" onclick="selectToggle('estadoCivilGroup', this, render)">Viúvo(a)</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Filhos / dependentes</label>
+          <div class="dynamic-list" id="filhosList"></div>
+          <button type="button" class="add-row-btn" onclick="addFilho()">+ Adicionar filho(a)</button>
+        </div>
+        <div class="field">
+          <label for="rendaMensalExtra">Renda mensal fora a carteira (R$)</label>
+          <span class="hint">Salário, pró-labore, aluguéis etc. — opcional</span>
+          <input type="text" inputmode="numeric" id="rendaMensalExtra" oninput="formatMoneyInput(this); render()" placeholder="R$ 0">
+        </div>
+      </div>
+    </details>
+
+    <details class="form-section" open>
+      <summary><span class="num">2</span> Situação Patrimonial <span class="chev">&#9656;</span></summary>
+      <div class="form-body">
+        <div class="field">
+          <label for="patrimonioTotal">Patrimônio investido — carteira (R$)</label>
+          <input type="text" inputmode="numeric" id="patrimonioTotal" oninput="formatMoneyInput(this); render()" placeholder="R$ 0">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="rentabilidadeAnual">Rentabilidade REAL esperada (% a.a.)</label>
+            <input type="number" id="rentabilidadeAnual" min="0" max="20" step="0.5" value="4" oninput="render()">
+          </div>
+          <div class="field"><label for="aportesMensais">Aportes mensais (R$)</label><input type="text" inputmode="numeric" id="aportesMensais" oninput="formatMoneyInput(this); render()" placeholder="R$ 0"></div>
+        </div>
+        <span class="hint" style="margin-top:-6px">Rentabilidade REAL = acima da inflação. Ex: se a carteira rende 9% a.a. e a inflação é 5%, a rentabilidade real é ~4%. Toda a projeção usa valores em poder de compra de hoje.</span>
+
+        <div class="row2">
+          <div class="field"><label for="valorImoveis">Imóveis — valor aproximado (R$)</label><input type="text" inputmode="numeric" id="valorImoveis" oninput="formatMoneyInput(this); render()" placeholder="R$ 0"></div>
+          <div class="field"><label for="valorEmpresas">Empresas — valor aproximado (R$)</label><input type="text" inputmode="numeric" id="valorEmpresas" oninput="formatMoneyInput(this); render()" placeholder="R$ 0"></div>
+        </div>
+        <div class="field">
+          <label>Imóveis estão estruturados em holding?</label>
+          <div class="toggle-group" id="holdingGroup">
+            <div class="toggle-btn" data-val="sim" onclick="selectToggle('holdingGroup', this, render)">Sim</div>
+            <div class="toggle-btn active" data-val="nao" onclick="selectToggle('holdingGroup', this, render)">Não</div>
+            <div class="toggle-btn" data-val="parcial" onclick="selectToggle('holdingGroup', this, render)">Parcialmente</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Alocação atual da carteira (%)</label>
+          <span class="hint">Usada para estimar a renda mensal líquida (Renda Fixa e Fundos são a parcela geradora de caixa)</span>
+          <div class="alocacao-grid">
+            <div class="alocacao-row"><label>Renda Fixa</label><input type="number" id="alocRF" min="0" max="100" value="40" oninput="render()">%</div>
+            <div class="alocacao-row"><label>Fundos</label><input type="number" id="alocFundos" min="0" max="100" value="10" oninput="render()">%</div>
+            <div class="alocacao-row"><label>Renda Variável</label><input type="number" id="alocRV" min="0" max="100" value="15" oninput="render()">%</div>
+            <div class="alocacao-row"><label>Internacional</label><input type="number" id="alocIntl" min="0" max="100" value="15" oninput="render()">%</div>
+            <div class="alocacao-row"><label>Previdência</label><input type="number" id="alocPrev" min="0" max="100" value="20" oninput="render()">%</div>
+            <div class="alocacao-total" id="alocTotal">Total: 100%</div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="form-section" open>
+      <summary><span class="num">3</span> Objetivos do Cliente <span class="chev">&#9656;</span></summary>
+      <div class="form-body">
+        <div class="field">
+          <label>Objetivos e quando deseja realizá-los</label>
+          <span class="hint">Ex: Compra de casa, R$ 3.000.000, 2029 · Viagem, R$ 150.000, 2027</span>
+          <div class="dynamic-list" id="objetivosList"></div>
+          <button type="button" class="add-row-btn" onclick="addObjetivo()">+ Adicionar objetivo</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="form-section">
+      <summary><span class="num">4</span> Alavancagem Patrimonial <span class="chev">&#9656;</span></summary>
+      <div class="form-body">
+        <div class="field">
+          <label>Já possui consórcio ativo?</label>
+          <div class="toggle-group" id="jaConsorcioGroup">
+            <div class="toggle-btn" data-val="sim" onclick="selectToggle('jaConsorcioGroup', this, render)">Sim</div>
+            <div class="toggle-btn active" data-val="nao" onclick="selectToggle('jaConsorcioGroup', this, render)">Não</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Simular consórcio na projeção patrimonial?</label>
+          <span class="hint">Adiciona uma segunda linha no gráfico comparando o patrimônio com e sem a estratégia</span>
+          <div class="toggle-group" id="simConsorcioGroup">
+            <div class="toggle-btn" data-val="sim" onclick="selectToggle('simConsorcioGroup', this, toggleSimConsorcio)">Sim</div>
+            <div class="toggle-btn active" data-val="nao" onclick="selectToggle('simConsorcioGroup', this, toggleSimConsorcio)">Não</div>
+          </div>
+        </div>
+        <div class="conditional-block" id="simConsorcioDetails">
+          <div class="row2">
+            <div class="field"><label for="valorCarta">Valor da carta (R$)</label><input type="text" inputmode="numeric" id="valorCarta" value="R$ 1.000.000" oninput="formatMoneyInput(this); render()" placeholder="R$ 0"></div>
+            <div class="field"><label for="anoContemplacao">Ano da contemplação</label><input type="number" id="anoContemplacao" min="2026" max="2080" oninput="render()"></div>
+          </div>
+          <div class="field"><label for="prazoConsorcio">Prazo do consórcio (meses)</label><input type="number" id="prazoConsorcio" min="12" max="240" step="12" value="200" oninput="render()"></div>
+          <span class="hint">Parcela estimada em 0,45% a.m. sobre o valor da carta, paga durante o prazo do plano a partir da renda mensal da carteira.</span>
+        </div>
+      </div>
+    </details>
+
+    <details class="form-section">
+      <summary><span class="num">5</span> Proteção Patrimonial <span class="chev">&#9656;</span></summary>
+      <div class="form-body">
+        <div class="field">
+          <label>Já possui seguro de vida?</label>
+          <div class="toggle-group" id="jaSeguroGroup">
+            <div class="toggle-btn" data-val="sim" onclick="selectToggle('jaSeguroGroup', this, toggleSeguro)">Sim</div>
+            <div class="toggle-btn active" data-val="nao" onclick="selectToggle('jaSeguroGroup', this, toggleSeguro)">Não</div>
+          </div>
+        </div>
+        <div class="conditional-block" id="seguroDetails">
+          <div class="field"><label for="coberturaAtual">Cobertura atual (R$)</label><input type="text" inputmode="numeric" id="coberturaAtual" oninput="formatMoneyInput(this); render()" placeholder="R$ 0"></div>
+        </div>
+        <div class="field">
+          <label for="custoVidaMensal">Custo de vida mensal da família (R$)</label>
+          <span class="hint">Usado para dimensionar a proteção em caso de invalidez/doença grave — não só sucessão</span>
+          <input type="text" inputmode="numeric" id="custoVidaMensal" oninput="formatMoneyInput(this); render()" placeholder="R$ 0">
+        </div>
+        <div class="field">
+          <label for="dividasRelevantes">Dívidas relevantes — financiamentos etc. (R$)</label>
+          <span class="hint">Opcional — soma à necessidade sucessória</span>
+          <input type="text" inputmode="numeric" id="dividasRelevantes" oninput="formatMoneyInput(this); render()" placeholder="R$ 0">
+        </div>
+        <div class="field">
+          <label for="itcmdPct">Estimativa de ITCMD a considerar (%)</label>
+          <span class="hint">ITCMD é progressivo (2%–8%) desde a LC 227/2026; alguns estados (ex: SP) ainda usam alíquota fixa própria. Ajuste se souber a faixa do cliente.</span>
+          <input type="number" id="itcmdPct" min="0" max="8" step="0.5" value="5" oninput="render()">
+        </div>
+      </div>
+    </details>
+
+    <details class="form-section">
+      <summary><span class="num">6</span> Previdência <span class="chev">&#9656;</span></summary>
+      <div class="form-body">
+        <div class="field">
+          <label>Posição atual em previdência</label>
+          <span class="hint" id="prevDerivedHint">Calculada automaticamente a partir do % de Previdência informado na seção 2.</span>
+        </div>
+        <div class="field">
+          <label>Declaração de Imposto de Renda</label>
+          <div class="toggle-group" id="declaracaoIrGroup">
+            <div class="toggle-btn active" data-val="completa" onclick="selectToggle('declaracaoIrGroup', this, render)">Completa</div>
+            <div class="toggle-btn" data-val="simplificada" onclick="selectToggle('declaracaoIrGroup', this, render)">Simplificada</div>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <div class="toolbar">
+      <button class="btn btn-secondary" onclick="if(confirm('Limpar todos os campos?')) location.reload()">Limpar</button>
+      <button class="btn btn-primary" onclick="window.print()">Imprimir / Exportar PDF</button>
+    </div>
+  </div>
+
+  <!-- ============ REPORT PANE ============ -->
+  <div class="report-pane" id="reportPane"></div>
+
+</div>
+
+<script>
+const LOGO_WHITE = 'data:image/png;base64,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';
+const LOGO_NAVY = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAtwAAACxCAYAAAD3XGrEAAAtS0lEQVR4nO3dQZKbyLYG4L9f3HnprqB0RxqWtALwvCOsXkHh4R1ZXkHjFTRegVUraHkFTlaANGTU0gqetIL3BhxcFCVBApkkoP+LqLBLoMxTEkKH5JD89vt/v4CIiIiIiOz4H9cBEBERERFNGRNuIiIiIiKLmHATEREREVnEhJuIiIiIyCIm3EREREREFv3LdQD3IolTH4Df8GnH/GflLY5GAyIiIiKiXjDh7s8MwJ9tn5zE6QmAArBbeYudmZCIiIiIyDYm3P1RHZ//COAZwHMSpxcAWwARR76JiIiIho013D1ZeYszgIOh5h4AfAbwTxKn2yRO54baJSIiIiLDmHD3a2ehzWdkiXeUxOnMQvtERERE1AET7n4pi21/BnBM4nRtsQ8iIiIiaogJd49W3kJZ7uIBwN9SZjKz3BcRERERaWDC3b+4hz6eASgm3URERETuMeHun+qpnydkJSbLnvojIiIioiuYcPdv12NfD8hGupc99klEREREBUy4e7byFnsAlx67zJPuWY99EhEREZFgwu2G6rk/Jt1EREREjjDhdkM56PMJQOSgXyIiIqK7xoTbDeWo32fO001ERETULybcDjio4y7iHN1EREREPWLC7Y5y1O8DWFpCRERE1Bsm3O7sHPb9zKkCiYiIiPrBhNsd5bj/yHH/RERERHeBCbcjK29xBHByGIKXxOncYf9EREREd4EJt1vKcf+h4/6JiIiIJo8Jt1vKcf9rx/0TERERTR4TbreU4/4fOC83ERERkV1MuB2SOu6D4zB8x/0TERERTRoTbveU4/59x/0TERERTRoTbveU4/6feOdJIiIiInuYcLunXAcAXjxJREREZA0TbsdW3uIM1nETERERTRYT7mFQjvv3HfdPRERENFlMuIdBOe7/MYnTpeMYiIiIiCaJCfcArLzFznUM4Cg3ERERkRVMuIcjdty/77h/IiIiokliwj0cynH/Hx33T0RERDRJTLiHQ7kOIIlT33UMRERERFPDhHsgVt5CuY4BLCshIiIiMo4J97C4ruNeO+6fiIiIaHKYcA/LznH/vM07ERERkWFMuIdFuQ4ALCshIiIiMooJ94CsvMUewMVxGL7j/omIiIgmhQn38CjH/a8d909EREQ0KUy4h0c57v8xidO5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';
+
+const ICONS = {
+  house: '<svg viewBox="0 0 24 24" fill="none" stroke="#1B2A4A" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="#1B2A4A" stroke-width="2"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
+  sprout: '<svg viewBox="0 0 24 24" fill="none" stroke="#1B2A4A" stroke-width="2"><path d="M12 21V9"/><path d="M12 9C12 5 9 4 5 4c0 4 2 7 7 7"/><path d="M12 9c0-3 2-5 7-5 0 4-2 7-7 7"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="#1B2A4A" stroke-width="2"><path d="M3 20V10M9 20V4M15 20v-8M21 20V8"/></svg>',
+  pie: '<svg viewBox="0 0 24 24" fill="none" stroke="#1B2A4A" stroke-width="2"><path d="M21.2 15a9 9 0 1 1-9.2-9.2"/><path d="M12 3v9l6.4 6.4"/></svg>',
+};
+
+const ALOC_COLORS = { rf: '#1B2A4A', fundos: '#C9A24B', rv: '#3D5178', intl: '#E4C878', prev: '#8A93A6' };
+const COMP_COLORS = { invest: '#1B2A4A', imoveis: '#C9A24B', empresas: '#6B7A99' };
+
+let filhoCount = 0;
+function addFilho() {
+  filhoCount++;
+  const id = 'filho_' + filhoCount;
+  const div = document.createElement('div');
+  div.className = 'dynamic-row';
+  div.id = 'row_' + id;
+  div.innerHTML = `<input type="number" placeholder="Idade" min="0" max="60" id="${id}" oninput="render()"><button type="button" onclick="removeRow('row_${id}')">&times;</button>`;
+  document.getElementById('filhosList').appendChild(div);
+  render();
+}
+
+let objetivoCount = 0;
+function addObjetivo() {
+  objetivoCount++;
+  const id = 'obj_' + objetivoCount;
+  const div = document.createElement('div');
+  div.className = 'dynamic-row';
+  div.id = 'row_' + id;
+  div.innerHTML = `<input type="text" placeholder="Objetivo" id="${id}_desc" oninput="render()">
+    <input type="text" inputmode="numeric" placeholder="R$ 0" style="max-width:120px" id="${id}_valor" oninput="formatMoneyInput(this); render()">
+    <input type="number" placeholder="Ano" style="max-width:70px" id="${id}_ano" oninput="render()">
+    <button type="button" onclick="removeRow('row_${id}')">&times;</button>`;
+  document.getElementById('objetivosList').appendChild(div);
+  render();
+}
+
+function removeRow(rowId) { const el = document.getElementById(rowId); if (el) el.remove(); render(); }
+function getFilhosIdades() { return Array.from(document.querySelectorAll('#filhosList input')).map(i => i.value).filter(v => v !== ''); }
+function getObjetivos() {
+  const rows = document.querySelectorAll('#objetivosList .dynamic-row');
+  const out = [];
+  rows.forEach(row => {
+    const desc = row.querySelector('input[id$="_desc"]').value.trim();
+    const rawValor = row.querySelector('input[id$="_valor"]').value;
+    const valor = rawValor ? parseInt(rawValor.replace(/\D/g, ''), 10) : NaN;
+    const ano = parseInt(row.querySelector('input[id$="_ano"]').value);
+    if (desc && !isNaN(valor) && valor > 0 && !isNaN(ano)) out.push({ label: desc, valor, ano });
+  });
+  return out;
+}
+
+function selectToggle(groupId, el, cb) {
+  document.querySelectorAll('#' + groupId + ' .toggle-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  if (cb) cb();
+}
+function getToggleVal(groupId) {
+  const el = document.querySelector('#' + groupId + ' .toggle-btn.active');
+  return el ? el.dataset.val : null;
+}
+function toggleSeguro() {
+  document.getElementById('seguroDetails').classList.toggle('show', getToggleVal('jaSeguroGroup') === 'sim');
+  render();
+}
+function togglePrev() { render(); }
+function toggleSimConsorcio() {
+  document.getElementById('simConsorcioDetails').classList.toggle('show', getToggleVal('simConsorcioGroup') === 'sim');
+  render();
+}
+
+// Projeção com consórcio: parcela sai do aporte; na contemplação, a carta vira patrimônio (bem adquirido)
+function projectWithConsorcio(patrimonioInicial, aporteMensal, taxaMensal, mesesTotal, goals, valorCarta, mesContemplacao, parcelaMensal, prazoMeses) {
+  let saldo = patrimonioInicial;
+  let bem = 0;
+  const goalsByMonth = {};
+  goals.forEach(g => {
+    const m = Math.max(0, Math.min(mesesTotal, g.mesAlvo));
+    goalsByMonth[m] = (goalsByMonth[m] || 0) + g.valor;
+  });
+  const series = [{ mes: 0, saldo: saldo }];
+  for (let m = 1; m <= mesesTotal; m++) {
+    const pagandoParcela = m <= prazoMeses;
+    const aporteLiquido = aporteMensal - (pagandoParcela ? parcelaMensal : 0);
+    saldo = saldo * (1 + taxaMensal) + aporteLiquido;
+    if (saldo < 0) saldo = 0;
+    if (goalsByMonth[m]) saldo = Math.max(0, saldo - goalsByMonth[m]);
+    if (m === mesContemplacao) bem = valorCarta;
+    series.push({ mes: m, saldo: saldo + bem });
+  }
+  return series;
+}
+
+function formatMoneyInput(el) {
+  const digits = el.value.replace(/\D/g, '');
+  if (!digits) { el.value = ''; return; }
+  el.value = 'R$ ' + parseInt(digits, 10).toLocaleString('pt-BR');
+}
+
+function num(id) {
+  const el = document.getElementById(id);
+  if (!el) return 0;
+  const raw = el.value;
+  if (!raw) return 0;
+  if (raw.indexOf('R$') !== -1) {
+    const d = raw.replace(/\D/g, '');
+    return d ? parseInt(d, 10) : 0;
+  }
+  const v = parseFloat(raw);
+  return isNaN(v) ? 0 : v;
+}
+function fmtBRL(v) { return 'R$ ' + Math.round(v).toLocaleString('pt-BR', {maximumFractionDigits: 0}); }
+function fmtBRLCompact(v) {
+  const sign = v < 0 ? '-' : '';
+  v = Math.abs(v);
+  if (v >= 1000000) return sign + 'R$ ' + (v/1000000).toLocaleString('pt-BR', {maximumFractionDigits: 1}) + ' mi';
+  if (v >= 1000) return sign + 'R$ ' + (v/1000).toLocaleString('pt-BR', {maximumFractionDigits: 0}) + ' mil';
+  return sign + fmtBRL(v);
+}
+function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// ---------- Accumulation phase ----------
+function projectPatrimony(patrimonioInicial, aporteMensal, taxaMensal, mesesTotal, goals) {
+  let saldo = patrimonioInicial;
+  const goalsByMonth = {};
+  goals.forEach(g => {
+    const m = Math.max(0, Math.min(mesesTotal, g.mesAlvo));
+    goalsByMonth[m] = (goalsByMonth[m] || 0) + g.valor;
+  });
+  const series = [{ mes: 0, saldo }];
+  for (let m = 1; m <= mesesTotal; m++) {
+    saldo = saldo * (1 + taxaMensal) + aporteMensal;
+    if (goalsByMonth[m]) saldo = Math.max(0, saldo - goalsByMonth[m]);
+    series.push({ mes: m, saldo });
+  }
+  return series;
+}
+
+// ---------- Decumulation phase (perpetuidade vs consumo total) ----------
+function projectDecumulation(saldoInicial, taxaMensal, mesesRestantes, mesOffset) {
+  const seriesPerp = [];
+  for (let m = 0; m <= mesesRestantes; m++) seriesPerp.push({ mes: mesOffset + m, saldo: saldoInicial });
+
+  let pmt;
+  if (taxaMensal > 0 && mesesRestantes > 0) {
+    pmt = saldoInicial * taxaMensal / (1 - Math.pow(1 + taxaMensal, -mesesRestantes));
+  } else {
+    pmt = mesesRestantes > 0 ? saldoInicial / mesesRestantes : 0;
+  }
+  const seriesConsumo = [{ mes: mesOffset, saldo: saldoInicial }];
+  let saldo = saldoInicial;
+  for (let m = 1; m <= mesesRestantes; m++) {
+    saldo = Math.max(0, saldo * (1 + taxaMensal) - pmt);
+    seriesConsumo.push({ mes: mesOffset + m, saldo });
+  }
+  return { seriesPerp, seriesConsumo, pmt, rendaPerpetuidade: saldoInicial * taxaMensal };
+}
+
+function renderPatrimonyChart(seriesAccum, seriesPerp, seriesConsumo, goals, anoAtual, mesesTotal, mesAposentadoria, seriesConsorcio) {
+  const W = 660, H = 290, padL = 62, padR = 20, padT = 30, padB = 32;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const allVals = seriesAccum.concat(seriesPerp, seriesConsumo, seriesConsorcio || []).map(p => p.saldo);
+  const maxSaldo = Math.max(...allVals, 1);
+  const xForMonth = m => padL + (m / mesesTotal) * plotW;
+  const yForSaldo = s => padT + plotH - (s / maxSaldo) * plotH;
+
+  const toPath = series => series.map((p, i) => (i === 0 ? 'M' : 'L') + xForMonth(p.mes).toFixed(1) + ',' + yForSaldo(p.saldo).toFixed(1)).join(' ');
+  const pathAccum = toPath(seriesAccum);
+  const pathPerp = seriesPerp.length > 1 ? toPath(seriesPerp) : '';
+  const pathConsumo = seriesConsumo.length > 1 ? toPath(seriesConsumo) : '';
+  const areaAccum = pathAccum + ` L${xForMonth(seriesAccum[seriesAccum.length-1].mes).toFixed(1)},${(padT+plotH).toFixed(1)} L${xForMonth(0).toFixed(1)},${(padT+plotH).toFixed(1)} Z`;
+
+  let gridLines = '', yLabels = '';
+  for (let i = 0; i <= 4; i++) {
+    const val = maxSaldo * i / 4;
+    const y = yForSaldo(val);
+    gridLines += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#E3E7EE" stroke-width="1"/>`;
+    yLabels += `<text x="${padL - 8}" y="${(y + 3).toFixed(1)}" font-size="9.5" fill="#8A93A6" text-anchor="end">${fmtBRLCompact(val)}</text>`;
+  }
+
+  const totalYears = mesesTotal / 12;
+  const yearStep = totalYears > 45 ? 10 : totalYears > 20 ? 5 : totalYears > 10 ? 2 : 1;
+  let xLabels = '';
+  for (let y = 0; y <= totalYears; y += yearStep) {
+    const x = xForMonth(y * 12);
+    xLabels += `<text x="${x.toFixed(1)}" y="${H - padB + 16}" font-size="9.5" fill="#8A93A6" text-anchor="middle">${anoAtual + y}</text>`;
+  }
+
+  // retirement divider
+  const xApos = xForMonth(mesAposentadoria);
+  let aposLine = '';
+  if (mesAposentadoria > 0 && mesAposentadoria < mesesTotal) {
+    aposLine = `<line x1="${xApos.toFixed(1)}" y1="${padT}" x2="${xApos.toFixed(1)}" y2="${padT+plotH}" stroke="#1B2A4A" stroke-width="1" stroke-dasharray="2,3" opacity="0.4"/>
+      <text x="${xApos.toFixed(1)}" y="${padT-10}" font-size="9" fill="#1B2A4A" text-anchor="middle" font-weight="700">Aposentadoria</text>`;
+  }
+
+  let goalMarkers = '';
+  goals.forEach(g => {
+    const mClamped = Math.max(0, Math.min(mesesTotal, g.mesAlvo));
+    if (mClamped > mesAposentadoria) return; // only show pre-retirement goals on accumulation line
+    const x = xForMonth(mClamped);
+    const idx = Math.max(0, Math.min(seriesAccum.length - 1, Math.round(mClamped)));
+    const y = yForSaldo(seriesAccum[idx].saldo);
+    goalMarkers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="#B5563A" stroke="white" stroke-width="1.5"/>`;
+    goalMarkers += `<text x="${x.toFixed(1)}" y="${(y-10).toFixed(1)}" font-size="9" fill="#B5563A" text-anchor="middle" font-weight="700">${escapeHtml(g.label)}</text>`;
+  });
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;" preserveAspectRatio="xMidYMid meet">
+    ${gridLines}
+    <path d="${areaAccum}" fill="#C9A24B" opacity="0.13"/>
+    ${seriesConsorcio && seriesConsorcio.length > 1 ? `<path d="${toPath(seriesConsorcio)}" fill="none" stroke="#5C7A5C" stroke-width="2.5"/>` : ''}
+    <path d="${pathAccum}" fill="none" stroke="#1B2A4A" stroke-width="2.5"/>
+    ${pathPerp ? `<path d="${pathPerp}" fill="none" stroke="#C9A24B" stroke-width="2.2" stroke-dasharray="5,4"/>` : ''}
+    ${pathConsumo ? `<path d="${pathConsumo}" fill="none" stroke="#B5563A" stroke-width="2.2" stroke-dasharray="5,4"/>` : ''}
+    ${aposLine}
+    ${yLabels}${xLabels}${goalMarkers}
+    <line x1="${padL}" y1="${(padT+plotH).toFixed(1)}" x2="${W - padR}" y2="${(padT+plotH).toFixed(1)}" stroke="#1B2A4A" stroke-width="1.5"/>
+  </svg>`;
+}
+
+function renderDonut(parts, centerLabel, centerValue) {
+  const size = 260, cx = size/2, cy = size/2, rOuter = 100, rInner = 58;
+  const visible = parts.filter(p => p.pct > 0.05);
+  const total = visible.reduce((s,p) => s + p.pct, 0) || 1;
+
+  let angle = -Math.PI/2;
+  let paths = '', labels = '';
+
+  visible.forEach(p => {
+    const sweep = (p.pct/total) * Math.PI * 2;
+    const end = angle + sweep;
+    const large = sweep > Math.PI ? 1 : 0;
+    const x1 = cx + rOuter*Math.cos(angle), y1 = cy + rOuter*Math.sin(angle);
+    const x2 = cx + rOuter*Math.cos(end),   y2 = cy + rOuter*Math.sin(end);
+    const x3 = cx + rInner*Math.cos(end),   y3 = cy + rInner*Math.sin(end);
+    const x4 = cx + rInner*Math.cos(angle), y4 = cy + rInner*Math.sin(angle);
+    paths += `<path d="M${x1.toFixed(1)},${y1.toFixed(1)} A${rOuter},${rOuter} 0 ${large} 1 ${x2.toFixed(1)},${y2.toFixed(1)} L${x3.toFixed(1)},${y3.toFixed(1)} A${rInner},${rInner} 0 ${large} 0 ${x4.toFixed(1)},${y4.toFixed(1)} Z" fill="${p.color}" stroke="#fff" stroke-width="2"/>`;
+    if (p.pct/total > 0.06) {
+      const mid = angle + sweep/2, rLabel = (rOuter + rInner)/2;
+      const lx = cx + rLabel*Math.cos(mid), ly = cy + rLabel*Math.sin(mid);
+      labels += `<text x="${lx.toFixed(1)}" y="${(ly+4).toFixed(1)}" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">${p.pct.toFixed(0)}%</text>`;
+    }
+    angle = end;
+  });
+
+  const center = centerValue
+    ? `<text x="${cx}" y="${cy-2}" font-size="20" font-weight="700" fill="#1B2A4A" text-anchor="middle" font-family="Georgia,serif">${centerValue}</text>
+       <text x="${cx}" y="${cy+16}" font-size="10" fill="#8A93A6" text-anchor="middle">${centerLabel||''}</text>`
+    : '';
+
+  const legend = visible.map(p => `<span><span class="dot" style="background:${p.color}"></span>${p.label} <strong>${p.pct.toFixed(1)}%</strong></span>`).join('');
+
+  return `<div style="text-align:center;">
+    <svg viewBox="0 0 ${size} ${size}" style="width:100%;max-width:260px;height:auto;display:block;margin:0 auto;">${paths}${labels}${center}</svg>
+    <div class="chart-legend" style="justify-content:center;margin-top:12px;">${legend}</div>
+  </div>`;
+}
+
+function render() {
+  const alocTotal = num('alocRF') + num('alocFundos') + num('alocRV') + num('alocIntl') + num('alocPrev');
+  const alocTotalEl = document.getElementById('alocTotal');
+  alocTotalEl.textContent = 'Total: ' + alocTotal + '%';
+  alocTotalEl.className = 'alocacao-total ' + (Math.abs(alocTotal - 100) < 0.5 ? 'ok' : 'bad');
+
+  const nome = document.getElementById('nome').value.trim();
+  const idade = num('idade');
+  const idadeAposentadoria = num('idadeAposentadoria');
+  const profissao = document.getElementById('profissao').value.trim();
+  const uf = document.getElementById('uf').value;
+  const estadoCivil = getToggleVal('estadoCivilGroup');
+  const filhos = getFilhosIdades();
+
+  const patrimonioTotal = num('patrimonioTotal');
+  const rentabilidadeAnual = num('rentabilidadeAnual');
+  const aportesMensais = num('aportesMensais');
+  const valorImoveis = num('valorImoveis');
+  const valorEmpresas = num('valorEmpresas');
+  const patrimonioImobilizado = valorImoveis + valorEmpresas;
+  const holding = getToggleVal('holdingGroup');
+  const alocRF = num('alocRF'), alocFundos = num('alocFundos'), alocRV = num('alocRV'), alocIntl = num('alocIntl'), alocPrev = num('alocPrev');
+
+  const objetivos = getObjetivos();
+  const jaConsorcio = getToggleVal('jaConsorcioGroup') === 'sim';
+
+  const jaSeguro = getToggleVal('jaSeguroGroup') === 'sim';
+  const coberturaAtual = jaSeguro ? num('coberturaAtual') : 0;
+  const custoVidaMensal = num('custoVidaMensal');
+  const dividasRelevantes = num('dividasRelevantes');
+  const itcmdPct = num('itcmdPct');
+
+  const valorPrevAtual = patrimonioTotal * (alocPrev / 100);
+  const jaPrev = valorPrevAtual > 0;
+  const declaracaoIr = getToggleVal('declaracaoIrGroup');
+  const prevHint = document.getElementById('prevDerivedHint');
+  if (prevHint) prevHint.textContent = valorPrevAtual > 0
+    ? `${alocPrev}% da carteira = ${fmtBRLCompact(valorPrevAtual)} (calculado a partir da seção 2).`
+    : 'Nenhuma posição em previdência informada na alocação da seção 2.';
+
+  const hasBasics = patrimonioTotal > 0 || nome;
+  const pane = document.getElementById('reportPane');
+
+  if (!hasBasics) {
+    pane.innerHTML = `<div class="empty-state"><h3>Diagnóstico Patrimonial</h3><p>Preencha os dados do cliente ao lado — o diagnóstico aparece aqui em tempo real.</p></div>`;
+    return;
+  }
+
+  const taxaMensalReal = Math.pow(1 + rentabilidadeAnual / 100, 1 / 12) - 1;
+  const baseRendaGeradora = patrimonioTotal * ((alocRF + alocFundos) / 100);
+  const rendaMensalGerada = aportesMensais + baseRendaGeradora * taxaMensalReal;
+
+  const anosParaAposentar = Math.max(0, idadeAposentadoria - idade);
+  const mesesAteAposentadoria = Math.max(1, Math.round(anosParaAposentar * 12) || 240);
+  const anoAtual = new Date().getFullYear();
+  const idadeFinal = 95;
+  const mesesAte95 = Math.max(mesesAteAposentadoria + 12, Math.round((idadeFinal - idade) * 12));
+
+  const goalsComMes = objetivos.map(o => ({ ...o, mesAlvo: (o.ano - anoAtual) * 12 }));
+  const seriesAccum = projectPatrimony(patrimonioTotal, aportesMensais, taxaMensalReal, mesesAteAposentadoria, goalsComMes);
+  const saldoAposentadoria = seriesAccum[seriesAccum.length - 1].saldo;
+
+  const mesesDecumulacao = mesesAte95 - mesesAteAposentadoria;
+  const decum = projectDecumulation(saldoAposentadoria, taxaMensalReal, mesesDecumulacao, mesesAteAposentadoria);
+
+  // simulação de consórcio
+  const simConsorcio = getToggleVal('simConsorcioGroup') === 'sim';
+  const valorCarta = simConsorcio ? num('valorCarta') : 0;
+  const anoContemplacao = simConsorcio ? num('anoContemplacao') : 0;
+  const parcelaConsorcio = valorCarta * 0.0045;
+  const mesContemplacao = anoContemplacao > 0 ? Math.max(1, (anoContemplacao - anoAtual) * 12) : 0;
+  let seriesConsorcio = null;
+  const prazoConsorcio = simConsorcio ? (num('prazoConsorcio') || 200) : 0;
+  if (simConsorcio && valorCarta > 0 && mesContemplacao > 0) {
+    seriesConsorcio = projectWithConsorcio(patrimonioTotal, aportesMensais, taxaMensalReal, mesesAteAposentadoria, goalsComMes, valorCarta, mesContemplacao, parcelaConsorcio, prazoConsorcio);
+  }
+  const saldoConsorcioFinal = seriesConsorcio ? seriesConsorcio[seriesConsorcio.length-1].saldo : 0;
+
+  // alavancagem
+  const taxaParcela = 0.0045;
+  const carta20 = (rendaMensalGerada * 0.20) / taxaParcela;
+  const carta50 = (rendaMensalGerada * 0.50) / taxaParcela;
+  const carta100 = (rendaMensalGerada * 1.00) / taxaParcela;
+
+  // seguro — sucessão + proteção de renda
+  const custasPct = 0.05;
+  const necessidadeSucessoria = (patrimonioTotal + patrimonioImobilizado) * (custasPct + itcmdPct / 100) + dividasRelevantes;
+  const anosProtecaoRenda = 10;
+  const necessidadeProtecaoRenda = custoVidaMensal * 12 * anosProtecaoRenda;
+  const necessidadeBrutaSeguro = necessidadeSucessoria + necessidadeProtecaoRenda;
+  const gapSeguro = Math.max(0, necessidadeBrutaSeguro - coberturaAtual);
+
+  // previdência
+  const alvoPrevValor = patrimonioTotal * 0.20;
+  const gapPrev = Math.max(0, alvoPrevValor - valorPrevAtual);
+
+  const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  let html = '';
+
+  // ---- print cover ----
+  html += `<div class="print-cover">
+    <img src="${LOGO_WHITE}" alt="Adami Wealth" style="width:300px;max-width:60%;height:auto;margin-bottom:60px;">
+    <h1>Diagnóstico<br><span class="accent">Patrimonial</span></h1>
+    <hr class="rule">
+    <div class="sub">PREPARADO PARA<br><strong style="color:white;font-size:16px;">${nome ? escapeHtml(nome) : 'Cliente'}</strong></div>
+    <div class="sub">${dataHoje}</div>
+  </div>`;
+
+  html += `<div class="report-header">
+    <div>
+      <img src="${LOGO_NAVY}" alt="Adami Wealth" style="height:26px;width:auto;display:block;margin-bottom:10px;">
+      <h1>Diagnóstico Patrimonial ${nome ? '— <span class="client-name">' + escapeHtml(nome) + '</span>' : ''}</h1>
+      <div class="meta">${profissao ? escapeHtml(profissao) + ' · ' : ''}${idade ? idade + ' anos · ' : ''}${uf ? uf : ''}</div>
+    </div>
+    <div class="date">${dataHoje}</div>
+  </div>`;
+
+  html += `<div class="summary-strip">
+    <div class="stat-box"><div class="stat-value">${patrimonioTotal ? fmtBRLCompact(patrimonioTotal) : '—'}</div><div class="stat-label">Patrimônio investido</div></div>
+    <div class="stat-box"><div class="stat-value accent">${rentabilidadeAnual ? rentabilidadeAnual + '% a.a. real' : '—'}</div><div class="stat-label">Rentabilidade média</div></div>
+    <div class="stat-box"><div class="stat-value accent">${rendaMensalGerada ? fmtBRLCompact(rendaMensalGerada) : '—'}</div><div class="stat-label">Renda mensal estimada</div></div>
+    <div class="stat-box"><div class="stat-value">${anosParaAposentar > 0 ? anosParaAposentar + ' anos' : '—'}</div><div class="stat-label">Até a aposentadoria</div></div>
+  </div>`;
+
+  // ---- composição patrimonial ----
+  const totalGeral = patrimonioTotal + valorImoveis + valorEmpresas;
+  if (totalGeral > 0) {
+    const compParts = [
+      { pct: patrimonioTotal/totalGeral*100, color: COMP_COLORS.invest, label: 'Investimentos' },
+      { pct: valorImoveis/totalGeral*100, color: COMP_COLORS.imoveis, label: 'Imóveis' },
+      { pct: valorEmpresas/totalGeral*100, color: COMP_COLORS.empresas, label: 'Empresas' },
+    ];
+    html += `<div class="section-block">
+      <div class="head-row"><div class="icon-circle">${ICONS.pie}</div><h2 style="margin:0;">Composição Patrimonial</h2></div>
+      <p class="subtext">Patrimônio total de ${fmtBRLCompact(totalGeral)}, entre carteira de investimentos, imóveis e participações societárias.</p>
+      ${renderDonut(compParts, 'patrimônio total', fmtBRLCompact(totalGeral))}
+      ${valorImoveis > 0 ? `<div class="insight-box" style="margin-top:14px;"><strong>Estrutura dos imóveis:</strong> ${holding === 'sim' ? 'já estão em holding.' : holding === 'parcial' ? 'parcialmente estruturados em holding — vale concluir a estruturação societária como parte do planejamento sucessório.' : 'ainda não estão em holding — vale avaliar a estruturação societária como parte do planejamento sucessório.'}</div>` : ''}
+    </div>`;
+  }
+
+  // ---- alocação da carteira ----
+  if (patrimonioTotal > 0) {
+    const alocParts = [
+      { pct: alocRF, color: ALOC_COLORS.rf, label: 'Renda Fixa' },
+      { pct: alocFundos, color: ALOC_COLORS.fundos, label: 'Fundos' },
+      { pct: alocRV, color: ALOC_COLORS.rv, label: 'Renda Variável' },
+      { pct: alocIntl, color: ALOC_COLORS.intl, label: 'Internacional' },
+      { pct: alocPrev, color: ALOC_COLORS.prev, label: 'Previdência' },
+    ];
+    html += `<div class="section-block">
+      <div class="head-row"><div class="icon-circle">${ICONS.pie}</div><h2 style="margin:0;">Composição da Carteira</h2></div>
+      <p class="subtext">Alocação atual informada — base para a estimativa de renda mensal e da projeção patrimonial.</p>
+      ${renderDonut(alocParts, 'em carteira', fmtBRLCompact(patrimonioTotal))}
+      <div class="insight-box"><strong>Diversificação internacional:</strong> a carteira do cliente tem ${alocIntl}% em ativos internacionais. Para referência, o investidor brasileiro médio mantém mais de 95% do patrimônio em ativos domésticos (menos de 5% no exterior), enquanto a recomendação geral de mercado é de ao menos 15% em ativos internacionais.</div>
+    </div>`;
+  }
+
+  // ---- gráfico de projeção patrimonial ----
+  if (patrimonioTotal > 0 && anosParaAposentar > 0) {
+    html += `<div class="section-block page-break">
+      <div class="head-row"><div class="icon-circle">${ICONS.chart}</div><h2 style="margin:0;">Projeção Patrimonial</h2></div>
+      <p class="subtext">De hoje (${anoAtual}) até os ${idadeFinal} anos, considerando rentabilidade real de ${rentabilidadeAnual}% a.a., aportes de ${fmtBRL(aportesMensais)}/mês${goalsComMes.length ? ' e os objetivos marcados no gráfico' : ''}. Após a aposentadoria, duas trajetórias possíveis:</p>
+      ${renderPatrimonyChart(seriesAccum, decum.seriesPerp, decum.seriesConsumo, goalsComMes, anoAtual, mesesAte95, mesesAteAposentadoria, seriesConsorcio)}
+      <div class="chart-legend" style="margin-top:10px;">
+        <span><span class="dash" style="background:#1B2A4A;"></span>Acumulação${seriesConsorcio ? ' (sem consórcio)' : ''}</span>
+        ${seriesConsorcio ? `<span><span class="dash" style="background:#5C7A5C;"></span>Com consórcio (inclui o bem adquirido)</span>` : ''}
+        <span><span class="dash" style="background:#C9A24B;"></span>Renda em perpetuidade</span>
+        <span><span class="dash" style="background:#B5563A;"></span>Consumindo o patrimônio até os ${idadeFinal} anos</span>
+      </div>
+      ${seriesConsorcio ? (() => {
+        const delta = saldoConsorcioFinal - saldoAposentadoria;
+        const positivo = delta >= 0;
+        return `<div class="insight-box"><strong>Simulação de alavancagem:</strong> carta de ${fmtBRLCompact(valorCarta)} contemplada em ${anoContemplacao}, parcela estimada de ${fmtBRL(parcelaConsorcio)}/mês por ${prazoConsorcio} meses. Patrimônio total na aposentadoria: <strong>${fmtBRLCompact(saldoConsorcioFinal)}</strong> (${positivo ? '+' : ''}${fmtBRLCompact(delta)} frente ao cenário sem consórcio, somando o bem adquirido ao saldo investido).<br><br>${positivo
+          ? 'Nesta simulação a estratégia é acretiva também em termos financeiros.'
+          : `Nesta simulação o custo da taxa de administração supera o retorno de manter o valor investido — a diferença de ${fmtBRLCompact(Math.abs(delta))} é o preço de antecipar a aquisição do bem. O ganho do consórcio aqui não é financeiro, e sim de acesso: adquirir o bem em ${anoContemplacao} sem liquidar a carteira nem tomar crédito com juros.`}</div>`;
+      })() : ''}
+      <div class="summary-strip" style="margin-top:16px;">
+        <div class="stat-box"><div class="stat-value">${fmtBRLCompact(saldoAposentadoria)}</div><div class="stat-label">Patrimônio na aposentadoria</div></div>
+        <div class="stat-box"><div class="stat-value accent">${fmtBRLCompact(decum.rendaPerpetuidade)}/mês</div><div class="stat-label">Renda em perpetuidade</div></div>
+        <div class="stat-box"><div class="stat-value accent">${fmtBRLCompact(decum.pmt)}/mês</div><div class="stat-label">Renda até os ${idadeFinal} anos (consome tudo)</div></div>
+      </div>
+      <p class="narrative" style="font-size:11px;color:var(--muted);margin-top:10px;margin-bottom:0;">Valores em poder de compra de hoje (termos reais). "Perpetuidade" preserva o principal indefinidamente; "consumindo o patrimônio" distribui tudo até os ${idadeFinal} anos, chegando a zero.</p>
+    </div>`;
+  }
+
+  html += `<h2 style="font-family:var(--serif);color:var(--navy);font-size:17px;margin:0 0 4px;" class="page-break">Estruturação Patrimonial</h2>
+  <p class="narrative" style="margin-bottom:20px;">Um plano patrimonial completo vai além da carteira de investimentos. As frentes abaixo fazem parte da estruturação patrimonial da família e valem ser discutidas nesta reunião:</p>`;
+
+  // ---- ALAVANCAGEM PATRIMONIAL ----
+  const alavancagemActive = patrimonioTotal > 0 && rendaMensalGerada > 0 && !jaConsorcio;
+  html += `<div class="trigger-card ${alavancagemActive ? '' : 'inactive'}">
+    <div class="card-head"><div class="icon-badge">${ICONS.house}</div><h2>Alavancagem Patrimonial</h2>
+      <span class="tag ${alavancagemActive ? 'hot' : 'cold'}">${jaConsorcio ? 'Já possui' : 'Avaliar nesta reunião'}</span></div>
+    <div class="card-body">`;
+  if (rendaMensalGerada <= 0) {
+    html += `<p class="narrative">Preencha o patrimônio, rentabilidade, alocação e aportes na seção 2 para estimar a capacidade de alavancagem.</p>`;
+  } else {
+    html += `<div class="kpi-row"><span class="kpi-number">${fmtBRLCompact(carta100)}</span><span class="kpi-caption">carta de crédito compatível com a renda mensal gerada pela carteira, direcionando 100% dela</span></div>
+    <p class="narrative">A renda mensal gerada pela carteira (aportes + rendimento líquido estimado) permite avaliar as seguintes faixas de carta de consórcio, sem depender do principal investido:</p>
+    <table class="mini-table">
+      <tr><th>% da renda mensal</th><th>Valor/mês</th><th>Carta de crédito</th></tr>
+      <tr><td>20%</td><td class="num">${fmtBRL(rendaMensalGerada*0.20)}</td><td class="num">${fmtBRLCompact(carta20)}</td></tr>
+      <tr><td>50%</td><td class="num">${fmtBRL(rendaMensalGerada*0.50)}</td><td class="num">${fmtBRLCompact(carta50)}</td></tr>
+      <tr><td>100%</td><td class="num">${fmtBRL(rendaMensalGerada*1.00)}</td><td class="num">${fmtBRLCompact(carta100)}</td></tr>
+    </table>`;
+    const objetivosCompativeis = objetivos.filter(o => o.valor > 0);
+    if (objetivosCompativeis.length > 0) {
+      html += `<p class="narrative" style="margin-top:10px">Cruzando com os objetivos informados:</p><table class="mini-table"><tr><th>Objetivo</th><th>Valor</th><th>% da renda necessária</th></tr>`;
+      objetivosCompativeis.forEach(o => {
+        const pctNecessario = Math.min(999, (o.valor * taxaParcela / rendaMensalGerada) * 100);
+        html += `<tr><td>${escapeHtml(o.label)} (${o.ano})</td><td class="num">${fmtBRLCompact(o.valor)}</td><td class="num">${pctNecessario.toFixed(0)}%</td></tr>`;
+      });
+      html += `</table>`;
+    }
+    html += `<p class="narrative" style="font-size:11px;color:var(--muted);margin-top:10px">*Parcela de referência: 0,45% a.m. Taxas variam por administradora e prazo — validar simulação oficial antes de apresentar ao cliente.</p>`;
+  }
+  html += `</div></div>`;
+
+  // ---- PROTEÇÃO PATRIMONIAL ----
+  const seguroActive = patrimonioTotal > 0 && gapSeguro > 0;
+  html += `<div class="trigger-card ${seguroActive ? '' : 'inactive'} page-break">
+    <div class="card-head"><div class="icon-badge">${ICONS.shield}</div><h2>Proteção Patrimonial</h2>
+      <span class="tag ${seguroActive ? 'hot' : 'cold'}">${jaSeguro ? 'Já possui cobertura' : 'Avaliar nesta reunião'}</span></div>
+    <div class="card-body">`;
+  if (patrimonioTotal <= 0) {
+    html += `<p class="narrative">Preencha o patrimônio total e imobilizado na seção 2 para estimar a necessidade de proteção.</p>`;
+  } else {
+    html += `<div class="kpi-row"><span class="kpi-number">${fmtBRLCompact(gapSeguro)}</span><span class="kpi-caption">gap de proteção estimado${jaSeguro ? ' (considerando a cobertura atual de '+fmtBRLCompact(coberturaAtual)+')' : ''}</span></div>
+    <p class="narrative">A proteção patrimonial cobre duas frentes distintas: a liquidez sucessória (custos de transmissão do patrimônio) e a proteção de renda em caso de invalidez ou doença grave (capacidade de trabalho comprometida em vida).</p>
+    <table class="mini-table">
+      <tr><th>Componente</th><th>Base de cálculo</th><th>Valor</th></tr>
+      <tr><td>Custas e honorários de inventário</td><td class="num">5% do patrimônio</td><td class="num">${fmtBRLCompact((patrimonioTotal+patrimonioImobilizado)*custasPct)}</td></tr>
+      <tr><td>ITCMD (estimativa ajustável)</td><td class="num">${itcmdPct}% do patrimônio</td><td class="num">${fmtBRLCompact((patrimonioTotal+patrimonioImobilizado)*itcmdPct/100)}</td></tr>
+      ${dividasRelevantes > 0 ? `<tr><td>Dívidas relevantes</td><td class="num">—</td><td class="num">${fmtBRLCompact(dividasRelevantes)}</td></tr>` : ''}
+      <tr><td>Subtotal — liquidez sucessória</td><td class="num">—</td><td class="num">${fmtBRLCompact(necessidadeSucessoria)}</td></tr>
+      <tr><td>Proteção de renda — invalidez/doença grave</td><td class="num">${anosProtecaoRenda} anos de custo de vida</td><td class="num">${fmtBRLCompact(necessidadeProtecaoRenda)}</td></tr>
+      ${jaSeguro && coberturaAtual > 0 ? `<tr><td>(–) Cobertura atual</td><td class="num">—</td><td class="num">-${fmtBRLCompact(coberturaAtual)}</td></tr>` : ''}
+      <tr class="total-row"><td>Cobertura total sugerida</td><td></td><td class="num">${fmtBRLCompact(gapSeguro)}</td></tr>
+    </table>`;
+    if (custoVidaMensal <= 0) {
+      html += `<p class="narrative" style="font-size:12px;color:var(--muted);margin-top:10px">Preencha o custo de vida mensal da família na seção 5 para incluir a proteção de renda por invalidez/doença grave (hoje considerando apenas a liquidez sucessória).</p>`;
+    }
+    if (estadoCivil || filhos.length > 0) {
+      let contextoFamilia = [];
+      if (estadoCivil === 'casado') contextoFamilia.push('cônjuge/companheiro(a)');
+      if (filhos.length > 0) contextoFamilia.push(filhos.length + (filhos.length === 1 ? ' filho(a)' : ' filhos(as)') + ' (' + filhos.join(', ') + ' anos)');
+      if (contextoFamilia.length > 0) html += `<p class="narrative">Com ${contextoFamilia.join(' e ')} dependendo da renda familiar, a proteção contra morte e invalidez merece prioridade na conversa.</p>`;
+    }
+    html += `<p class="narrative" style="font-size:11px;color:var(--muted)">*ITCMD tornou-se progressivo (2% a 8%) pela LC 227/2026; alguns estados ainda usam alíquota fixa própria enquanto aguardam lei estadual. Validar com o time jurídico/contábil antes de apresentar ao cliente.</p>`;
+  }
+  html += `</div></div>`;
+
+  // ---- PREVIDÊNCIA ----
+  const prevActive = patrimonioTotal > 0 && gapPrev > 0;
+  html += `<div class="trigger-card ${prevActive ? '' : 'inactive'}">
+    <div class="card-head"><div class="icon-badge">${ICONS.sprout}</div><h2>Previdência</h2>
+      <span class="tag ${prevActive ? 'hot' : 'cold'}">${jaPrev ? 'Já possui' : 'Avaliar nesta reunião'}</span></div>
+    <div class="card-body">`;
+  if (patrimonioTotal <= 0) {
+    html += `<p class="narrative">Preencha o patrimônio total na seção 2 para comparar com a posição em previdência.</p>`;
+  } else {
+    html += `<div class="kpi-row"><span class="kpi-number">${fmtBRLCompact(gapPrev)}</span><span class="kpi-caption">espaço estimado até uma alocação de referência de 20% do patrimônio em previdência</span></div>
+    <p class="narrative">Posição atual em previdência: <strong>${fmtBRLCompact(valorPrevAtual)}</strong>. Além de complementar a camada sucessória ao lado da proteção patrimonial (capital ao beneficiário indicado, sem passar pelo inventário na maioria dos casos), a previdência oferece benefício fiscal.</p>`;
+    html += declaracaoIr === 'completa'
+      ? `<p class="narrative">Cliente declara IR completo — pode abater contribuições PGBL em até <strong>12% da renda bruta anual</strong>, dentro do limite legal.</p>`
+      : `<p class="narrative">Cliente declara IR simplificado — o benefício de dedução do PGBL não se aplica hoje; VGBL com tabela regressiva pode ser a rota mais adequada para o horizonte de longo prazo.</p>`;
+    html += `<p class="narrative" style="font-size:11px;color:var(--muted)">*Percentual de referência (20%) é ilustrativo — ajustar conforme perfil e política de investimento do cliente.</p>`;
+  }
+  html += `</div></div>`;
+
+  html += `<div class="disclaimer disclaimer-page">Ferramenta de apoio à reunião de planejamento — estimativas ilustrativas para orientar a conversa com o cliente, não constituem aconselhamento tributário, atuarial ou de investimento. A projeção patrimonial assume rentabilidade real constante e não elimina o risco de mercado, de crédito ou de liquidez. Validar percentuais de ITCMD, custas e cobertura recomendada com as áreas jurídica, contábil e de produtos antes de formalizar qualquer proposta. Diagnóstico Patrimonial · Adami Wealth.</div>`;
+
+  pane.innerHTML = html;
+}
+
+document.getElementById('topLogo').src = LOGO_WHITE;
+toggleSeguro();
+toggleSimConsorcio();
+render();
+</script>
+
+<button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
+</body>
+</html>
