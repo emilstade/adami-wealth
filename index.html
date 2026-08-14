@@ -49,7 +49,7 @@ input,select,textarea{font-family:inherit;font-size:13px}
 .auth{min-height:100vh;display:grid;grid-template-columns:1.08fr .92fr}
 .auth-side{position:relative;background:var(--navy);color:#fff;padding:46px 54px;display:flex;flex-direction:column;overflow:hidden}
 .auth-side:before{content:"";position:absolute;inset:0;
-  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.05) 0 1px,transparent 1px 38px);
+  background:radial-gradient(120% 90% at 12% 88%,rgba(61,109,158,.28) 0%,transparent 62%);
   pointer-events:none}
 .auth-side>*{position:relative}
 .auth-side img{height:36px;width:auto;align-self:flex-start;flex:none}
@@ -326,7 +326,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 16</div>
+    <div class="rail-user" style="opacity:.6">versão 17</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -415,7 +415,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 16";
+var VERSAO="versão 17";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
