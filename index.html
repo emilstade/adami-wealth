@@ -46,24 +46,54 @@ input,select,textarea{font-family:inherit;font-size:13px}
 .dot.err{background:var(--alert)} .dot.wait{background:var(--gold)}
 
 /* ---------- login ---------- */
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--navy);padding:24px}
-.login{background:#fff;border-radius:4px;padding:44px 40px;width:100%;max-width:390px;box-shadow:0 18px 60px rgba(0,0,0,.28)}
-.login .brand{text-align:center;margin-bottom:30px}
-.login .brand img{width:180px;max-width:80%;height:auto;display:block;margin:0 auto}
-.login label{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
-.login input{width:100%;border:1px solid var(--line);border-radius:3px;padding:11px 12px;margin-bottom:16px;font-size:14px}
-.login input:focus{outline:0;border-color:var(--navy);box-shadow:0 0 0 2px #EBF1F8}
-.login button{width:100%;background:var(--navy);color:#fff;border:0;border-radius:3px;padding:12px;font-weight:600;letter-spacing:.02em}
-.login button:hover{background:var(--navy-d)}
-.login button[disabled]{opacity:.6}
-.login .erro{background:#FBEDEB;color:var(--alert);font-size:12.5px;padding:10px 12px;border-radius:3px;margin-bottom:16px}
-.login .campo{position:relative}
-.login .campo input{padding-right:52px}
-.login .olho{position:absolute;right:1px;top:1px;height:41px;width:44px;border:0;background:transparent;
-  color:var(--muted);padding:0;display:flex;align-items:center;justify-content:center}
-.login .olho:hover{color:var(--navy);background:transparent}
-.login .olho svg{width:19px;height:19px;display:block}
-.login .pe{text-align:center;font-size:11.5px;color:var(--muted);margin-top:18px;line-height:1.6}
+.auth{min-height:100vh;display:grid;grid-template-columns:1.08fr .92fr}
+.auth-side{position:relative;background:var(--navy);color:#fff;padding:46px 54px;display:flex;flex-direction:column;overflow:hidden}
+.auth-side:before{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(to bottom,rgba(255,255,255,.05) 0 1px,transparent 1px 38px);
+  pointer-events:none}
+.auth-side>*{position:relative}
+.auth-side img{height:34px;width:auto}
+.auth-say{margin-top:auto;max-width:13em}
+.auth-say .rule{width:54px;height:2px;background:var(--gold);margin-bottom:22px}
+.auth-say h2{font-family:var(--display);font-size:33px;font-weight:500;line-height:1.24;letter-spacing:.005em}
+.auth-say p{color:#A9C0D8;font-size:13.5px;line-height:1.65;margin:16px 0 0;max-width:24em}
+.auth-meta{margin-top:auto;padding-top:44px;display:flex;gap:22px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:#6E88A4}
+.auth-form{display:flex;align-items:center;justify-content:center;padding:40px 34px;background:#F7F9FB}
+.auth-card{width:100%;max-width:344px;animation:sobe .5s ease both}
+@keyframes sobe{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.auth-card .rule{width:34px;height:2px;background:var(--gold);margin-bottom:20px}
+.auth-card h1{font-family:var(--display);font-size:25px;font-weight:600;color:var(--navy);letter-spacing:.01em}
+.auth-card .hint{font-size:13px;color:var(--muted);margin:7px 0 28px}
+.auth-card label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 7px}
+.auth-card input{width:100%;border:1px solid var(--line);border-radius:2px;padding:12px 13px;
+  font-size:14px;background:#fff;color:var(--ink);transition:border-color .12s,box-shadow .12s}
+.auth-card input::placeholder{color:#B4BECA}
+.auth-card input:focus{outline:0;border-color:var(--navy);box-shadow:0 0 0 3px rgba(27,58,95,.09)}
+.auth-card .campo{position:relative;margin-bottom:18px}
+.auth-card .campo input{padding-right:50px}
+.auth-card .olho{position:absolute;right:2px;top:2px;height:calc(100% - 4px);width:44px;border:0;
+  background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;padding:0}
+.auth-card .olho:hover{color:var(--navy);background:transparent}
+.auth-card .olho svg{width:18px;height:18px;display:block}
+.auth-card button.entrar{width:100%;background:var(--navy);color:#fff;border:0;border-radius:2px;
+  padding:13px;font-size:13.5px;font-weight:600;letter-spacing:.03em;margin-top:6px;transition:background .12s}
+.auth-card button.entrar:hover{background:var(--navy-d)}
+.auth-card button.entrar[disabled]{opacity:.55}
+.auth-card .erro{border-left:2px solid var(--alert);background:#FBEDEB;color:#7E2C20;
+  font-size:12.5px;line-height:1.5;padding:11px 13px;margin-bottom:22px}
+.auth-card .pe{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--muted);line-height:1.6}
+@media (prefers-reduced-motion:reduce){.auth-card{animation:none}}
+@media(max-width:860px){
+  .auth{grid-template-columns:1fr;min-height:100vh}
+  .auth-side{padding:26px 24px 30px}
+  .auth-side .auth-say{margin-top:26px}
+  .auth-say h2{font-size:25px}
+  .auth-say p,.auth-meta{display:none}
+  .auth-form{padding:34px 24px 50px}
+}
 .rail-user{font-size:11.5px;color:#8AA8C6;margin-top:10px;overflow:hidden;text-overflow:ellipsis}
 
 /* ---------- portal ---------- */
@@ -295,7 +325,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 14</div>
+    <div class="rail-user" style="opacity:.6">versão 15</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -384,6 +414,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
+var VERSAO="versão 15";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -1188,7 +1219,6 @@ function imprimir(){
   window.print();
 }
 /* ---------- portal de sistemas ---------- */
-var VERSAO="versão 14";
 var APPS=[
   {id:"carteiras",nome:"Carteiras",desc:"Lançamento mensal das carteiras e geração do relatório consolidado em PDF.",tag:"Disponível",ativo:true,
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>'},
@@ -1239,17 +1269,6 @@ function viewHub(){
     '<div class="hub-foot">Acesso restrito aos colaboradores. Todas as ações ficam registradas. &nbsp;·&nbsp; '+VERSAO+'</div>'+
     '</div>';
 }
-function viewLogin(erro){
-  return '<div class="login-wrap"><div class="login">'+
-    '<div class="brand"><img src="'+LOGO_AZUL+'" alt="Adami Wealth"></div>'+
-    (erro?'<div class="erro">'+esc(erro)+'</div>':'')+
-    '<label>E-mail</label><input type="email" id="lgEmail" autocomplete="username" placeholder="seu@email.com">'+
-    '<label>Senha</label><div class="campo"><input type="password" id="lgSenha" autocomplete="current-password" placeholder="••••••••">'+
-    '<button type="button" class="olho" id="lgOlho" onclick="verSenha()" aria-label="Mostrar senha" title="Mostrar senha">'+iconeOlho(false)+'</button></div>'+
-    '<button id="lgBtn" onclick="fazerLogin()">Entrar</button>'+
-    '<div class="pe">Acesso restrito.<br>versão 14</div>'+
-    '</div></div>';
-}
 function iconeOlho(aberto){
   var base='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">';
   if(aberto){
@@ -1266,6 +1285,31 @@ function verSenha(){
   b.setAttribute("aria-label",mostrar?"Ocultar senha":"Mostrar senha");
   b.setAttribute("title",mostrar?"Ocultar senha":"Mostrar senha");
   i.focus();
+}
+function viewLogin(erro){
+  return '<div class="auth">'+
+    '<div class="auth-side">'+
+      '<img src="'+LOGO_BRANCO+'" alt="Adami Wealth">'+
+      '<div class="auth-say"><div class="rule"></div>'+
+        '<h2>Sistemas internos</h2>'+
+        '<p>Carteiras, diagnóstico patrimonial e relatórios — em um só lugar, para a equipe Adami Wealth.</p>'+
+      '</div>'+
+      '<div class="auth-meta"><span>Acesso restrito</span><span>'+VERSAO+'</span></div>'+
+    '</div>'+
+    '<div class="auth-form"><div class="auth-card">'+
+      '<div class="rule"></div>'+
+      '<h1>Entrar</h1>'+
+      '<p class="hint">Use o e-mail cadastrado pela empresa.</p>'+
+      (erro?'<div class="erro">'+esc(erro)+'</div>':'')+
+      '<label for="lgEmail">E-mail</label>'+
+      '<div class="campo"><input type="email" id="lgEmail" autocomplete="username" placeholder="nome@adamiwealth.com.br"></div>'+
+      '<label for="lgSenha">Senha</label>'+
+      '<div class="campo"><input type="password" id="lgSenha" autocomplete="current-password" placeholder="••••••••">'+
+        '<button type="button" class="olho" id="lgOlho" onclick="verSenha()" aria-label="Mostrar senha" title="Mostrar senha">'+iconeOlho(false)+'</button></div>'+
+      '<button class="entrar" id="lgBtn" onclick="fazerLogin()">Entrar</button>'+
+      '<p class="pe">Esqueceu a senha ou precisa de acesso? Fale com o administrador do sistema.</p>'+
+    '</div></div>'+
+  '</div>';
 }
 function fazerLogin(){
   var e=document.getElementById("lgEmail").value.trim();
