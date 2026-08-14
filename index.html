@@ -66,6 +66,35 @@ input,select,textarea{font-family:inherit;font-size:13px}
 .login .pe{text-align:center;font-size:11.5px;color:var(--muted);margin-top:18px;line-height:1.6}
 .rail-user{font-size:11.5px;color:#8AA8C6;margin-top:10px;overflow:hidden;text-overflow:ellipsis}
 
+/* ---------- portal ---------- */
+.hub{min-height:100vh;background:var(--navy);color:#fff;padding:0}
+.hub-top{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:26px 40px;border-bottom:1px solid #24405F;flex-wrap:wrap}
+.hub-top img{height:30px;width:auto}
+.hub-top .sai{background:transparent;border:1px solid #35516F;color:#C3D2E2;border-radius:3px;padding:8px 16px}
+.hub-top .sai:hover{background:#1B3A5F;color:#fff}
+.hub-body{max-width:1040px;margin:0 auto;padding:64px 40px 80px}
+.hub-hi{font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#8AA8C6}
+.hub-body h1{font-family:var(--display);font-size:38px;font-weight:500;margin:14px 0 8px;line-height:1.2}
+.hub-body .sub{color:#A9C0D8;font-size:14.5px;max-width:44em}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:18px;margin-top:44px}
+.app{background:#17324F;border:1px solid #27455F;border-radius:5px;padding:26px 24px 22px;
+  text-align:left;color:#fff;display:flex;flex-direction:column;gap:9px;min-height:172px;
+  transition:transform .12s ease,border-color .12s ease,background .12s ease}
+.app.on{cursor:pointer}
+.app.on:hover{background:#1C3C5D;border-color:var(--gold);transform:translateY(-2px)}
+.app .ic{width:34px;height:34px;color:var(--gold-2);margin-bottom:4px}
+.app .ic svg{width:100%;height:100%;display:block}
+.app b{font-family:var(--display);font-size:19px;font-weight:600;letter-spacing:.01em}
+.app span{font-size:12.8px;color:#A9C0D8;line-height:1.55}
+.app .tag{margin-top:auto;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+.app.off{opacity:.5;cursor:default}
+.app.off .tag{color:#7C93AB}
+.hub-foot{max-width:1040px;margin:0 auto;padding:0 40px 50px;color:#6E88A4;font-size:11.5px}
+.voltar{background:transparent;border:1px solid var(--line);color:var(--ink-2);border-radius:3px;padding:9px 14px}
+.voltar:hover{background:#F6F8FA}
+@media(max-width:640px){ .hub-body{padding:40px 22px 60px} .hub-body h1{font-size:29px} .hub-top{padding:20px 22px} }
+
 /* ---------- main ---------- */
 .main{margin-left:var(--rail);padding:26px 30px 70px}
 .topbar{display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap}
@@ -266,7 +295,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 10</div>
+    <div class="rail-user" style="opacity:.6">versão 11</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -274,6 +303,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 
 <main class="main">
   <div class="topbar">
+    <button class="voltar" onclick="irParaHub()" title="Voltar ao início">&#8592; Início</button>
     <div class="tabs">
       <button id="tabP" class="on" onclick="setTab('preencher')">Preencher</button>
       <button id="tabC" onclick="setTab('carta')">Carta do mês</button>
@@ -327,7 +357,8 @@ function sair(){
   var tk=SESSAO&&SESSAO.access_token;
   limparSessao();
   if(tk) fetch(SB_URL+"/auth/v1/logout",{method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+tk}}).catch(function(){});
-  db={clientes:[],dados:{}}; S.cliente=null; S.rasc=null;
+  db={clientes:[],dados:{},cartas:{}}; S.cliente=null; S.rasc=null; S.app=null;
+  try{ localStorage.removeItem("aw_app"); }catch(e){}
   render();
 }
 function api(path,opts,jaTentou){
@@ -361,7 +392,7 @@ var LOGO_AZUL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVgAAABPCAYAAACuyN3
 var ESTRAT=[["pos","Pós-fixado"],["infl","Inflação"],["pre","Pré-fixado"],["ma","Retorno Absoluto (MM)"],["rv","Renda Variável"],["intl","Internacional"],["alt","Alternativo"]];
 var IND=[["cdi","CDI"],["ipca","IPCA"],["ibov","Ibovespa"],["sp500","S&P 500"],["poup","Poupança"],["dolar","Dólar"],["ouro","Ouro"],["ifix","IFIX"]];
 var db={clientes:[],dados:{},cartas:{}};
-var S={cliente:null,mes:new Date().getMonth()+1,ano:new Date().getFullYear(),tab:"preencher",rasc:null,erro:null};
+var S={cliente:null,mes:new Date().getMonth()+1,ano:new Date().getFullYear(),tab:"preencher",rasc:null,erro:null,app:null};
 
 function chave(id,mes,ano){ return id+"|"+ano+"-"+String(mes).padStart(2,"0"); }
 function chaveCarta(mes,ano){ return ano+"-"+String(mes).padStart(2,"0"); }
@@ -626,8 +657,39 @@ function registrar(acao,alvo,detalhe){
     .catch(function(){});
 }
 function carregarAuditoria(){
-  return api("auditoria?select=quando,usuario,acao,alvo,detalhe&order=quando.desc&limit=200")
+  return api("auditoria?select=id,quando,usuario,acao,alvo,detalhe&order=quando.desc&limit=200")
     .catch(function(){ return null; });
+}
+function apagarRegistro(id,rotulo){
+  if(!confirm("Apagar este registro do histórico?\n\n"+rotulo+"\n\nO registro some para sempre e não há como recuperar.")) return;
+  status("wait","Apagando…");
+  api("auditoria?id=eq."+id,{method:"DELETE"}).then(function(){
+    HIST.log=HIST.log.filter(function(l){return l.id!==id;});
+    status("ok","Sincronizado"); render();
+  }).catch(function(e){
+    if(String(e.message).indexOf("permission")>=0||String(e.message).indexOf("42501")>=0){
+      falha(new Error("O banco ainda não permite apagar registros. Rode o arquivo supabase-apagar-historico.sql no SQL Editor do Supabase."));
+    } else falha(e);
+  });
+}
+function limparHistorico(){
+  var total=(HIST.log||[]).length;
+  if(!confirm("Apagar TODO o histórico de alterações?\n\nSão "+total+" registro(s). Esta ação não pode ser desfeita.")) return;
+  var conf=prompt("Para confirmar, digite APAGAR em maiúsculas:");
+  if(conf!=="APAGAR"){ alert("Cancelado. Nada foi apagado."); return; }
+  status("wait","Apagando…");
+  api("auditoria?id=gt.0",{method:"DELETE"}).then(function(){
+    return registrar("limpou o histórico","",total+" registro(s) apagado(s)");
+  }).then(function(){
+    return carregarAuditoria();
+  }).then(function(r){
+    HIST.log=r===null?false:r;
+    status("ok","Sincronizado"); render();
+  }).catch(function(e){
+    if(String(e.message).indexOf("permission")>=0||String(e.message).indexOf("42501")>=0){
+      falha(new Error("O banco ainda não permite apagar registros. Rode o arquivo supabase-apagar-historico.sql no SQL Editor do Supabase."));
+    } else falha(e);
+  });
 }
 function quandoBR(iso){
   if(!iso) return "—";
@@ -822,11 +884,14 @@ function viewHistorico(){
   }else if(!HIST.log.length){
     h+='<p style="color:var(--muted);font-size:13px">Nenhuma alteração registrada ainda.</p>';
   }else{
-    h+='<div style="overflow-x:auto"><table class="form"><thead><tr><th>Quando</th><th>Quem</th><th>Ação</th><th>Cliente</th><th>Detalhe</th></tr></thead><tbody>'+
+    h+='<div style="overflow-x:auto"><table class="form"><thead><tr><th>Quando</th><th>Quem</th><th>Ação</th><th>Cliente</th><th>Detalhe</th><th></th></tr></thead><tbody>'+
        HIST.log.map(function(l){
+         var rot=quandoBR(l.quando)+" · "+l.acao+(l.alvo?" · "+l.alvo:"");
          return '<tr><td style="white-space:nowrap">'+quandoBR(l.quando)+'</td><td>'+esc((l.usuario||"").split("@")[0])+'</td>'+
-         '<td>'+esc(l.acao)+'</td><td>'+esc(l.alvo||"—")+'</td><td style="color:var(--muted)">'+esc(l.detalhe||"")+'</td></tr>';
-       }).join("")+'</tbody></table></div>';
+         '<td>'+esc(l.acao)+'</td><td>'+esc(l.alvo||"—")+'</td><td style="color:var(--muted)">'+esc(l.detalhe||"")+'</td>'+
+         '<td style="text-align:right"><button class="xbtn" title="Apagar registro" onclick="apagarRegistro('+l.id+',\''+esc(rot).replace(/'/g,"")+'\')">&times;</button></td></tr>';
+       }).join("")+'</tbody></table></div>'+
+       '<div style="margin-top:14px"><button class="btn" onclick="limparHistorico()">Apagar todo o histórico</button></div>';
   }
   h+='</div>';
 
@@ -1122,6 +1187,50 @@ function imprimir(){
   }
   window.print();
 }
+/* ---------- portal de sistemas ---------- */
+var APPS=[
+  {id:"carteiras",nome:"Carteiras",desc:"Lançamento mensal das carteiras e geração do relatório consolidado em PDF.",tag:"Disponível",ativo:true,
+   ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>'},
+  {id:"crm",nome:"CRM",desc:"Cadastro de clientes, histórico de contatos e acompanhamento de oportunidades.",tag:"Em breve",ativo:false,
+   ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M17 8.5h5M17 12h5M17 15.5h3"/></svg>'},
+  {id:"comissoes",nome:"Comissões",desc:"Apuração de receitas e repasses por assessor.",tag:"Em breve",ativo:false,
+   ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 19V9M10 19V4M16 19v-7M22 19H2"/></svg>'}
+];
+function irParaApp(id){
+  var a=APPS.filter(function(x){return x.id===id;})[0];
+  if(!a||!a.ativo) return;
+  S.app=id; S.tab="preencher";
+  try{ localStorage.setItem("aw_app",id); }catch(e){}
+  render();
+}
+function irParaHub(){
+  S.app=null;
+  try{ localStorage.removeItem("aw_app"); }catch(e){}
+  render();
+}
+function viewHub(){
+  var nome=((SESSAO&&SESSAO.email)||"").split("@")[0];
+  nome=nome?nome.charAt(0).toUpperCase()+nome.slice(1):"";
+  var hora=new Date().getHours();
+  var saud=hora<12?"Bom dia":(hora<18?"Boa tarde":"Boa noite");
+  return '<div class="hub">'+
+    '<div class="hub-top"><img src="'+LOGO_BRANCO+'" alt="Adami Wealth">'+
+    '<button class="sai" onclick="sair()">Sair</button></div>'+
+    '<div class="hub-body">'+
+    '<div class="hub-hi">'+saud+(nome?", "+esc(nome):"")+'</div>'+
+    '<h1>Sistemas Adami Wealth</h1>'+
+    '<p class="sub">Escolha abaixo a ferramenta que deseja abrir.</p>'+
+    '<div class="hub-grid">'+
+    APPS.map(function(a){
+      return '<div class="app '+(a.ativo?"on":"off")+'"'+(a.ativo?' onclick="irParaApp(\''+a.id+'\')"':'')+'>'+
+        '<div class="ic">'+a.ic+'</div>'+
+        '<b>'+esc(a.nome)+'</b><span>'+esc(a.desc)+'</span>'+
+        '<div class="tag">'+esc(a.tag)+'</div></div>';
+    }).join("")+
+    '</div></div>'+
+    '<div class="hub-foot">Acesso restrito aos colaboradores. Todas as ações ficam registradas.</div>'+
+    '</div>';
+}
 function viewLogin(erro){
   return '<div class="login-wrap"><div class="login">'+
     '<div class="brand"><img src="'+LOGO_AZUL+'" alt="Adami Wealth"></div>'+
@@ -1130,7 +1239,7 @@ function viewLogin(erro){
     '<label>Senha</label><div class="campo"><input type="password" id="lgSenha" autocomplete="current-password" placeholder="••••••••">'+
     '<button type="button" class="olho" id="lgOlho" onclick="verSenha()" aria-label="Mostrar senha" title="Mostrar senha">'+iconeOlho(false)+'</button></div>'+
     '<button id="lgBtn" onclick="fazerLogin()">Entrar</button>'+
-    '<div class="pe">Acesso restrito.<br>versão 10</div>'+
+    '<div class="pe">Acesso restrito.<br>versão 11</div>'+
     '</div></div>';
 }
 function iconeOlho(aberto){
@@ -1158,7 +1267,7 @@ function fazerLogin(){
   entrar(e,p).then(function(){
     return carregar().then(function(){
       if(db.clientes.length) S.cliente=db.clientes[0].id;
-      S.tab="preencher"; montarRascunho(); render();
+      S.app=null; S.tab="preencher"; montarRascunho(); render();
       registrar("entrou","","");
       backupAutomatico();
     });
@@ -1181,6 +1290,14 @@ function render(){
         if(el) el.addEventListener("keydown",function(ev){ if(ev.key==="Enter") fazerLogin(); });
       });
     },30);
+    return;
+  }
+  if(!S.app){
+    document.querySelector(".rail").style.display="none";
+    document.querySelector(".topbar").style.display="none";
+    document.querySelector(".main").style.margin="0";
+    document.querySelector(".main").style.padding="0";
+    document.getElementById("view").innerHTML=viewHub();
     return;
   }
   document.querySelector(".main").style.margin="";
