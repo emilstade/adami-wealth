@@ -295,7 +295,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 13</div>
+    <div class="rail-user" style="opacity:.6">versão 14</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -1188,6 +1188,7 @@ function imprimir(){
   window.print();
 }
 /* ---------- portal de sistemas ---------- */
+var VERSAO="versão 14";
 var APPS=[
   {id:"carteiras",nome:"Carteiras",desc:"Lançamento mensal das carteiras e geração do relatório consolidado em PDF.",tag:"Disponível",ativo:true,
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>'},
@@ -1216,8 +1217,8 @@ function irParaHub(){
   render();
 }
 function viewHub(){
-  var nome=((SESSAO&&SESSAO.email)||"").split("@")[0];
-  nome=nome?nome.charAt(0).toUpperCase()+nome.slice(1):"";
+  var nome=((SESSAO&&SESSAO.email)||"").split("@")[0].split(/[._-]/)[0];
+  nome=nome?nome.charAt(0).toUpperCase()+nome.slice(1).toLowerCase():"";
   var hora=new Date().getHours();
   var saud=hora<12?"Bom dia":(hora<18?"Boa tarde":"Boa noite");
   return '<div class="hub">'+
@@ -1235,7 +1236,7 @@ function viewHub(){
         '<div class="tag">'+esc(a.tag)+'</div></div>';
     }).join("")+
     '</div></div>'+
-    '<div class="hub-foot">Acesso restrito aos colaboradores. Todas as ações ficam registradas.</div>'+
+    '<div class="hub-foot">Acesso restrito aos colaboradores. Todas as ações ficam registradas. &nbsp;·&nbsp; '+VERSAO+'</div>'+
     '</div>';
 }
 function viewLogin(erro){
@@ -1246,7 +1247,7 @@ function viewLogin(erro){
     '<label>Senha</label><div class="campo"><input type="password" id="lgSenha" autocomplete="current-password" placeholder="••••••••">'+
     '<button type="button" class="olho" id="lgOlho" onclick="verSenha()" aria-label="Mostrar senha" title="Mostrar senha">'+iconeOlho(false)+'</button></div>'+
     '<button id="lgBtn" onclick="fazerLogin()">Entrar</button>'+
-    '<div class="pe">Acesso restrito.<br>versão 13</div>'+
+    '<div class="pe">Acesso restrito.<br>versão 14</div>'+
     '</div></div>';
 }
 function iconeOlho(aberto){
