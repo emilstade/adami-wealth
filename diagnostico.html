@@ -178,19 +178,34 @@
     .trigger-card, .section-block { break-inside: avoid; border: 1px solid #ccc; }
 
     .print-cover {
-      display: flex; flex-direction: column; justify-content: flex-end;
-      background: var(--navy); color: white; height: 100vh; padding: 60px;
-      page-break-after: always; margin: 0;
+      display: flex; flex-direction: column; align-items: flex-start;
+      background: var(--navy) !important; color: #fff;
+      height: 297mm; width: auto; margin: 0; padding: 46mm 22mm 20mm;
+      page-break-after: always; break-after: page;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
-    .print-cover .brand { font-family: var(--serif); font-weight: bold; font-size: 22px; color: var(--gold); letter-spacing: 1px; margin-bottom: 60px; }
-    .print-cover h1 { font-family: var(--serif); font-size: 40px; margin: 0 0 6px; }
-    .print-cover h1 .accent { color: var(--gold); }
-    .print-cover .sub { font-size: 14px; color: #C7CEDC; margin-top: 16px; }
-    .print-cover .rule { border: none; border-top: 1px solid rgba(201,162,75,0.5); margin: 24px 0; }
+    .print-cover .eyebrow {
+      font-size: 9.5pt; letter-spacing: .34em; text-transform: uppercase; color: #93AECB;
+    }
+    .print-cover h1 {
+      font-family: var(--serif); font-size: 30pt; font-weight: 600; line-height: 1.18;
+      color: #fff; margin: 16px 0 0; max-width: 9.5em;
+    }
+    .print-cover .cli { font-size: 15px; color: #C3D2E2; margin-top: 36px; }
+    .print-cover .rule { border: none; border-top: 1px solid #6C86A3; width: 76px; margin: 18px 0 22px; }
+    .print-cover .ref { font-size: 13px; color: #C3D2E2; }
+    .print-cover .mark { margin-top: auto; align-self: center; text-align: center; }
+    .print-cover .mark img { width: 210px; max-width: 56%; height: auto; display: block; margin: 0 auto; }
+    .print-cover .foot {
+      align-self: center; text-align: center; margin-top: 54px;
+      font-size: 9.5pt; letter-spacing: .34em; text-transform: uppercase; color: #93AECB;
+    }
 
     .report-header { page-break-before: auto; }
     .page-break { page-break-before: always; }
     .disclaimer-page { page-break-before: always; padding-top: 40px; }
+    @page { size: A4; margin: 0; }
+    .report-pane { padding: 15mm 14mm 12mm; }
   }
 </style>
 <script>
@@ -782,11 +797,13 @@ function render() {
 
   // ---- print cover ----
   html += `<div class="print-cover">
-    <img src="${LOGO_WHITE}" alt="Adami Wealth" style="width:300px;max-width:60%;height:auto;margin-bottom:60px;">
-    <h1>Diagnóstico<br><span class="accent">Patrimonial</span></h1>
+    <div class="eyebrow">Relatório</div>
+    <h1>Diagnóstico Patrimonial</h1>
+    <div class="cli">${nome ? escapeHtml(nome) : 'Cliente'}</div>
     <hr class="rule">
-    <div class="sub">PREPARADO PARA<br><strong style="color:white;font-size:16px;">${nome ? escapeHtml(nome) : 'Cliente'}</strong></div>
-    <div class="sub">${dataHoje}</div>
+    <div class="ref">${dataHoje}</div>
+    <div class="mark"><img src="${LOGO_WHITE}" alt="Adami Wealth"></div>
+    <div class="foot">Planejamento</div>
   </div>`;
 
   html += `<div class="report-header">
