@@ -188,6 +188,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .cover .cli{font-size:15px;color:#C3D2E2;margin-top:36px}
 .cover .rule{width:76px;height:1px;background:#6C86A3;margin:18px 0 22px}
 .cover .ref{font-size:13px;color:#C3D2E2}
+.cover .ref-base{font-family:var(--mono);font-size:11px;color:#93AECB;margin-top:7px;letter-spacing:.04em}
 .cover .mark{margin-top:auto;text-align:center}
 .cover .mark img{width:210px;max-width:56%;height:auto;display:block;margin:0 auto}
 .cover .foot{text-align:center;font-size:9.5px;letter-spacing:.34em;color:#93AECB;margin-top:54px}
@@ -326,7 +327,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 17</div>
+    <div class="rail-user" style="opacity:.6">versão 18</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -337,7 +338,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button class="voltar" onclick="irParaHub()" title="Voltar ao início">&#8592; Início</button>
     <div class="tabs">
       <button id="tabP" class="on" onclick="setTab('preencher')">Preencher</button>
-      <button id="tabC" onclick="setTab('carta')">Carta do mês</button>
+      <button id="tabC" onclick="setTab('carta')">Comentários do mês</button>
       <button id="tabR" onclick="setTab('relatorio')">Relatório</button>
       <button id="tabH" onclick="setTab('historico')">Histórico</button>
     </div>
@@ -415,7 +416,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 17";
+var VERSAO="versão 18";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -437,6 +438,10 @@ function brlC(v){ var a=Math.abs(v||0); if(a>=1e6) return "R$ "+(v/1e6).toLocale
 function pct(v,d){ d=d==null?2:d; return (v||0).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d})+"%"; }
 function sinal(v){ return v>0?"pos":(v<0?"neg":""); }
 function ref(m,a){ return MESES_C[m-1]+"/"+String(a).slice(2); }
+function dataBase(m,a){
+  var ultimo=new Date(a,m,0).getDate();
+  return String(ultimo).padStart(2,"0")+"/"+String(m).padStart(2,"0")+"/"+a;
+}
 function moedaParse(str){
   var t=String(str==null?"":str).replace(/\./g,"").replace(",",".").replace(/[^0-9.\-]/g,"");
   var v=parseFloat(t); return isNaN(v)?0:v;
@@ -647,14 +652,14 @@ function salvarCarta(){
     body:{mes:S.mes,ano:S.ano,conteudo:conteudo,atualizado_em:new Date().toISOString()}})
     .then(function(){
       db.cartas[chaveCarta(S.mes,S.ano)]=conteudo;
-      registrar("salvou carta","",MESES[S.mes-1]+"/"+S.ano);
+      registrar("salvou comentários","",MESES[S.mes-1]+"/"+S.ano);
       status("ok","Sincronizado");
-      if(b){b.disabled=false;b.textContent="Salvar carta";}
+      if(b){b.disabled=false;b.textContent="Salvar comentários";}
       var av=document.getElementById("avisoCarta");
-      if(av){ av.textContent="Carta salva. Todos os relatórios de "+MESES[S.mes-1]+" de "+S.ano+" já usam este texto."; }
+      if(av){ av.textContent="Comentários salvos. Todos os relatórios de "+MESES[S.mes-1]+" de "+S.ano+" já usam este texto."; }
     })
     .catch(function(e){
-      if(b){b.disabled=false;b.textContent="Salvar carta";}
+      if(b){b.disabled=false;b.textContent="Salvar comentários";}
       if(String(e.message).indexOf("cartas")>=0||String(e.message).indexOf("42P01")>=0){
         falha(new Error("A tabela de cartas ainda não existe no banco. Rode o arquivo supabase-carta-mensal.sql no SQL Editor do Supabase."));
       } else falha(e);
@@ -877,8 +882,8 @@ function viewCarta(){
   var atual=cartaDoMes(S.mes,S.ano);
   var h='';
   if(S.erro) h+='<div class="note err"><b>Sem conexão com o servidor.</b> '+esc(S.erro)+'</div>';
-  h+='<div class="card"><div class="sec-title">Carta do gestor — '+MESES[S.mes-1]+' de '+S.ano+'</div>'+
-     '<div class="sec-sub" id="avisoCarta">Escrita uma única vez por mês. Todos os relatórios deste mês, de todos os clientes, usam este texto automaticamente. Para trocar o mês, use o seletor no menu lateral.</div>'+
+  h+='<div class="card"><div class="sec-title">Comentários do mês — '+MESES[S.mes-1]+' de '+S.ano+'</div>'+
+     '<div class="sec-sub" id="avisoCarta">Escritos uma única vez por mês. Todos os relatórios deste mês, de todos os clientes, usam este texto automaticamente. Para trocar o mês, use o seletor no menu lateral.</div>'+
      '<div class="tb">'+
      '<button onclick="cmd(\'bold\')" title="Negrito"><b>N</b></button>'+
      '<button onclick="cmd(\'italic\')" title="Itálico"><i>I</i></button>'+
@@ -900,8 +905,8 @@ function viewCarta(){
      '</div>'+
      '<div class="ed" id="edCarta" contenteditable="true" data-ph="Caros clientes e amigos, ...">'+atual+'</div>'+
      '<div style="display:flex;gap:12px;align-items:center;margin-top:16px;flex-wrap:wrap">'+
-     '<button class="btn pri" id="btnCarta" onclick="salvarCarta()">Salvar carta</button>'+
-     '<span class="salvo">'+(atual?"Já existe carta salva para este mês.":"Nenhuma carta salva para este mês ainda.")+'</span>'+
+     '<button class="btn pri" id="btnCarta" onclick="salvarCarta()">Salvar comentários</button>'+
+     '<span class="salvo">'+(atual?"Já existem comentários salvos para este mês.":"Nenhum comentário salvo para este mês ainda.")+'</span>'+
      '</div></div>';
   return h;
 }
@@ -1103,21 +1108,22 @@ function viewRelatorio(){
       '<div class="cli">'+esc(c.nome)+'</div>'+
       '<div class="rule"></div>'+
       '<div class="ref">'+MESES[S.mes-1]+' de '+S.ano+'</div>'+
+      '<div class="ref-base">Data-base '+dataBase(S.mes,S.ano)+'</div>'+
       '<div class="mark"><img src="'+LOGO_BRANCO+'" alt="Adami Wealth"></div>'+
       '<div class="foot">Performance</div>', true);
 
   /* --- carta do gestor --- */
   if(carta){
-    pag('<div class="dash"><i>—</i><h2>Carta do gestor</h2></div>'+
-        '<div class="carta"><h3>Carta Mensal de Investimentos — '+MESES[S.mes-1]+' de '+S.ano+'</h3>'+
+    pag('<div class="dash"><i>—</i><h2>Comentários do mês</h2></div>'+
+        '<div class="carta"><h3>Comentários do mês — '+MESES[S.mes-1]+' de '+S.ano+'</h3>'+
         carta+'</div>');
   }
 
   /* --- performance --- */
   var p1='<div class="rep-eyebrow">Relatório de performance</div>'+
      '<div class="rep-name">'+esc(c.nome)+'</div>'+
-     '<div class="rep-ref">'+MESES[S.mes-1]+' de '+S.ano+'</div>'+
-     '<div class="pat"><div class="l">Patrimônio</div><div class="v">'+brl(t.pl)+'</div><div class="s">saldo de '+ref(S.mes,S.ano)+'</div></div>'+
+     '<div class="rep-ref">'+MESES[S.mes-1]+' de '+S.ano+' &nbsp;·&nbsp; data-base '+dataBase(S.mes,S.ano)+'</div>'+
+     '<div class="pat"><div class="l">Patrimônio</div><div class="v">'+brl(t.pl)+'</div><div class="s">posição em '+dataBase(S.mes,S.ano)+'</div></div>'+
      '<div class="kgrid">'+
      '<div class="kbox"><div class="l">Rentabilidade no mês</div><div class="v '+sinal(t.rendPct)+'">'+pct(t.rendPct)+'</div><div class="s">'+(doCdi!=null?pct(doCdi,0)+" do CDI":"—")+'</div></div>'+
      '<div class="kbox"><div class="l">Resultado no mês</div><div class="v '+sinal(t.rendRs)+'">'+brl(t.rendRs)+'</div><div class="s">'+ref(S.mes,S.ano)+'</div></div>'+
@@ -1137,7 +1143,7 @@ function viewRelatorio(){
        '</tbody></table></div>';
   }
 
-  p1+=shead(nx(),"Distribuição por instituição","saldos de "+ref(S.mes,S.ano))+
+  p1+=shead(nx(),"Distribuição por instituição","posição em "+dataBase(S.mes,S.ano))+
      '<div class="panel" style="text-align:center">'+pizza(inst)+'<div class="dn-total">total <b>'+brl(t.pl)+'</b></div>'+
      '<div class="dn-leg">'+inst.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+'</div>'+
      '<div class="dn-rows">'+inst.map(function(x){return '<div><span>'+esc(x.nome)+'</span><b>'+brl(x.valor)+'</b></div>';}).join("")+'</div>'+
