@@ -327,7 +327,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 18</div>
+    <div class="rail-user" style="opacity:.6">versão 19</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -416,7 +416,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 18";
+var VERSAO="versão 19";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -1231,7 +1231,7 @@ var APPS=[
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 7h18v13H3z"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></svg>'},
   {id:"planos",nome:"Gerador de Planos Patrimoniais",desc:"Planos patrimoniais completos para clientes private.",tag:"Em breve",ativo:false,
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9.5 12h6M9.5 15.5h6M9.5 8.5h2.5"/></svg>'},
-  {id:"diagnostico",nome:"Diagnóstico Patrimonial",desc:"Composição do patrimônio, projeções, estruturação, alavancagem e proteção.",tag:"Disponível",ativo:true,url:"diagnostico.html",
+  {id:"diagnostico",nome:"Plano de Liberdade Financeira",desc:"Projeção de patrimônio e renda, estruturação, alavancagem e proteção.",tag:"Disponível",ativo:true,url:"diagnostico.html",
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3v18h18"/><path d="M7 15l4-5 3.5 3L21 6"/></svg>'},
   {id:"imobiliario",nome:"Relatório Imobiliário",desc:"Imóveis, projetos, histórico de retornos e apresentação para clientes private.",tag:"Disponível",ativo:true,url:"imobiliario.html",
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>'}
@@ -1299,7 +1299,7 @@ function viewLogin(erro){
       '<img src="'+LOGO_BRANCO+'" alt="Adami Wealth">'+
       '<div class="auth-say"><div class="rule"></div>'+
         '<h2>Apoiando famílias, planejando o futuro</h2>'+
-        '<p>Ambiente administrativo da Adami Wealth. Carteiras, diagnóstico patrimonial e relatórios em um só lugar.</p>'+
+        '<p>Ambiente administrativo da Adami Wealth. Carteiras, planejamento e relatórios em um só lugar.</p>'+
       '</div>'+
       '<div class="auth-meta"><span>Acesso restrito</span><span>'+VERSAO+'</span></div>'+
       '<div class="auth-copy">&copy; '+new Date().getFullYear()+' Adami Wealth. Todos os direitos reservados.</div>'+

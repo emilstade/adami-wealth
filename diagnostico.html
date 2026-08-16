@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Diagnóstico Patrimonial — Adami Wealth</title>
+<title>Plano de Liberdade Financeira — Adami Wealth</title>
 <style>
   :root {
     --navy: #1B2A4A;
@@ -231,7 +231,7 @@
 <header class="top">
   <div>
     <img id="topLogo" alt="Adami Wealth" style="height:24px;width:auto;display:block;margin-bottom:5px;">
-    <div class="subtitle">Reunião de Planejamento Patrimonial</div>
+    <div class="subtitle">Plano de Liberdade Financeira</div>
   </div>
   <div class="subtitle">Ferramenta interna · preencha ao vivo ou antes da reunião</div>
 </header>
@@ -741,7 +741,7 @@ function render() {
   const pane = document.getElementById('reportPane');
 
   if (!hasBasics) {
-    pane.innerHTML = `<div class="empty-state"><h3>Diagnóstico Patrimonial</h3><p>Preencha os dados do cliente ao lado — o diagnóstico aparece aqui em tempo real.</p></div>`;
+    pane.innerHTML = `<div class="empty-state"><h3>Plano de Liberdade Financeira</h3><p>Preencha os dados do cliente ao lado — o plano aparece aqui em tempo real.</p></div>`;
     return;
   }
 
@@ -800,18 +800,18 @@ function render() {
   // ---- print cover ----
   html += `<div class="print-cover">
     <div class="eyebrow">Relatório</div>
-    <h1>Diagnóstico Patrimonial</h1>
+    <h1>Plano de Liberdade Financeira</h1>
     <div class="cli">${nome ? escapeHtml(nome) : 'Cliente'}</div>
     <hr class="rule">
     <div class="ref">${dataHoje}</div>
     <div class="mark"><img src="${LOGO_WHITE}" alt="Adami Wealth"></div>
-    <div class="foot">Planejamento</div>
+    <div class="foot">Liberdade Financeira</div>
   </div>`;
 
   html += `<div class="report-header">
     <div>
       <img src="${LOGO_NAVY}" alt="Adami Wealth" style="height:26px;width:auto;display:block;margin-bottom:10px;">
-      <h1>Diagnóstico Patrimonial ${nome ? '— <span class="client-name">' + escapeHtml(nome) + '</span>' : ''}</h1>
+      <h1>Plano de Liberdade Financeira ${nome ? '— <span class="client-name">' + escapeHtml(nome) + '</span>' : ''}</h1>
       <div class="meta">${profissao ? escapeHtml(profissao) + ' · ' : ''}${idade ? idade + ' anos · ' : ''}${uf ? uf : ''}</div>
     </div>
     <div class="date">${dataHoje}</div>
@@ -970,7 +970,7 @@ function render() {
   }
   html += `</div></div>`;
 
-  html += `<div class="disclaimer disclaimer-page">Ferramenta de apoio à reunião de planejamento — estimativas ilustrativas para orientar a conversa com o cliente, não constituem aconselhamento tributário, atuarial ou de investimento. A projeção patrimonial assume rentabilidade real constante e não elimina o risco de mercado, de crédito ou de liquidez. Validar percentuais de ITCMD, custas e cobertura recomendada com as áreas jurídica, contábil e de produtos antes de formalizar qualquer proposta. Diagnóstico Patrimonial · Adami Wealth.</div>`;
+  html += `<div class="disclaimer disclaimer-page">Ferramenta de apoio à reunião de planejamento — estimativas ilustrativas para orientar a conversa com o cliente, não constituem aconselhamento tributário, atuarial ou de investimento. A projeção patrimonial assume rentabilidade real constante e não elimina o risco de mercado, de crédito ou de liquidez. Validar percentuais de ITCMD, custas e cobertura recomendada com as áreas jurídica, contábil e de produtos antes de formalizar qualquer proposta. Plano de Liberdade Financeira · Adami Wealth.</div>`;
 
   pane.innerHTML = html;
 }
