@@ -2,13 +2,13 @@
 --  Adami Wealth - acesso por assessor
 --  Rode este arquivo INTEIRO no SQL Editor do Supabase, de uma vez.
 --
---  ANTES DE RODAR: troque o e-mail na linha abaixo pelo SEU e-mail
---  de login. Ele sera o administrador (enxerga todos os clientes)
---  e recebera a posse de todos os clientes que ja existem.
+--  Administrador: emil.gualter.stade@gmail.com
+--  Ele enxerga todos os clientes e recebe a posse de todos os
+--  clientes que ja existem. Nao precisa editar nada neste arquivo.
 -- ============================================================
 
 create temporary table _cfg as
-select 'emil@adamiwealth.com.br'::text as email_admin;   -- <<<<<< TROQUE AQUI
+select 'emil.gualter.stade@gmail.com'::text as email_admin;   -- e-mail do administrador
 
 
 -- ------------------------------------------------------------
