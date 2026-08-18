@@ -34,6 +34,8 @@ input,select,textarea{font-family:inherit;font-size:13px}
 .rail select{width:100%;background:#16283C;color:#EAF1EF;border:1px solid #27394F;border-radius:3px;padding:8px 9px}
 .cli-list{margin:0;padding:0;list-style:none}
 .cli-list li{padding:9px 10px;border-radius:3px;cursor:pointer;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.cli-list li.grp{padding:12px 4px 5px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#7A8DA3;cursor:default;display:block}
+.cli-list li.grp:hover{background:transparent}
 .cli-list li:hover{background:#1B2E44}
 .cli-list li.on{background:var(--navy);color:#fff}
 .cli-list li b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -337,7 +339,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 1.9.7</div>
+    <div class="rail-user" style="opacity:.6">versão 2.0</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -364,9 +366,18 @@ var SB_URL="https://mqhqbqiyrtlhhzjfuqxs.supabase.co";
 var SB_KEY="sb_publishable_7CLSR1wwXFAD2y-it_bo9A_GtjAUnm3";
 var SESSAO=null;
 try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
+var PERFIS={}, EU={admin:false,nome:"",id:null};
 
+function idDoToken(tk){
+  try{
+    var b=tk.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
+    return JSON.parse(decodeURIComponent(escape(atob(b+"===".slice((b.length+3)%4))))).sub||null;
+  }catch(e){ return null; }
+}
 function guardarSessao(d){
-  SESSAO={access_token:d.access_token,refresh_token:d.refresh_token,email:(d.user&&d.user.email)||""};
+  SESSAO={access_token:d.access_token,refresh_token:d.refresh_token,
+          email:(d.user&&d.user.email)||"",
+          id:(d.user&&d.user.id)||idDoToken(d.access_token||"")};
   try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){}
 }
 function limparSessao(){
@@ -426,7 +437,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 1.9.7";
+var VERSAO="versão 2.0";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -496,16 +507,33 @@ function dataBR(d){
 }
 function reg(id,mes,ano){ return db.dados[chave(id,mes,ano)]||null; }
 function anterior(mes,ano){ return mes===1?{mes:12,ano:ano-1}:{mes:mes-1,ano:ano}; }
+function nomeAssessor(uid){
+  if(!uid) return "Sem assessor";
+  var p=PERFIS[uid];
+  return (p&&p.nome)?p.nome:"Assessor";
+}
+function assessoresComClientes(){
+  var m={};
+  db.clientes.forEach(function(c){ var k=c.assessor_id||""; if(!m[k]) m[k]=[]; m[k].push(c); });
+  return Object.keys(m).map(function(k){ return {id:k||null,nome:nomeAssessor(k),clientes:m[k]}; })
+    .sort(function(a,b){ return a.nome.localeCompare(b.nome); });
+}
 function cli(){ var id=S.cliente; return db.clientes.filter(function(c){return c.id===id;})[0]||null; }
 
 /* ============ carga ============ */
 function carregar(){
   status("wait","Carregando…");
   return Promise.all([
-    api("clientes?select=id,nome&order=nome.asc"),
+    api("clientes?select=id,nome,assessor_id&order=nome.asc").catch(function(){ return api("clientes?select=id,nome&order=nome.asc"); }),
     api("lancamentos?select=cliente_id,mes,ano,contas,indicadores"),
-    api("cartas?select=mes,ano,conteudo").catch(function(){ return []; })
+    api("cartas?select=mes,ano,conteudo").catch(function(){ return []; }),
+    api("perfis?select=user_id,nome,admin").catch(function(){ return []; })
   ]).then(function(r){
+    if(SESSAO&&!SESSAO.id){ SESSAO.id=idDoToken(SESSAO.access_token||""); try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){} }
+    PERFIS={}; (r[3]||[]).forEach(function(x){ PERFIS[x.user_id]={nome:x.nome||"",admin:!!x.admin}; });
+    EU.id=(SESSAO&&SESSAO.id)||null;
+    EU.admin=!!(EU.id&&PERFIS[EU.id]&&PERFIS[EU.id].admin);
+    EU.nome=(EU.id&&PERFIS[EU.id]&&PERFIS[EU.id].nome)||((SESSAO&&SESSAO.email)||"").split("@")[0];
     db.clientes=r[0]||[];
     db.dados={};
     (r[1]||[]).forEach(function(l){
@@ -682,10 +710,32 @@ function porInstituicao(r,cur){
 function novoCliente(){
   var nome=prompt("Nome do cliente:"); if(!nome) return;
   status("wait","Salvando…");
-  api("clientes",{method:"POST",prefer:"return=representation",body:{nome:nome.trim()}})
-    .then(function(r){ var c=r[0]; db.clientes.push({id:c.id,nome:c.nome});
+  api("clientes",{method:"POST",prefer:"return=representation",body:{nome:nome.trim(),assessor_id:(SESSAO&&SESSAO.id)||null}})
+    .then(function(r){ var c=r[0]; db.clientes.push({id:c.id,nome:c.nome,assessor_id:c.assessor_id});
       db.clientes.sort(function(a,b){return a.nome.localeCompare(b.nome);});
       S.cliente=c.id; registrar("criou cliente",c.nome,""); status("ok","Sincronizado"); montarRascunho(); render(); }).catch(falha);
+}
+function transferirCliente(){
+  var c=cli(); if(!c) return;
+  if(!EU.admin){ alert("Apenas o administrador pode trocar o assessor de um cliente."); return; }
+  var lista=Object.keys(PERFIS).map(function(k){ return {id:k,nome:PERFIS[k].nome||k}; })
+    .sort(function(a,b){ return a.nome.localeCompare(b.nome); });
+  if(!lista.length){ alert("Nenhum assessor cadastrado."); return; }
+  var txt="Transferir “"+c.nome+"” para qual assessor?\n\n"+
+    lista.map(function(x,i){ return (i+1)+". "+x.nome+(x.id===c.assessor_id?"  (atual)":""); }).join("\n")+
+    "\n\nDigite o numero:";
+  var esc1=prompt(txt); if(!esc1) return;
+  var idx=parseInt(esc1,10)-1;
+  if(isNaN(idx)||idx<0||idx>=lista.length){ alert("Numero invalido."); return; }
+  var novo=lista[idx];
+  if(novo.id===c.assessor_id) return;
+  status("wait","Salvando\u2026");
+  api("clientes?id=eq."+c.id,{method:"PATCH",body:{assessor_id:novo.id}})
+    .then(function(){
+      c.assessor_id=novo.id;
+      registrar("trocou assessor",c.nome,"agora com "+novo.nome);
+      status("ok","Sincronizado"); render();
+    }).catch(falha);
 }
 function renomear(){
   var c=cli(); if(!c) return;
@@ -857,6 +907,7 @@ function quandoBR(iso){
 
 /* ---------- backup automático ---------- */
 function backupAutomatico(){
+  if(!EU.admin) return Promise.resolve(null);
   return api("backups?select=quando&order=quando.desc&limit=1").then(function(r){
     var ultimo=(r&&r[0])?new Date(r[0].quando):null;
     var horas=ultimo?(Date.now()-ultimo.getTime())/36e5:999;
@@ -918,10 +969,18 @@ function renderRail(){
   var ul=document.getElementById("cliList");
   if(!db.clientes.length){ ul.innerHTML='<li style="color:#7A8DA3;cursor:default">Nenhum cliente ainda</li>'; }
   else{
-    ul.innerHTML=db.clientes.map(function(c){
-      var r=reg(c.id,S.mes,S.ano),t=r?totais(r):null;
+    var item=function(c){
+      var r=reg(c.id,S.mes,S.ano),t=r?totais(r,"BRL"):null;
       return '<li class="'+(S.cliente===c.id?"on":"")+'" onclick="selCliente(\''+c.id+'\')"><b>'+esc(c.nome)+'</b><i>'+(t?brlC(t.pl):"—")+'</i></li>';
-    }).join("");
+    };
+    if(EU.admin){
+      var gs=assessoresComClientes();
+      ul.innerHTML=(gs.length>1)
+        ? gs.map(function(g){ return '<li class="grp">'+esc(g.nome)+' ('+g.clientes.length+')</li>'+g.clientes.map(item).join(""); }).join("")
+        : db.clientes.map(item).join("");
+    }else{
+      ul.innerHTML=db.clientes.map(item).join("");
+    }
   }
   var sm=document.getElementById("selMes");
   if(!sm.options.length){
@@ -942,7 +1001,9 @@ function viewPreencher(){
      '<div><div class="sec-title">'+esc(c.nome)+'</div><div class="sec-sub">Lançamento de '+MESES[S.mes-1]+' de '+S.ano+'</div></div>'+
      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="renomear()">Renomear</button>'+
      (reg(c.id,S.mes,S.ano)?'<button class="btn" onclick="excluirMes()">Excluir mês</button>':'')+
-     '<button class="btn" onclick="excluirCliente()">Excluir cliente</button></div></div></div>';
+     (EU.admin?'<button class="btn" onclick="transferirCliente()">Assessor</button>':'')+
+     '<button class="btn" onclick="excluirCliente()">Excluir cliente</button></div></div></div>'+
+     (EU.admin&&c.assessor_id!==EU.id?'<div class="sec-sub" style="margin-top:-8px">Cliente de '+esc(nomeAssessor(c.assessor_id))+'.</div>':'');
   if(r._herdado) h+='<div class="note"><b>Dados herdados do mês anterior.</b> Contas e saldos vieram do último mês lançado. Atualize os saldos e informe o resultado do mês — nada é gravado até você clicar em “Salvar mês”.</div>';
   h+=cardContas(r,"BRL")+cardContas(r,"USD");
   h+='<div class="card"><div class="sec-title">Indicadores do mês</div>'+
