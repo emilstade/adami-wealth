@@ -215,10 +215,15 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .pat .l{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
 .pat .v{font-family:var(--mono);font-size:34px;color:var(--navy);letter-spacing:.03em;margin:9px 0 4px}
 .pat .s{font-size:11.5px;color:var(--muted)}
-.pat-ant{margin-top:16px;padding-top:13px;border-top:1px solid var(--line-2);display:flex;justify-content:center;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
-.pat-ant b{font-family:var(--mono);font-weight:400;color:var(--navy);font-size:14px}
-.pat-ant i{font-style:normal;font-family:var(--mono);font-size:12.5px}
-.pat-ant i.pos{color:var(--green)} .pat-ant i.neg{color:var(--alert)}
+.pat-duo{display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap;margin-top:16px}
+.pat-col{text-align:center;min-width:135px}
+.pat-col .d{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted)}
+.pat-col .n{font-family:var(--mono);color:var(--navy);letter-spacing:.03em;margin:7px 0 4px;line-height:1.1}
+.pat-col .c{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#93A2B4}
+.pat-col.ant .n{font-size:20px;color:#61758C}
+.pat-col.atual .n{font-size:34px}
+.pat-var{font-family:var(--mono);font-size:13px;padding:6px 11px;border-radius:3px;background:#F4F7FA;border:1px solid var(--line-2);white-space:nowrap}
+.pat-var.pos{color:var(--green)} .pat-var.neg{color:var(--alert)}
 .kgrid{display:grid;grid-template-columns:1fr 1fr;border-bottom:3px solid var(--navy)}
 .kbox{padding:18px 0 16px}
 .kbox:nth-child(odd){border-right:1px solid var(--line);padding-right:22px}
@@ -304,6 +309,9 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
   .dn{max-height:42mm}
   .pat{padding:14px 0;margin-top:14px}
   .pat .v{font-size:26px}
+  .pat-col.atual .n{font-size:26px}
+  .pat-col.ant .n{font-size:17px}
+  .pat-duo{gap:16px}
   .kbox{padding:12px 0 10px}
   .kbox .v{font-size:18px}
   .rep-name{font-size:24px}
@@ -343,7 +351,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.1</div>
+    <div class="rail-user" style="opacity:.6">versão 2.1.1</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -441,7 +449,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.1";
+var VERSAO="versão 2.1.1";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -607,12 +615,21 @@ function patAnterior(id,mes,ano,cur){
   }
   return null;
 }
-function blocoPatAnterior(id,mes,ano,cur,plAtual){
+function blocoPatrimonio(id,mes,ano,cur,pl,rotulo,nota){
   var a=patAnterior(id,mes,ano,cur);
-  if(!a) return "";
-  var v=(a.pl>0)?((plAtual-a.pl)/a.pl)*100:null;
-  return '<div class="pat-ant"><span>M\u00eas anterior \u00b7 '+dataBase(a.mes,a.ano)+'</span><b>'+mo(a.pl,cur)+'</b>'+
-    (v!=null?'<i class="'+sinal(v)+'">'+(v>0?"+":"")+pct(v)+'</i>':'')+'</div>';
+  var h='<div class="pat"><div class="l">'+esc(rotulo)+'</div>';
+  if(!a){
+    h+='<div class="v">'+mo(pl,cur)+'</div><div class="s">posi\u00e7\u00e3o em '+dataBase(mes,ano)+(nota?' \u00b7 '+nota:'')+'</div>';
+    return h+'</div>';
+  }
+  var v=(a.pl>0)?((pl-a.pl)/a.pl)*100:null;
+  h+='<div class="pat-duo">'+
+     '<div class="pat-col ant"><div class="d">'+dataBase(a.mes,a.ano)+'</div><div class="n">'+mo(a.pl,cur)+'</div><div class="c">m\u00eas anterior</div></div>'+
+     (v!=null?'<div class="pat-var '+sinal(v)+'">'+(v>0?"+":"")+pct(v)+'</div>':'')+
+     '<div class="pat-col atual"><div class="d">'+dataBase(mes,ano)+'</div><div class="n">'+mo(pl,cur)+'</div><div class="c">posi\u00e7\u00e3o atual</div></div>'+
+     '</div>';
+  if(nota) h+='<div class="s" style="margin-top:13px">'+nota+'</div>';
+  return h+'</div>';
 }
 function indicesDoMes(mes,ano,excluiId){
   var achado=null;
@@ -1453,8 +1470,7 @@ function viewRelatorio(){
   var p1='<div class="rep-eyebrow">Relatório de performance</div>'+
      '<div class="rep-name">'+esc(c.nome)+'</div>'+
      '<div class="rep-ref">'+MESES[S.mes-1]+' de '+S.ano+' &nbsp;·&nbsp; data-base '+dataBase(S.mes,S.ano)+'</div>'+
-     '<div class="pat"><div class="l">Patrimônio'+(temOff?" onshore":"")+'</div><div class="v">'+brl(t.pl)+'</div><div class="s">posição em '+dataBase(S.mes,S.ano)+'</div>'+
-     blocoPatAnterior(c.id,S.mes,S.ano,"BRL",t.pl)+'</div>'+
+     blocoPatrimonio(c.id,S.mes,S.ano,"BRL",t.pl,"Patrimônio"+(temOff?" onshore":""),"")+
      '<div class="kgrid">'+
      '<div class="kbox"><div class="l">Rentabilidade no mês</div><div class="v '+sinal(t.rendPct)+'">'+pct(t.rendPct)+'</div><div class="s">'+(doCdi!=null?pct(doCdi,0)+" do CDI":"—")+'</div></div>'+
      '<div class="kbox"><div class="l">Resultado no mês</div><div class="v '+sinal(t.rendRs)+'">'+brl(t.rendRs)+'</div><div class="s">'+ref(S.mes,S.ano)+'</div></div>'+
@@ -1530,9 +1546,7 @@ function viewRelatorio(){
     var anoRsU=serieU.reduce(function(a,s2){return a+s2.rendRs;},0);
     var p3=shead(nx(),"Patrim\u00f4nio offshore","valores em d\u00f3lar norte-americano")+
       '<div class="panel">'+
-      '<div class="pat"><div class="l">Patrim\u00f4nio offshore</div><div class="v">'+usd(tU.pl)+'</div>'+
-      '<div class="s">posi\u00e7\u00e3o em '+dataBase(S.mes,S.ano)+(ptax>0?' \u00b7 PTAX de fechamento '+ptaxFmt(ptax):'')+'</div>'+
-      blocoPatAnterior(c.id,S.mes,S.ano,"USD",tU.pl)+'</div>'+
+      blocoPatrimonio(c.id,S.mes,S.ano,"USD",tU.pl,"Patrim\u00f4nio offshore",(ptax>0?'PTAX de fechamento '+ptaxFmt(ptax):''))+
       '<div class="kgrid">'+
       '<div class="kbox"><div class="l">Rentabilidade no m\u00eas</div><div class="v '+sinal(tU.rendPct)+'">'+pct(tU.rendPct)+'</div><div class="s">em d\u00f3lar</div></div>'+
       '<div class="kbox"><div class="l">Resultado no m\u00eas</div><div class="v '+sinal(tU.rendRs)+'">'+usd(tU.rendRs)+'</div><div class="s">'+ref(S.mes,S.ano)+'</div></div>'+
