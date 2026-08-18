@@ -327,7 +327,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 1.9.3</div>
+    <div class="rail-user" style="opacity:.6">versão 1.9.4</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -416,7 +416,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 1.9.3";
+var VERSAO="versão 1.9.4";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -597,6 +597,40 @@ function serieAno(id,ano,ateMes,cur){
   return out;
 }
 function comp(vals){ var f=1; vals.forEach(function(v){ f*=(1+v/100); }); return (f-1)*100; }
+/* serie mes a mes ate (mes/ano); nMeses=0 -> desde o primeiro lancamento */
+function serieHist(id,mes,ano,cur,nMeses){
+  cur=(cur==="USD")?"USD":"BRL";
+  var out=[],p={mes:mes,ano:ano},lim=nMeses||600,vazios=0;
+  for(var i=0;i<lim;i++){
+    var r=reg(id,p.mes,p.ano);
+    if(r&&contasDe(r,cur).length){
+      var t=totais(r,cur);
+      out.unshift({mes:p.mes,ano:p.ano,pl:t.pl,rendPct:t.rendPct,rendRs:t.rendRs,ind:r.ind||{}});
+      vazios=0;
+    }else{
+      vazios++;
+      if(!nMeses&&out.length&&vazios>24) break;
+      if(!nMeses&&!out.length&&vazios>240) break;
+    }
+    p=anterior(p.mes,p.ano);
+  }
+  return out;
+}
+/* rentabilidade composta da carteira e resultado somado num recorte */
+function agregado(serie){
+  return { pct:comp(serie.map(function(x){return x.rendPct;})),
+           rs:serie.reduce(function(a,x){return a+x.rendRs;},0),
+           meses:serie.length };
+}
+/* rentabilidade composta de um indicador no recorte; null se nunca informado */
+function benchAcum(serie,chaveInd){
+  var tem=false,vals=serie.map(function(x){ var v=n(x.ind&&x.ind[chaveInd]); if(v) tem=true; return v; });
+  return tem?comp(vals):null;
+}
+/* quantos meses do recorte tem o indicador preenchido */
+function benchMeses(serie,chaveInd){
+  return serie.filter(function(x){ return n(x.ind&&x.ind[chaveInd])!==0; }).length;
+}
 /* rentabilidade composta de uma conta nos últimos N meses até (mes/ano) */
 function contaAcum(id,nome,mes,ano,nMeses){
   var vals=[],p={mes:mes,ano:ano};
@@ -1200,6 +1234,39 @@ function blocoRetornos(id){
 /* ============ view: relatório ============ */
 function marca(){ return '<div class="pg-mark"><img src="'+LOGO_AZUL+'" alt="Adami Wealth"></div>'; }
 var SNUM=0;
+function tabelaBenchmarks(id,mes,ano,cur){
+  var sMes=serieHist(id,mes,ano,cur,1),
+      s12=serieHist(id,mes,ano,cur,12),
+      sIni=serieHist(id,mes,ano,cur,0),
+      sAno=sIni.filter(function(x){return x.ano===ano;});
+  var cols=[{r:"No m\u00eas",s:sMes},{r:"No ano",s:sAno},{r:"12 meses",s:s12},{r:"Desde o in\u00edcio",s:sIni}];
+  var linhas='<tr class="tot"><td>Carteira</td>'+cols.map(function(c){
+      var a=agregado(c.s);
+      return '<td class="n '+sinal(a.pct)+'">'+(a.s===0?"\u2014":pct(a.pct))+'</td>';
+    }).join("")+'</tr>';
+  var incompleto=false;
+  IND.forEach(function(par){
+    var k=par[0];
+    if(benchAcum(sIni,k)===null) return;
+    linhas+='<tr><td>'+esc(par[1])+'</td>'+cols.map(function(c){
+      var v=benchAcum(c.s,k);
+      if(v===null) return '<td class="n">\u2014</td>';
+      if(benchMeses(c.s,k)<c.s.length) incompleto=true;
+      return '<td class="n '+sinal(v)+'">'+pct(v)+'</td>';
+    }).join("")+'</tr>';
+  });
+  var aCdi=cols.map(function(c){
+    var a=agregado(c.s),d=benchAcum(c.s,"cdi");
+    return '<td class="n">'+((d!=null&&d>0)?pct(a.pct/d*100,0):"\u2014")+'</td>';
+  }).join("");
+  linhas+='<tr><td style="font-style:italic">Carteira / CDI</td>'+aCdi+'</tr>';
+  var nota='Rentabilidades compostas at\u00e9 '+dataBase(mes,ano)+'. A s\u00e9rie desde o in\u00edcio cobre '+
+    sIni.length+(sIni.length===1?' m\u00eas lan\u00e7ado':' meses lan\u00e7ados')+'.'+
+    (incompleto?' Meses sem o \u00edndice informado entram como zero no acumulado do indicador.':'');
+  return '<div class="panel"><table class="rt"><thead><tr><th>Indicador</th>'+
+    cols.map(function(c){return '<th class="n">'+c.r+'</th>';}).join("")+
+    '</tr></thead><tbody>'+linhas+'</tbody></table><p class="foot-note">'+nota+'</p></div>';
+}
 function nx(){ SNUM++; return String(SNUM).padStart(2,"0"); }
 function shead(num,titulo,cap){
   return '<div class="shead"><span class="n">'+num+'</span><h2>'+titulo+'</h2>'+(cap?'<span class="cap">'+cap+'</span>':'')+'</div>';
@@ -1218,6 +1285,12 @@ function viewRelatorio(){
   var anoCdi=comp(serie.map(function(s){return s.cdi;}));
   var anoRs=serie.reduce(function(a,s){return a+s.rendRs;},0);
   var anoDoCdi=anoCdi>0?(anoPct/anoCdi)*100:null;
+  var s12=serieHist(c.id,S.mes,S.ano,"BRL",12), sIni=serieHist(c.id,S.mes,S.ano,"BRL",0);
+  var a12=agregado(s12), aIni=agregado(sIni);
+  var cdi12=benchAcum(s12,"cdi"), cdiIni=benchAcum(sIni,"cdi");
+  var do12=(cdi12&&cdi12>0)?(a12.pct/cdi12)*100:null;
+  var doIni=(cdiIni&&cdiIni>0)?(aIni.pct/cdiIni)*100:null;
+  var desdeQuando=sIni.length?(MESES_C[sIni[0].mes-1]+"/"+String(sIni[0].ano).slice(2)):"";
   var carta=(cartaDoMes(S.mes,S.ano)||"").trim();
   if(!carta && (r.ind.carta||"").trim()){
     carta="<p>"+esc(r.ind.carta.trim()).split(/\n\s*\n/).join("</p><p>").replace(/\n/g,"<br>")+"</p>";
@@ -1251,8 +1324,10 @@ function viewRelatorio(){
      '<div class="kgrid">'+
      '<div class="kbox"><div class="l">Rentabilidade no mês</div><div class="v '+sinal(t.rendPct)+'">'+pct(t.rendPct)+'</div><div class="s">'+(doCdi!=null?pct(doCdi,0)+" do CDI":"—")+'</div></div>'+
      '<div class="kbox"><div class="l">Resultado no mês</div><div class="v '+sinal(t.rendRs)+'">'+brl(t.rendRs)+'</div><div class="s">'+ref(S.mes,S.ano)+'</div></div>'+
-     '<div class="kbox"><div class="l">Rentabilidade no ano</div><div class="v '+sinal(anoPct)+'">'+pct(anoPct)+'</div><div class="s">'+(anoDoCdi!=null?pct(anoDoCdi,0)+" do CDI":"—")+'</div></div>'+
-     '<div class="kbox"><div class="l">Resultado no ano</div><div class="v '+sinal(anoRs)+'">'+brl(anoRs)+'</div><div class="s">'+serie.length+(serie.length===1?" mês":" meses")+' em '+S.ano+'</div></div>'+
+     '<div class="kbox"><div class="l">Rentabilidade em 12 meses</div><div class="v '+sinal(a12.pct)+'">'+(a12.meses?pct(a12.pct):"—")+'</div><div class="s">'+(do12!=null?pct(do12,0)+" do CDI":a12.meses+(a12.meses===1?" mês":" meses")+" lançados")+'</div></div>'+
+     '<div class="kbox"><div class="l">Resultado em 12 meses</div><div class="v '+sinal(a12.rs)+'">'+brl(a12.rs)+'</div><div class="s">'+a12.meses+(a12.meses===1?" mês":" meses")+' lançados</div></div>'+
+     '<div class="kbox"><div class="l">Rentabilidade desde o início</div><div class="v '+sinal(aIni.pct)+'">'+(aIni.meses?pct(aIni.pct):"—")+'</div><div class="s">'+(doIni!=null?pct(doIni,0)+" do CDI":"acumulado")+'</div></div>'+
+     '<div class="kbox"><div class="l">Resultado desde o início</div><div class="v '+sinal(aIni.rs)+'">'+brl(aIni.rs)+'</div><div class="s">'+(desdeQuando?"desde "+desdeQuando:"—")+'</div></div>'+
      '</div>';
 
   var estr=listaEstrat(r.ind);
@@ -1279,6 +1354,9 @@ function viewRelatorio(){
   var p2=shead(nx(),"Retornos mensais","carteira contra o CDI")+
      '<div class="panel tint">'+blocoRetornos(c.id)+'</div>';
 
+  p2+=shead(nx(),"Carteira contra os indicadores","rentabilidade acumulada por período")+
+     tabelaBenchmarks(c.id,S.mes,S.ano,"BRL");
+
   p2+=shead(nx(),"Desempenho por conta","")+
      '<div class="panel"><table class="rt"><thead><tr><th>Conta</th><th class="n">Saldo</th><th class="n">% da carteira</th><th class="n">Último mês</th><th class="n">No ano</th><th class="n">12 meses</th></tr></thead><tbody>'+
      contasDe(r,"BRL").map(function(x){
@@ -1289,7 +1367,7 @@ function viewRelatorio(){
        '<td class="n '+sinal(noAno)+'">'+(noAno!=null?pct(noAno):"—")+'</td>'+
        '<td class="n '+sinal(m12)+'">'+(m12!=null?pct(m12):"—")+'</td></tr>';
      }).join("")+
-     '<tr class="tot"><td>Total</td><td class="n">'+brl(t.pl)+'</td><td class="n">100,0%</td><td class="n">'+pct(t.rendPct)+'</td><td class="n">'+pct(anoPct)+'</td><td class="n">—</td></tr>'+
+     '<tr class="tot"><td>Total</td><td class="n">'+brl(t.pl)+'</td><td class="n">100,0%</td><td class="n">'+pct(t.rendPct)+'</td><td class="n">'+pct(anoPct)+'</td><td class="n">'+(a12.meses?pct(a12.pct):"—")+'</td></tr>'+
      '</tbody></table></div>';
 
   p2+=shead(nx(),"Evolução do patrimônio",serie.length+(serie.length===1?" mês":" meses")+" com saldo")+
@@ -1310,6 +1388,9 @@ function viewRelatorio(){
   /* --- offshore --- */
   if(temOff){
     var tU=totais(r,"USD"), serieU=serieAno(c.id,S.ano,S.mes,"USD"), instU=porInstituicao(r,"USD");
+    var s12U=serieHist(c.id,S.mes,S.ano,"USD",12), sIniU=serieHist(c.id,S.mes,S.ano,"USD",0);
+    var a12U=agregado(s12U), aIniU=agregado(sIniU);
+    var desdeU=sIniU.length?(MESES_C[sIniU[0].mes-1]+"/"+String(sIniU[0].ano).slice(2)):"";
     var anoPctU=comp(serieU.map(function(s2){return s2.rendPct;}));
     var anoRsU=serieU.reduce(function(a,s2){return a+s2.rendRs;},0);
     var p3=shead(nx(),"Patrim\u00f4nio offshore","valores em d\u00f3lar norte-americano")+
@@ -1319,8 +1400,10 @@ function viewRelatorio(){
       '<div class="kgrid">'+
       '<div class="kbox"><div class="l">Rentabilidade no m\u00eas</div><div class="v '+sinal(tU.rendPct)+'">'+pct(tU.rendPct)+'</div><div class="s">em d\u00f3lar</div></div>'+
       '<div class="kbox"><div class="l">Resultado no m\u00eas</div><div class="v '+sinal(tU.rendRs)+'">'+usd(tU.rendRs)+'</div><div class="s">'+ref(S.mes,S.ano)+'</div></div>'+
-      '<div class="kbox"><div class="l">Rentabilidade no ano</div><div class="v '+sinal(anoPctU)+'">'+pct(anoPctU)+'</div><div class="s">em d\u00f3lar</div></div>'+
-      '<div class="kbox"><div class="l">Resultado no ano</div><div class="v '+sinal(anoRsU)+'">'+usd(anoRsU)+'</div><div class="s">'+serieU.length+(serieU.length===1?" m\u00eas":" meses")+' em '+S.ano+'</div></div>'+
+      '<div class="kbox"><div class="l">Rentabilidade em 12 meses</div><div class="v '+sinal(a12U.pct)+'">'+(a12U.meses?pct(a12U.pct):"\u2014")+'</div><div class="s">em d\u00f3lar \u00b7 '+a12U.meses+(a12U.meses===1?" m\u00eas":" meses")+'</div></div>'+
+      '<div class="kbox"><div class="l">Resultado em 12 meses</div><div class="v '+sinal(a12U.rs)+'">'+usd(a12U.rs)+'</div><div class="s">'+a12U.meses+(a12U.meses===1?" m\u00eas":" meses")+' lan\u00e7ados</div></div>'+
+      '<div class="kbox"><div class="l">Rentabilidade desde o in\u00edcio</div><div class="v '+sinal(aIniU.pct)+'">'+(aIniU.meses?pct(aIniU.pct):"\u2014")+'</div><div class="s">em d\u00f3lar</div></div>'+
+      '<div class="kbox"><div class="l">Resultado desde o in\u00edcio</div><div class="v '+sinal(aIniU.rs)+'">'+usd(aIniU.rs)+'</div><div class="s">'+(desdeU?"desde "+desdeU:"\u2014")+'</div></div>'+
       '</div></div>';
 
     p3+=shead(nx(),"Offshore \u00b7 desempenho por conta","")+
@@ -1333,7 +1416,7 @@ function viewRelatorio(){
         '<td class="n '+sinal(noAnoU)+'">'+(noAnoU!=null?pct(noAnoU):"\u2014")+'</td>'+
         '<td class="n '+sinal(m12U)+'">'+(m12U!=null?pct(m12U):"\u2014")+'</td></tr>';
       }).join("")+
-      '<tr class="tot"><td>Total</td><td class="n">'+usd(tU.pl)+'</td><td class="n">100,0%</td><td class="n">'+pct(tU.rendPct)+'</td><td class="n">'+pct(anoPctU)+'</td><td class="n">\u2014</td></tr>'+
+      '<tr class="tot"><td>Total</td><td class="n">'+usd(tU.pl)+'</td><td class="n">100,0%</td><td class="n">'+pct(tU.rendPct)+'</td><td class="n">'+pct(anoPctU)+'</td><td class="n">'+(a12U.meses?pct(a12U.pct):"\u2014")+'</td></tr>'+
       '</tbody></table></div>';
 
     if(instU.length>1){
