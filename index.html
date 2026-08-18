@@ -337,7 +337,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 1.9.5</div>
+    <div class="rail-user" style="opacity:.6">versão 1.9.6</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -426,7 +426,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 1.9.5";
+var VERSAO="versão 1.9.6";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -527,7 +527,7 @@ function recarregar(){
 function montarRascunho(){
   var id=S.cliente; if(!id){S.rasc=null;return;}
   var r=reg(id,S.mes,S.ano);
-  if(r){ S.rasc=JSON.parse(JSON.stringify(r)); if(!S.rasc.ind) S.rasc.ind=indVazio(); S.rasc._herdado=false; aplicarIndices(); return; }
+  if(r){ S.rasc=JSON.parse(JSON.stringify(r)); if(!S.rasc.ind) S.rasc.ind=indVazio(); S.rasc._herdado=false; aplicarIndices(); herdarOffshore(); return; }
   var p=anterior(S.mes,S.ano),ant=null,t=0;
   while(t<24&&!ant){ ant=reg(id,p.mes,p.ano); if(!ant)p=anterior(p.mes,p.ano); t++; }
   if(ant){
@@ -535,7 +535,24 @@ function montarRascunho(){
   }else{
     S.rasc={_herdado:false,contas:[contaVazia(),contaVazia()],ind:indVazio()};
   }
-  aplicarIndices();
+  aplicarIndices(); herdarOffshore();
+}
+/* se o mes nao tem conta offshore mas algum mes anterior tinha, traz os saldos */
+function herdarOffshore(){
+  if(!S.rasc) return;
+  S.rasc._offHerdado=false;
+  if(contasDe(S.rasc,"USD").length) return;
+  var p=anterior(S.mes,S.ano),ant=null,t=0;
+  while(t<24&&!ant){
+    var rr=reg(S.cliente,p.mes,p.ano);
+    if(rr&&contasDe(rr,"USD").length) ant=rr; else p=anterior(p.mes,p.ano);
+    t++;
+  }
+  if(!ant) return;
+  contasDe(ant,"USD").forEach(function(c){
+    S.rasc.contas.push({nome:c.nome,inst:c.inst,saldo:n(c.saldo),apl:0,res:0,rendPct:0,rendRs:0,moeda:"USD"});
+  });
+  S.rasc._offHerdado=true;
 }
 
 /* ---- indicadores de mercado: valem para todos os clientes no mes ---- */
@@ -1001,6 +1018,7 @@ function cardContas(r,cur){
       '<button class="btn" onclick="buscarPtax()">Buscar no Banco Central</button>'+
       '<span id="ptaxMsg" style="font-size:12.5px;color:var(--muted)"></span></div>';
   }
+  if(off && r._offHerdado){ h+='<div class="note" style="margin-bottom:14px">Contas offshore trazidas do \u00faltimo m\u00eas lan\u00e7ado. Atualize os saldos \u2014 nada \u00e9 gravado at\u00e9 salvar.</div>'; }
   h+='<div style="overflow-x:auto"><table class="form"><thead><tr><th style="min-width:150px">Conta</th><th style="min-width:120px">Instituicao</th>'+
     '<th class="num">Saldo final</th><th class="num">Aplicacoes</th><th class="num">Resgates</th><th class="num">Rend. '+(off?"US$":"R$")+'</th><th class="num">Rend. %</th><th></th></tr></thead><tbody>'+
     (vazio?'<tr><td colspan="8" style="color:var(--muted);font-size:12.5px">Nenhuma conta '+(off?"offshore":"onshore")+' informada.</td></tr>':linhas)+
@@ -1371,7 +1389,7 @@ function viewRelatorio(){
      '<div class="panel"><table class="rt"><thead><tr><th>Conta</th><th class="n">Saldo</th><th class="n">% da carteira</th><th class="n">Último mês</th><th class="n">No ano</th><th class="n">12 meses</th></tr></thead><tbody>'+
      contasDe(r,"BRL").map(function(x){
        var noAno=contaAcum(c.id,x.nome,S.mes,S.ano,S.mes), m12=contaAcum(c.id,x.nome,S.mes,S.ano,12);
-       return '<tr><td>'+esc(x.nome||"—")+' '+ref(S.mes,S.ano)+'</td><td class="n">'+brl(n(x.saldo))+'</td>'+
+       return '<tr><td>'+esc(x.nome||"—")+'</td><td class="n">'+brl(n(x.saldo))+'</td>'+
        '<td class="n">'+pct(t.pl>0?n(x.saldo)/t.pl*100:0,1)+'</td>'+
        '<td class="n '+sinal(n(x.rendPct))+'">'+pct(n(x.rendPct))+'</td>'+
        '<td class="n '+sinal(noAno)+'">'+(noAno!=null?pct(noAno):"—")+'</td>'+
@@ -1420,7 +1438,7 @@ function viewRelatorio(){
       '<div class="panel"><table class="rt"><thead><tr><th>Conta</th><th class="n">Saldo</th><th class="n">% do offshore</th><th class="n">\u00daltimo m\u00eas</th><th class="n">No ano</th><th class="n">12 meses</th></tr></thead><tbody>'+
       offC.map(function(x){
         var noAnoU=contaAcum(c.id,x.nome,S.mes,S.ano,S.mes), m12U=contaAcum(c.id,x.nome,S.mes,S.ano,12);
-        return '<tr><td>'+esc(x.nome||"\u2014")+' '+ref(S.mes,S.ano)+'</td><td class="n">'+usd(n(x.saldo))+'</td>'+
+        return '<tr><td>'+esc(x.nome||"\u2014")+'</td><td class="n">'+usd(n(x.saldo))+'</td>'+
         '<td class="n">'+pct(tU.pl>0?n(x.saldo)/tU.pl*100:0,1)+'</td>'+
         '<td class="n '+sinal(n(x.rendPct))+'">'+pct(n(x.rendPct))+'</td>'+
         '<td class="n '+sinal(noAnoU)+'">'+(noAnoU!=null?pct(noAnoU):"\u2014")+'</td>'+
@@ -1479,7 +1497,17 @@ function viewRelatorio(){
 }
 
 var avisoImpressao=true;
+function tituloPdf(){
+  var c=cli(); if(!c) return "Carteira Consolidada";
+  var m=MESES[S.mes-1]; m=m.charAt(0).toUpperCase()+m.slice(1);
+  return ("Carteira Consolidada "+c.nome+" "+m+" "+S.ano).replace(/[\\/:*?"<>|]/g," ").replace(/\s+/g," ").trim();
+}
 function imprimir(){
+  var tituloAntigo=document.title;
+  document.title=tituloPdf();
+  var restaurar=function(){ document.title=tituloAntigo; window.removeEventListener("afterprint",restaurar); };
+  window.addEventListener("afterprint",restaurar);
+  setTimeout(restaurar,120000);
   if(avisoImpressao){
     avisoImpressao=false;
     alert("Na janela de impressão que vai abrir:\n\n1. Destino: Salvar como PDF\n2. Margens: Padrão\n3. Desmarque \u201cCabeçalhos e rodapés\u201d\n4. Marque \u201cGráficos de segundo plano\u201d\n\nSem esses dois últimos ajustes a capa sai branca e aparece a data e o endereço do arquivo no topo.");
