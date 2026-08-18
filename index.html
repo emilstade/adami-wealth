@@ -327,7 +327,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 1.9.2</div>
+    <div class="rail-user" style="opacity:.6">versão 1.9.3</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -416,7 +416,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 1.9.2";
+var VERSAO="versão 1.9.3";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -517,14 +517,59 @@ function recarregar(){
 function montarRascunho(){
   var id=S.cliente; if(!id){S.rasc=null;return;}
   var r=reg(id,S.mes,S.ano);
-  if(r){ S.rasc=JSON.parse(JSON.stringify(r)); if(!S.rasc.ind) S.rasc.ind=indVazio(); S.rasc._herdado=false; return; }
+  if(r){ S.rasc=JSON.parse(JSON.stringify(r)); if(!S.rasc.ind) S.rasc.ind=indVazio(); S.rasc._herdado=false; aplicarIndices(); return; }
   var p=anterior(S.mes,S.ano),ant=null,t=0;
   while(t<24&&!ant){ ant=reg(id,p.mes,p.ano); if(!ant)p=anterior(p.mes,p.ano); t++; }
   if(ant){
-    S.rasc={_herdado:true,contas:ant.contas.map(function(c){return {nome:c.nome,inst:c.inst,saldo:n(c.saldo),apl:0,res:0,rendPct:0,rendRs:0};}),ind:indVazio()};
+    S.rasc={_herdado:true,contas:ant.contas.map(function(c){return {nome:c.nome,inst:c.inst,saldo:n(c.saldo),apl:0,res:0,rendPct:0,rendRs:0,moeda:curDe(c)};}),ind:indVazio()};
   }else{
     S.rasc={_herdado:false,contas:[contaVazia(),contaVazia()],ind:indVazio()};
   }
+  aplicarIndices();
+}
+
+/* ---- indicadores de mercado: valem para todos os clientes no mes ---- */
+var INDGLOB=IND.map(function(x){return x[0];}).concat(["ptax"]);
+function indicesDoMes(mes,ano,excluiId){
+  var achado=null;
+  db.clientes.forEach(function(c){
+    if(achado||c.id===excluiId) return;
+    var rr=reg(c.id,mes,ano); if(!rr||!rr.ind) return;
+    for(var i=0;i<INDGLOB.length;i++){ if(n(rr.ind[INDGLOB[i]])){ achado=rr.ind; return; } }
+  });
+  return achado;
+}
+function aplicarIndices(){
+  if(!S.rasc) return;
+  S.rasc._indHerdados=false;
+  for(var i=0;i<INDGLOB.length;i++){ if(n(S.rasc.ind[INDGLOB[i]])) return; }
+  var g=indicesDoMes(S.mes,S.ano,S.cliente); if(!g) return;
+  var algum=false;
+  INDGLOB.forEach(function(k){ var v=n(g[k]); if(v){ S.rasc.ind[k]=v; algum=true; } });
+  S.rasc._indHerdados=algum;
+}
+function replicarIndices(mes,ano,origemId,ind){
+  var vals={},chaves=[];
+  INDGLOB.forEach(function(k){ var v=n(ind&&ind[k]); if(v){ vals[k]=v; chaves.push(k); } });
+  if(!chaves.length) return Promise.resolve(0);
+  var fila=[],qtd=0;
+  db.clientes.forEach(function(c){
+    if(c.id===origemId) return;
+    var rr=reg(c.id,mes,ano); if(!rr) return;
+    var dif=chaves.some(function(k){ return n(rr.ind&&rr.ind[k])!==vals[k]; });
+    if(!dif) return;
+    var novo=JSON.parse(JSON.stringify(rr.ind||{}));
+    chaves.forEach(function(k){ novo[k]=vals[k]; });
+    qtd++;
+    fila.push(api("lancamentos?cliente_id=eq."+c.id+"&mes=eq."+mes+"&ano=eq."+ano,
+      {method:"PATCH",prefer:"return=minimal",body:{indicadores:novo,atualizado_em:new Date().toISOString()}})
+      .then(function(){ var d=db.dados[chave(c.id,mes,ano)]; if(d) d.ind=novo; }));
+  });
+  if(!fila.length) return Promise.resolve(0);
+  return Promise.all(fila).then(function(){
+    registrar("replicou indicadores",MESES[mes-1]+"/"+ano,qtd+(qtd===1?" cliente atualizado":" clientes atualizados"));
+    return qtd;
+  }).catch(function(){ return 0; });
 }
 
 /* ============ cálculos ============ */
@@ -612,7 +657,11 @@ function salvarMes(){
     .then(function(){
       db.dados[chave(S.cliente,S.mes,S.ano)]={contas:contas,ind:S.rasc.ind};
       registrar("salvou lançamento",(cli()||{}).nome||"",MESES[S.mes-1]+"/"+S.ano+" · "+contas.length+(contas.length===1?" conta · ":" contas · ")+brl(totais({contas:contas}).pl));
-      status("ok","Sincronizado"); montarRascunho(); S.tab="relatorio"; render();
+      return replicarIndices(S.mes,S.ano,S.cliente,S.rasc.ind);
+    })
+    .then(function(qtd){
+      status("ok",qtd?("Sincronizado · índices replicados para "+qtd+(qtd===1?" cliente":" clientes")):"Sincronizado");
+      montarRascunho(); S.tab="relatorio"; render();
     }).catch(function(e){ falha(e); if(b){b.disabled=false;b.textContent="Salvar mês e ver relatório";} });
 }
 function excluirMes(){
@@ -835,7 +884,10 @@ function viewPreencher(){
      '<button class="btn" onclick="excluirCliente()">Excluir cliente</button></div></div></div>';
   if(r._herdado) h+='<div class="note"><b>Dados herdados do mês anterior.</b> Contas e saldos vieram do último mês lançado. Atualize os saldos e informe o resultado do mês — nada é gravado até você clicar em “Salvar mês”.</div>';
   h+=cardContas(r,"BRL")+cardContas(r,"USD");
-  h+='<div class="card"><div class="sec-title">Indicadores do mês</div><div class="sec-sub">Variação percentual no mês de referência.</div><div class="grid-ind">';
+  h+='<div class="card"><div class="sec-title">Indicadores do mês</div>'+
+     '<div class="sec-sub">Variação percentual no mês de referência. São dados de mercado: valem para todos os clientes e, ao salvar, são replicados automaticamente para os demais lançamentos de '+MESES[S.mes-1]+'/'+S.ano+'.</div>'+
+     (r._indHerdados?'<div class="note" style="margin-bottom:14px">Preenchidos a partir de outro cliente já lançado neste mês. Ajuste se precisar.</div>':'')+
+     '<div class="grid-ind">';
   IND.forEach(function(p){ h+='<div><label>'+p[1]+' (%)</label><input class="inp num" type="number" step="0.01" value="'+(r.ind[p[0]]||"")+'" oninput="setInd(\''+p[0]+'\',this.value)"></div>'; });
   h+='</div></div>';
   var est=S.rasc.ind.estrategias||{};
