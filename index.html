@@ -337,7 +337,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 1.9.6</div>
+    <div class="rail-user" style="opacity:.6">versão 1.9.7</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -426,7 +426,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 1.9.6";
+var VERSAO="versão 1.9.7";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -1212,7 +1212,8 @@ function chartEvolucao(serie,cur){
 }
 
 /* tabela de retornos por ano (carteira x CDI) */
-function tabelaRetornos(id){
+function tabelaRetornos(id,cur){
+  cur=(cur==="USD")?"USD":"BRL";
   var anos=[];
   Object.keys(db.dados).forEach(function(k){
     if(k.indexOf(id+"|")===0){
@@ -1226,9 +1227,11 @@ function tabelaRetornos(id){
     var meses=[];
     for(var m=1;m<=12;m++){
       var r=reg(id,m,y);
-      meses.push(r?{p:totais(r).rendPct,c:n(r.ind&&r.ind.cdi)}:null);
+      var ok=r&&contasDe(r,cur).length;
+      meses.push(ok?{p:totais(r,cur).rendPct,c:(cur==="BRL"?n(r.ind&&r.ind.cdi):0)}:null);
     }
     var vivos=meses.filter(function(x){return x;});
+    if(!vivos.length) return;
     var noAnoP=comp(vivos.map(function(x){return x.p;}));
     var noAnoC=comp(vivos.map(function(x){return x.c;}));
     fc*=(1+noAnoP/100); fd*=(1+noAnoC/100);
@@ -1236,15 +1239,17 @@ function tabelaRetornos(id){
   });
   return linhas.reverse();
 }
-function blocoRetornos(id){
-  var linhas=tabelaRetornos(id);
+function blocoRetornos(id,cur){
+  cur=(cur==="USD")?"USD":"BRL";
+  var off=(cur==="USD");
+  var linhas=tabelaRetornos(id,cur);
   if(!linhas.length) return '<p class="foot-note">Sem histórico lançado.</p>';
   var cab='<tr><th>Retorno mensal (%)</th>'+
     MESES_C.map(function(m){return '<th class="n">'+(m.charAt(0).toUpperCase()+m.slice(1)).slice(0,3)+'</th>';}).join("")+
     '<th class="n">No ano</th><th class="n">Acum.</th></tr>';
   var corpo=linhas.map(function(L){
     var cel=function(v,d){ return v==null?'<td class="n" style="color:#B7C0CB">–</td>':'<td class="n">'+pct(v,d==null?2:d)+'</td>'; };
-    var r1='<tr class="ano"><td>'+L.ano+'</td>'+L.meses.map(function(x){return cel(x?x.p:null);}).join("")+
+    var r1='<tr class="ano'+(off?' sep':'')+'"><td>'+L.ano+'</td>'+L.meses.map(function(x){return cel(x?x.p:null);}).join("")+
            cel(L.noAnoP)+cel(L.accP)+'</tr>';
     var r2='<tr><td>CDI</td>'+L.meses.map(function(x){return cel(x?x.c:null);}).join("")+
            cel(L.noAnoC)+cel(L.accC)+'</tr>';
@@ -1253,10 +1258,10 @@ function blocoRetornos(id){
            }).join("")+
            (L.noAnoC>0?'<td class="n">'+pct(L.noAnoP/L.noAnoC*100,0)+'</td>':'<td class="n" style="color:#B7C0CB">–</td>')+
            (L.accC>0?'<td class="n">'+pct(L.accP/L.accC*100,0)+'</td>':'<td class="n" style="color:#B7C0CB">–</td>')+'</tr>';
-    return r1+r2+r3;
+    return off?r1:(r1+r2+r3);
   }).join("");
   return '<div style="overflow-x:auto"><table class="rt compact"><thead>'+cab+'</thead><tbody>'+corpo+'</tbody></table></div>'+
-    '<p class="foot-note">Rentabilidade da carteira ponderada pelo saldo de abertura de cada conta. “No ano” e “Acumulado” são compostos pelos meses lançados; o acumulado considera todo o histórico até o fim de cada ano.</p>';
+    '<p class="foot-note">'+(off?"Rentabilidade da carteira offshore, medida em d\u00f3lar, ponderada pelo saldo de abertura de cada conta.":"Rentabilidade da carteira ponderada pelo saldo de abertura de cada conta.")+' “No ano” e “Acumulado” são compostos pelos meses lançados; o acumulado considera todo o histórico até o fim de cada ano.</p>';
 }
 
 /* ============ view: relatório ============ */
@@ -1433,6 +1438,9 @@ function viewRelatorio(){
       '<div class="kbox"><div class="l">Rentabilidade desde o in\u00edcio</div><div class="v '+sinal(aIniU.pct)+'">'+(aIniU.meses?pct(aIniU.pct):"\u2014")+'</div><div class="s">em d\u00f3lar</div></div>'+
       '<div class="kbox"><div class="l">Resultado desde o in\u00edcio</div><div class="v '+sinal(aIniU.rs)+'">'+usd(aIniU.rs)+'</div><div class="s">'+(desdeU?"desde "+desdeU:"\u2014")+'</div></div>'+
       '</div></div>';
+
+    p3+=shead(nx(),"Offshore \u00b7 retornos mensais","rentabilidade em d\u00f3lar")+
+      '<div class="panel tint">'+blocoRetornos(c.id,"USD")+'</div>';
 
     p3+=shead(nx(),"Offshore \u00b7 desempenho por conta","")+
       '<div class="panel"><table class="rt"><thead><tr><th>Conta</th><th class="n">Saldo</th><th class="n">% do offshore</th><th class="n">\u00daltimo m\u00eas</th><th class="n">No ano</th><th class="n">12 meses</th></tr></thead><tbody>'+
