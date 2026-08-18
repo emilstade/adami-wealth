@@ -238,6 +238,13 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .kbox .v .uni:last-child{margin-left:.1em}
 
 /* blocos */
+.sum{margin-top:26px}
+.sum-row{display:flex;align-items:baseline;gap:12px;padding:13px 0;border-bottom:1px solid var(--line-2)}
+.sum-row:last-child{border-bottom:0}
+.sum-row .n{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:.06em;min-width:22px}
+.sum-row .t{font-family:var(--display);font-size:15px;color:var(--navy)}
+.sum-row .dots{flex:1;border-bottom:1px dotted var(--line);transform:translateY(-4px)}
+.sum-row .p{font-family:var(--mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .panel{border:1px solid var(--line);border-radius:3px;padding:22px;background:#fff}
 .panel.tint{background:#FAFBFD}
 .rt{width:100%}
@@ -355,7 +362,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.2</div>
+    <div class="rail-user" style="opacity:.6">versão 2.3</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -453,7 +460,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.2";
+var VERSAO="versão 2.3";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -1427,7 +1434,10 @@ function tabelaBenchmarks(id,mes,ano,cur){
     '</tr></thead><tbody>'+linhas+'</tbody></table><p class="foot-note">'+nota+'</p></div>';
 }
 function nx(){ SNUM++; return String(SNUM).padStart(2,"0"); }
+var SUM=[], PGN=0;
+function sumAdd(num,titulo){ SUM.push({num:num||"",titulo:titulo,pg:PGN}); }
 function shead(num,titulo,cap){
+  sumAdd(num,titulo);
   return '<div class="shead"><span class="n">'+num+'</span><h2>'+titulo+'</h2>'+(cap?'<span class="cap">'+cap+'</span>':'')+'</div>';
 }
 function viewRelatorio(){
@@ -1436,7 +1446,7 @@ function viewRelatorio(){
   var r=reg(c.id,S.mes,S.ano);
   if(!r) return '<div class="card empty"><h2>Sem dados em '+MESES[S.mes-1]+'/'+S.ano+'</h2><p>Preencha o mês na aba “Preencher” para gerar o relatório.</p></div>';
 
-  SNUM=0;
+  SNUM=0; SUM=[]; PGN=0;
   var t=totais(r,"BRL"), serie=serieAno(c.id,S.ano,S.mes,"BRL"), inst=porInstituicao(r,"BRL");
   var offC=contasDe(r,"USD"), temOff=offC.length>0, ptax=n(r.ind&&r.ind.ptax);
   var cdi=n(r.ind.cdi), doCdi=cdi>0?(t.rendPct/cdi)*100:null;
@@ -1456,7 +1466,7 @@ function viewRelatorio(){
   }
   var h='<div class="doc">';
   var PGS=[];
-  function pag(conteudo,capa){ PGS.push({html:conteudo,capa:!!capa}); }
+  function pag(conteudo,capa){ PGS.push({html:conteudo,capa:!!capa}); PGN=PGS.length; }
 
   /* --- capa --- */
   pag('<div class="eyebrow">Relatório</div>'+
@@ -1470,6 +1480,7 @@ function viewRelatorio(){
 
   /* --- carta do gestor --- */
   if(carta && secOn(r.ind,"comentarios")){
+    sumAdd("","Coment\u00e1rios do m\u00eas");
     pag('<div class="dash"><i>—</i><h2>Comentários do mês</h2></div>'+
         '<div class="carta"><h3>Comentários do mês — '+MESES[S.mes-1]+' de '+S.ano+'</h3>'+
         carta+'</div>');
@@ -1610,6 +1621,7 @@ function viewRelatorio(){
   }
 
   /* --- informações importantes --- */
+  sumAdd("","Informações importantes");
   pag('<div class="dash"><i>—</i><h2>Informações importantes</h2></div>'+
      '<div class="panel disc">'+
      '<p>Este material foi preparado com finalidade exclusivamente informativa e não constitui oferta, recomendação individualizada de investimento, análise de valores mobiliários ou solicitação de compra ou venda de qualquer ativo.</p>'+
@@ -1618,6 +1630,19 @@ function viewRelatorio(){
      '<p>Investimentos envolvem riscos, inclusive de perda do capital investido. Produtos de renda fixa emitidos por instituições financeiras contam com a cobertura do Fundo Garantidor de Créditos nos limites e condições previstos em seu regulamento; demais ativos não contam com garantia do FGC nem do administrador. Leia atentamente os documentos de cada produto antes de investir.</p>'+
      '<p>Dúvidas sobre este relatório devem ser tratadas diretamente com o assessor responsável.</p>'+
      '</div>');
+
+  /* --- sumário: inserido como página 2, empurrando o resto ---
+     as entradas ja tem o indice da pagina em que foram criadas;
+     como o sumario entra no indice 1, tudo dali pra frente anda um. */
+  if(SUM.length){
+    var linhas=SUM.map(function(e){
+      return '<div class="sum-row"><span class="n">'+esc(e.num)+'</span>'+
+        '<span class="t">'+esc(e.titulo)+'</span><span class="dots"></span>'+
+        '<span class="p">'+((e.pg>=1?e.pg+1:e.pg)+1)+'</span></div>';
+    }).join("");
+    PGS.splice(1,0,{html:'<div class="dash"><i>\u2014</i><h2>Sum\u00e1rio</h2></div>'+
+      '<div class="sum">'+linhas+'</div>',capa:false});
+  }
 
   /* --- montagem com numeração real --- */
   var total=PGS.length;
