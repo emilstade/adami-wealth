@@ -215,6 +215,10 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .pat .l{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
 .pat .v{font-family:var(--mono);font-size:34px;color:var(--navy);letter-spacing:.03em;margin:9px 0 4px}
 .pat .s{font-size:11.5px;color:var(--muted)}
+.pat-ant{margin-top:16px;padding-top:13px;border-top:1px solid var(--line-2);display:flex;justify-content:center;align-items:baseline;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.pat-ant b{font-family:var(--mono);font-weight:400;color:var(--navy);font-size:14px}
+.pat-ant i{font-style:normal;font-family:var(--mono);font-size:12.5px}
+.pat-ant i.pos{color:var(--green)} .pat-ant i.neg{color:var(--alert)}
 .kgrid{display:grid;grid-template-columns:1fr 1fr;border-bottom:3px solid var(--navy)}
 .kbox{padding:18px 0 16px}
 .kbox:nth-child(odd){border-right:1px solid var(--line);padding-right:22px}
@@ -339,7 +343,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.0</div>
+    <div class="rail-user" style="opacity:.6">versão 2.1</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -437,7 +441,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.0";
+var VERSAO="versão 2.1";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -560,6 +564,7 @@ function montarRascunho(){
   while(t<24&&!ant){ ant=reg(id,p.mes,p.ano); if(!ant)p=anterior(p.mes,p.ano); t++; }
   if(ant){
     S.rasc={_herdado:true,contas:ant.contas.map(function(c){return {nome:c.nome,inst:c.inst,saldo:n(c.saldo),apl:0,res:0,rendPct:0,rendRs:0,moeda:curDe(c)};}),ind:indVazio()};
+    if(ant.ind&&ant.ind.secoes) S.rasc.ind.secoes=JSON.parse(JSON.stringify(ant.ind.secoes));
   }else{
     S.rasc={_herdado:false,contas:[contaVazia(),contaVazia()],ind:indVazio()};
   }
@@ -585,6 +590,30 @@ function herdarOffshore(){
 
 /* ---- indicadores de mercado: valem para todos os clientes no mes ---- */
 var INDGLOB=IND.map(function(x){return x[0];}).concat(["ptax"]);
+var SECOES=[["comentarios","Coment\u00e1rios do m\u00eas"],["estrategia","Aloca\u00e7\u00e3o por estrat\u00e9gia"],
+  ["instituicao","Distribui\u00e7\u00e3o por institui\u00e7\u00e3o"],["retornos","Retornos mensais"],
+  ["benchmarks","Carteira contra os indicadores"],["contas","Desempenho por conta"],
+  ["evolucao","Evolu\u00e7\u00e3o do patrim\u00f4nio"],["vencimentos","Pr\u00f3ximos vencimentos"],
+  ["offshore","Bloco offshore"]];
+function secOn(ind,k){ var o=ind&&ind.secoes; return (!o||o[k]===undefined)?true:!!o[k]; }
+function setSecao(k,v){ if(!S.rasc.ind.secoes) S.rasc.ind.secoes={}; S.rasc.ind.secoes[k]=!!v; }
+/* patrimonio do ultimo mes lancado antes de (mes/ano) */
+function patAnterior(id,mes,ano,cur){
+  var p=anterior(mes,ano),t=0;
+  while(t<24){
+    var r=reg(id,p.mes,p.ano);
+    if(r&&contasDe(r,cur).length) return {pl:totais(r,cur).pl,mes:p.mes,ano:p.ano};
+    p=anterior(p.mes,p.ano); t++;
+  }
+  return null;
+}
+function blocoPatAnterior(id,mes,ano,cur,plAtual){
+  var a=patAnterior(id,mes,ano,cur);
+  if(!a) return "";
+  var v=(a.pl>0)?((plAtual-a.pl)/a.pl)*100:null;
+  return '<div class="pat-ant"><span>M\u00eas anterior \u00b7 '+dataBase(a.mes,a.ano)+'</span><b>'+mo(a.pl,cur)+'</b>'+
+    (v!=null?'<i class="'+sinal(v)+'">'+(v>0?"+":"")+pct(v)+'</i>':'')+'</div>';
+}
 function indicesDoMes(mes,ano,excluiId){
   var achado=null;
   db.clientes.forEach(function(c){
@@ -1022,6 +1051,16 @@ function viewPreencher(){
      }).join("")+
      '</div><div id="somaEstrat" style="margin-top:12px;font-size:12.5px;color:'+((somaEst===0||Math.abs(somaEst-100)<0.05)?'var(--muted)':'var(--alert)')+'">Soma: '+pct(somaEst,1)+'</div></div>';
 
+  h+='<div class="card"><div class="sec-title">Se\u00e7\u00f5es do relat\u00f3rio</div>'+
+     '<div class="sec-sub">Desmarque o que n\u00e3o deve sair no relat\u00f3rio deste cliente. A escolha \u00e9 salva com o m\u00eas e segue para os meses seguintes.</div>'+
+     '<div class="grid-ind">'+
+     SECOES.map(function(x){
+       return '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">'+
+         '<input type="checkbox" '+(secOn(S.rasc.ind,x[0])?"checked":"")+' onchange="setSecao(\''+x[0]+'\',this.checked)">'+
+         '<span>'+x[1]+'</span></label>';
+     }).join("")+
+     '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Se\u00e7\u00f5es sem dado preenchido continuam ocultas automaticamente.</div></div>';
+
   var vencs=S.rasc.ind.vencimentos||[];
   h+='<div class="card"><div class="sec-title">Próximos vencimentos</div>'+
      '<div class="sec-sub">Opcional. Se ficar em branco, a seção não aparece no relatório.</div>'+
@@ -1404,7 +1443,7 @@ function viewRelatorio(){
       '<div class="foot">Performance</div>', true);
 
   /* --- carta do gestor --- */
-  if(carta){
+  if(carta && secOn(r.ind,"comentarios")){
     pag('<div class="dash"><i>—</i><h2>Comentários do mês</h2></div>'+
         '<div class="carta"><h3>Comentários do mês — '+MESES[S.mes-1]+' de '+S.ano+'</h3>'+
         carta+'</div>');
@@ -1414,7 +1453,8 @@ function viewRelatorio(){
   var p1='<div class="rep-eyebrow">Relatório de performance</div>'+
      '<div class="rep-name">'+esc(c.nome)+'</div>'+
      '<div class="rep-ref">'+MESES[S.mes-1]+' de '+S.ano+' &nbsp;·&nbsp; data-base '+dataBase(S.mes,S.ano)+'</div>'+
-     '<div class="pat"><div class="l">Patrimônio'+(temOff?" onshore":"")+'</div><div class="v">'+brl(t.pl)+'</div><div class="s">posição em '+dataBase(S.mes,S.ano)+'</div></div>'+
+     '<div class="pat"><div class="l">Patrimônio'+(temOff?" onshore":"")+'</div><div class="v">'+brl(t.pl)+'</div><div class="s">posição em '+dataBase(S.mes,S.ano)+'</div>'+
+     blocoPatAnterior(c.id,S.mes,S.ano,"BRL",t.pl)+'</div>'+
      '<div class="kgrid">'+
      '<div class="kbox"><div class="l">Rentabilidade no mês</div><div class="v '+sinal(t.rendPct)+'">'+pct(t.rendPct)+'</div><div class="s">'+(doCdi!=null?pct(doCdi,0)+" do CDI":"—")+'</div></div>'+
      '<div class="kbox"><div class="l">Resultado no mês</div><div class="v '+sinal(t.rendRs)+'">'+brl(t.rendRs)+'</div><div class="s">'+ref(S.mes,S.ano)+'</div></div>'+
@@ -1425,7 +1465,7 @@ function viewRelatorio(){
      '</div>';
 
   var estr=listaEstrat(r.ind);
-  if(estr.length){
+  if(estr.length && secOn(r.ind,"estrategia")){
     var somaE=estr.reduce(function(a,x){return a+x.pc;},0);
     p1+=shead(nx(),"Alocação por estratégia","% da carteira")+
        '<div class="panel" style="text-align:center">'+pizza(estr.map(function(x){return {nome:x.nome,valor:x.pc};}))+
@@ -1436,7 +1476,7 @@ function viewRelatorio(){
        '</tbody></table></div>';
   }
 
-  p1+=shead(nx(),"Distribuição por instituição","posição em "+dataBase(S.mes,S.ano))+
+  if(secOn(r.ind,"instituicao")) p1+=shead(nx(),"Distribuição por instituição","posição em "+dataBase(S.mes,S.ano))+
      '<div class="panel" style="text-align:center">'+pizza(inst)+'<div class="dn-total">total <b>'+brl(t.pl)+'</b></div>'+
      '<div class="dn-leg">'+inst.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+'</div>'+
      '<div class="dn-rows">'+inst.map(function(x){return '<div><span>'+esc(x.nome)+'</span><b>'+brl(x.valor)+'</b></div>';}).join("")+'</div>'+
@@ -1445,13 +1485,14 @@ function viewRelatorio(){
   pag(p1);
 
   /* --- tabelas --- */
-  var p2=shead(nx(),"Retornos mensais","carteira contra o CDI")+
-     '<div class="panel tint">'+blocoRetornos(c.id)+'</div>';
+  var p2="";
+  if(secOn(r.ind,"retornos")) p2+=shead(nx(),"Retornos mensais","carteira contra o CDI")+
+     '<div class="panel tint">'+blocoRetornos(c.id,"BRL")+'</div>';
 
-  p2+=shead(nx(),"Carteira contra os indicadores","rentabilidade acumulada por período")+
+  if(secOn(r.ind,"benchmarks")) p2+=shead(nx(),"Carteira contra os indicadores","rentabilidade acumulada por período")+
      tabelaBenchmarks(c.id,S.mes,S.ano,"BRL");
 
-  p2+=shead(nx(),"Desempenho por conta","")+
+  if(secOn(r.ind,"contas")) p2+=shead(nx(),"Desempenho por conta","")+
      '<div class="panel"><table class="rt"><thead><tr><th>Conta</th><th class="n">Saldo</th><th class="n">% da carteira</th><th class="n">Último mês</th><th class="n">No ano</th><th class="n">12 meses</th></tr></thead><tbody>'+
      contasDe(r,"BRL").map(function(x){
        var noAno=contaAcum(c.id,x.nome,S.mes,S.ano,S.mes), m12=contaAcum(c.id,x.nome,S.mes,S.ano,12);
@@ -1464,7 +1505,7 @@ function viewRelatorio(){
      '<tr class="tot"><td>Total</td><td class="n">'+brl(t.pl)+'</td><td class="n">100,0%</td><td class="n">'+pct(t.rendPct)+'</td><td class="n">'+pct(anoPct)+'</td><td class="n">'+(a12.meses?pct(a12.pct):"—")+'</td></tr>'+
      '</tbody></table></div>';
 
-  p2+=shead(nx(),"Evolução do patrimônio",serie.length+(serie.length===1?" mês":" meses")+" com saldo")+
+  if(secOn(r.ind,"evolucao")) p2+=shead(nx(),"Evolução do patrimônio",serie.length+(serie.length===1?" mês":" meses")+" com saldo")+
      '<div class="panel tint">'+
      '<p class="foot-note" style="margin:0 0 18px">Patrimônio de <b>'+brl(t.pl)+'</b> em '+ref(S.mes,S.ano)+'.'+(serie.length<2?' A comparação entre meses aparece a partir do segundo mês lançado.':'')+'</p>'+
      chartEvolucao(serie,"BRL")+
@@ -1477,10 +1518,10 @@ function viewRelatorio(){
        '<td class="n '+sinal(varia)+'">'+(varia!=null?pct(varia):"—")+'</td></tr>';
      }).join("")+
      '</tbody></table></div>';
-  pag(p2);
+  if(p2) pag(p2);
 
   /* --- offshore --- */
-  if(temOff){
+  if(temOff && secOn(r.ind,"offshore")){
     var tU=totais(r,"USD"), serieU=serieAno(c.id,S.ano,S.mes,"USD"), instU=porInstituicao(r,"USD");
     var s12U=serieHist(c.id,S.mes,S.ano,"USD",12), sIniU=serieHist(c.id,S.mes,S.ano,"USD",0);
     var a12U=agregado(s12U), aIniU=agregado(sIniU);
@@ -1490,7 +1531,8 @@ function viewRelatorio(){
     var p3=shead(nx(),"Patrim\u00f4nio offshore","valores em d\u00f3lar norte-americano")+
       '<div class="panel">'+
       '<div class="pat"><div class="l">Patrim\u00f4nio offshore</div><div class="v">'+usd(tU.pl)+'</div>'+
-      '<div class="s">posi\u00e7\u00e3o em '+dataBase(S.mes,S.ano)+(ptax>0?' \u00b7 PTAX de fechamento '+ptaxFmt(ptax):'')+'</div></div>'+
+      '<div class="s">posi\u00e7\u00e3o em '+dataBase(S.mes,S.ano)+(ptax>0?' \u00b7 PTAX de fechamento '+ptaxFmt(ptax):'')+'</div>'+
+      blocoPatAnterior(c.id,S.mes,S.ano,"USD",tU.pl)+'</div>'+
       '<div class="kgrid">'+
       '<div class="kbox"><div class="l">Rentabilidade no m\u00eas</div><div class="v '+sinal(tU.rendPct)+'">'+pct(tU.rendPct)+'</div><div class="s">em d\u00f3lar</div></div>'+
       '<div class="kbox"><div class="l">Resultado no m\u00eas</div><div class="v '+sinal(tU.rendRs)+'">'+usd(tU.rendRs)+'</div><div class="s">'+ref(S.mes,S.ano)+'</div></div>'+
@@ -1533,7 +1575,7 @@ function viewRelatorio(){
 
   /* --- vencimentos (página própria quando houver) --- */
   var venc=listaVenc(r.ind);
-  if(venc.length){
+  if(venc.length && secOn(r.ind,"vencimentos")){
     pag(shead(nx(),"Próximos vencimentos","valores aproximados")+
       '<div class="panel"><table class="rt"><thead><tr><th>Ativo</th><th>Instituição</th><th>Taxa</th><th class="n">Vencimento</th><th class="n">Valor aproximado</th></tr></thead><tbody>'+
       venc.map(function(v){
