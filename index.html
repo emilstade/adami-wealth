@@ -327,7 +327,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 1.9</div>
+    <div class="rail-user" style="opacity:.6">versão 1.9.1</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -416,7 +416,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 1.9";
+var VERSAO="versão 1.9.1";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -827,14 +827,13 @@ function viewPreencher(){
      '<div style="overflow-x:auto"><table class="form"><thead><tr><th style="min-width:150px">Conta</th><th style="min-width:120px">Instituição</th>'+
      '<th class="num">Saldo final</th><th class="num">Aplicações</th><th class="num">Resgates</th><th class="num">Rend. R$</th><th class="num">Rend. %</th><th></th></tr></thead><tbody>';
   r.contas.forEach(function(x,i){
-    var idx=i;
     h+='<tr>'+
     '<td><input class="inp" value="'+esc(x.nome)+'" oninput="setConta('+i+',\'nome\',this.value)" placeholder="Ex.: XP"></td>'+
     '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setConta('+i+',\'inst\',this.value)" placeholder="Ex.: XP"></td>'+
-    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.saldo)+'" oninput="onMoeda(this,function(v){setConta(idx,\'saldo\',v);})"></td>'+
-    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.apl)+'" oninput="onMoeda(this,function(v){setConta(idx,\'apl\',v);})"></td>'+
-    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.res)+'" oninput="onMoeda(this,function(v){setConta(idx,\'res\',v);})"></td>'+
-    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.rendRs)+'" oninput="onMoeda(this,function(v){setConta(idx,\'rendRs\',v);})"></td>'+
+    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.saldo)+'" oninput="onMoeda(this,function(v){setConta('+i+',\'saldo\',v);})"></td>'+
+    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.apl)+'" oninput="onMoeda(this,function(v){setConta('+i+',\'apl\',v);})"></td>'+
+    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.res)+'" oninput="onMoeda(this,function(v){setConta('+i+',\'res\',v);})"></td>'+
+    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.rendRs)+'" oninput="onMoeda(this,function(v){setConta('+i+',\'rendRs\',v);})"></td>'+
     '<td><input class="inp num" id="pc'+i+'" type="number" step="0.01" value="'+(x.rendPct||"")+'" oninput="setConta('+i+',\'rendPct\',this.value)"></td>'+
     '<td><button class="xbtn" onclick="delConta('+i+')" title="Remover">&times;</button></td></tr>';
   });
@@ -862,13 +861,12 @@ function viewPreencher(){
      '<th style="min-width:110px">Taxa</th><th style="min-width:140px">Vencimento</th>'+
      '<th class="num">Valor aproximado</th><th></th></tr></thead><tbody>'+
      (vencs.length?vencs.map(function(x,i){
-       var vi=i;
        return '<tr>'+
        '<td><input class="inp" value="'+esc(x.ativo)+'" oninput="setVenc('+i+',\'ativo\',this.value)" placeholder="Ex.: CDB Banco XYZ"></td>'+
        '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setVenc('+i+',\'inst\',this.value)" placeholder="Ex.: XP"></td>'+
        '<td><input class="inp" value="'+esc(x.taxa)+'" oninput="setVenc('+i+',\'taxa\',this.value)" placeholder="Ex.: 112% do CDI"></td>'+
        '<td><input class="inp" type="date" value="'+esc(x.data)+'" oninput="setVenc('+i+',\'data\',this.value)"></td>'+
-       '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.valor)+'" oninput="onMoeda(this,function(v){setVenc(vi,\'valor\',v);})"></td>'+
+       '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.valor)+'" oninput="onMoeda(this,function(v){setVenc('+i+',\'valor\',v);})"></td>'+
        '<td><button class="xbtn" onclick="delVenc('+i+')" title="Remover">&times;</button></td></tr>';
      }).join(""):'<tr><td colspan="6" style="color:var(--muted);font-size:12.5px">Nenhum vencimento informado.</td></tr>')+
      '</tbody></table></div>'+
