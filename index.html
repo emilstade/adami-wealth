@@ -337,7 +337,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
   .pg-num{bottom:8mm;right:14mm}
   /* capa sangrando na folha inteira */
   .cover{margin:0;padding:46mm 22mm 20mm;height:297mm;border-radius:0;
-         background:var(--navy)!important;display:flex;flex-direction:column}
+         background:#fff!important;border:0;display:flex;flex-direction:column}
   .cover h1{font-size:30pt}
   /* manter título junto do bloco e evitar sobras */
   .shead,.dash{break-after:avoid;page-break-after:avoid;margin:16px 0 11px}
@@ -366,7 +366,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
   .pg{padding:30px 22px}
   .pg-mark{display:none}
   .kgrid{grid-template-columns:1fr}
-  .kbox{border-right:0!important;padding:16px 0!important;border-bottom:1px solid var(--line)}
+  .kbox{padding:16px 15px}
 }
 </style>
 </head>
@@ -390,7 +390,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.6</div>
+    <div class="rail-user" style="opacity:.6">versão 2.6.1</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -506,7 +506,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.6";
+var VERSAO="versão 2.6.1";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
