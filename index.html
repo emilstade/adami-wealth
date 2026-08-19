@@ -393,7 +393,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.7.2</div>
+    <div class="rail-user" style="opacity:.6">versão 2.7.3</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini" id="miniAcesso">Os dados ficam no servidor. Cada assessor enxerga apenas os próprios clientes.</div>
   </div>
@@ -509,7 +509,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.7.2";
+var VERSAO="versão 2.7.3";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -905,7 +905,6 @@ function setConta(i,campo,v){
 function addConta(cur){ S.rasc.contas.push(contaVazia(cur)); render(); }
 function delConta(i){ S.rasc.contas.splice(i,1); render(); }
 function setInd(k,v){ S.rasc.ind[k]=n(v); }
-function setCarta(v){ S.rasc.ind.carta=v; }
 function setEstrat(k,v){
   if(!S.rasc.ind.estrategias) S.rasc.ind.estrategias={};
   S.rasc.ind.estrategias[k]=n(v);
@@ -1107,7 +1106,10 @@ function viewPreencher(){
   if(S.erro) h+='<div class="note err"><b>Sem conexão com o servidor.</b> '+esc(S.erro)+'</div>';
   var c=cli();
   if(!c) return h+'<div class="card empty"><h2>Comece cadastrando um cliente</h2><p>Use o botão “+ Novo cliente” no menu lateral.</p></div>';
-  var r=S.rasc,t=totais(r);
+  if(!S.rasc) montarRascunho();
+  var r=S.rasc;
+  if(!r) return h+'<div class="card empty"><h2>N\u00e3o foi poss\u00edvel montar o lan\u00e7amento</h2><p>Selecione o cliente novamente no menu lateral.</p></div>';
+  var t=totais(r);
   h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">'+
      '<div><div class="sec-title">'+esc(c.nome)+'</div><div class="sec-sub">Lançamento de '+MESES[S.mes-1]+' de '+S.ano+'</div></div>'+
      '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" onclick="renomear()">Renomear</button>'+
@@ -1343,24 +1345,6 @@ function eixoY(max,H,pt,pb,W,fmt){
          '<text x="46" y="'+(y+3)+'" text-anchor="end" font-size="8.5" fill="#9AA6B5" font-family="Segoe UI, Arial, sans-serif">'+fmt(v)+'</text>';
   }
   return out;
-}
-function chartCarteiraCdi(serie){
-  if(!serie.length) return '<p class="foot-note">Sem histórico no ano.</p>';
-  var W=Math.max(420,serie.length*74+70),H=210,pt=16,pb=30;
-  var max=Math.max.apply(null,serie.map(function(s){return Math.max(s.rendPct,s.cdi);}));
-  if(max<=0) max=1; max=max*1.15;
-  var slot=(W-62)/serie.length,bw=Math.min(19,slot/3.2),out=eixoY(max,H,pt,pb,W,function(v){return pct(v,2);});
-  serie.forEach(function(s,i){
-    var cx=52+i*slot+slot/2;
-    [[s.rendPct,"#1B3A5F",-1],[s.cdi,"#C0A265",1]].forEach(function(p){
-      var hh=Math.max(0,(p[0]/max)*(H-pt-pb)),x=cx+(p[2]<0?-bw-2:2),y=H-pb-hh;
-      out+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" fill="'+p[1]+'"/>';
-    });
-    out+='<text x="'+cx+'" y="'+(H-11)+'" text-anchor="middle" font-size="9" fill="#7A8698">'+ref(s.mes,s.ano)+'</text>';
-  });
-  out+='<line x1="52" y1="'+(H-pb)+'" x2="'+(W-8)+'" y2="'+(H-pb)+'" stroke="#DCE2EA"/>';
-  return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:'+W+'px;display:block;margin:0 auto">'+out+'</svg></div>'+
-         '<div class="dn-leg" style="margin-top:14px"><span><i style="background:#1B3A5F"></i>Rendimento da carteira</span><span><i style="background:#C0A265"></i>CDI</span></div>';
 }
 function pizza(items){
   var R=88,cx=100,cy=100,ang=-Math.PI/2,out="";
@@ -1666,16 +1650,9 @@ function viewRelatorio(){
   var chk = S._chk ? painelConferencia(c.id) : "";
   var t=totais(r,"BRL"), serie=serieAno(c.id,S.ano,S.mes,"BRL"), inst=porInstituicao(r,"BRL");
   var offC=contasDe(r,"USD"), temOff=offC.length>0, ptax=n(r.ind&&r.ind.ptax);
-  var cdi=n(r.ind.cdi), doCdi=cdi>0?(t.rendPct/cdi)*100:null;
   var anoPct=comp(serie.map(function(s){return s.rendPct;}));
-  var anoCdi=comp(serie.map(function(s){return s.cdi;}));
-  var anoRs=serie.reduce(function(a,s){return a+s.rendRs;},0);
-  var anoDoCdi=anoCdi>0?(anoPct/anoCdi)*100:null;
   var s12=serieHist(c.id,S.mes,S.ano,"BRL",12), sIni=serieHist(c.id,S.mes,S.ano,"BRL",0);
   var a12=agregado(s12), aIni=agregado(sIni);
-  var cdi12=benchAcum(s12,"cdi"), cdiIni=benchAcum(sIni,"cdi");
-  var do12=(cdi12&&cdi12>0)?(a12.pct/cdi12)*100:null;
-  var doIni=(cdiIni&&cdiIni>0)?(aIni.pct/cdiIni)*100:null;
   var desdeQuando=sIni.length?(MESES_C[sIni[0].mes-1]+"/"+String(sIni[0].ano).slice(2)):"";
   var carta=(cartaDoMes(S.mes,S.ano)||"").trim();
   if(!carta && (r.ind.carta||"").trim()){
