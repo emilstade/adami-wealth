@@ -238,6 +238,23 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .kbox .v .uni:last-child{margin-left:.1em}
 
 /* blocos */
+.chk{border:1px solid var(--line);border-radius:3px;background:#fff;margin-bottom:22px;overflow:hidden}
+.chk-top{display:flex;align-items:center;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line);background:#FAFBFD}
+.chk-top h3{font-family:var(--display);font-size:16px;color:var(--navy);margin:0;flex:1;font-weight:400}
+.chk-tag{font-family:var(--mono);font-size:11px;padding:4px 9px;border-radius:2px;letter-spacing:.04em}
+.chk-tag.ok{background:#E8F3ED;color:var(--green)}
+.chk-tag.al{background:#F7E9E6;color:var(--alert)}
+.chk-tag.at{background:#FBF3E2;color:#8A6A1F}
+.chk-item{display:flex;gap:14px;padding:15px 20px;border-bottom:1px solid var(--line-2)}
+.chk-item:last-child{border-bottom:0}
+.chk-bar{width:3px;border-radius:2px;flex:none}
+.chk-bar.alta{background:var(--alert)} .chk-bar.atencao{background:var(--gold)} .chk-bar.info{background:var(--blue-3)}
+.chk-txt{flex:1;min-width:0}
+.chk-txt b{display:block;font-size:13.5px;color:var(--ink);font-weight:500;margin-bottom:4px}
+.chk-txt span{display:block;font-size:12.5px;color:var(--ink-2);line-height:1.65}
+.chk-txt i{font-style:normal;font-family:var(--mono);color:var(--navy)}
+.chk-onde{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:block}
+.chk-vazio{padding:22px 20px;font-size:13px;color:var(--ink-2)}
 .sum{margin-top:26px}
 .sum-row{display:flex;align-items:baseline;gap:12px;padding:13px 0;border-bottom:1px solid var(--line-2)}
 .sum-row:last-child{border-bottom:0}
@@ -362,7 +379,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.3</div>
+    <div class="rail-user" style="opacity:.6">versão 2.4</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -378,6 +395,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
       <button id="tabH" onclick="setTab('historico')">Histórico</button>
     </div>
     <div class="spacer"></div>
+    <button class="btn" id="btnChk" onclick="rodarConferencia()" style="display:none">Conferir dados</button>
     <button class="btn pri" id="btnPdf" onclick="imprimir()" style="display:none">Imprimir / Salvar PDF</button>
   </div>
   <div id="view"><div class="card empty"><h2>Carregando…</h2></div></div>
@@ -460,7 +478,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.3";
+var VERSAO="versão 2.4";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -845,8 +863,8 @@ function excluirMes(){
     .catch(falha);
 }
 function falha(e){ status("err","Erro ao salvar"); alert("Não foi possível concluir:\n\n"+e.message); }
-function selCliente(id){ S.cliente=id; montarRascunho(); render(); }
-function mudarRef(){ S.mes=parseInt(document.getElementById("selMes").value,10); S.ano=parseInt(document.getElementById("selAno").value,10); montarRascunho(); render(); }
+function selCliente(id){ S._chk=false; S.cliente=id; montarRascunho(); render(); }
+function mudarRef(){ S._chk=false; S.mes=parseInt(document.getElementById("selMes").value,10); S.ano=parseInt(document.getElementById("selAno").value,10); montarRascunho(); render(); }
 function setTab(t){ S.tab=t; render(); if(t==="historico"){ HIST.log=null; HIST.backups=null; abrirHistorico(); } }
 function setConta(i,campo,v){
   var c=S.rasc.contas[i];
@@ -1400,6 +1418,140 @@ function blocoRetornos(id,cur){
 /* ============ view: relatório ============ */
 function marca(){ return '<div class="pg-mark"><img src="'+LOGO_AZUL+'" alt="Adami Wealth"></div>'; }
 var SNUM=0;
+/* ===== conferencia de consistencia dos lancamentos =====
+   Regras deterministicas: cada achado aponta a conta, o numero encontrado
+   e o numero esperado, para dar pra conferir na mao. */
+function conferir(id,mes,ano){
+  var r=reg(id,mes,ano), out=[];
+  if(!r) return out;
+  var add=function(nivel,onde,titulo,detalhe){ out.push({nivel:nivel,onde:onde,titulo:titulo,detalhe:detalhe}); };
+  var ant=null,pa=anterior(mes,ano),tt=0;
+  while(tt<24&&!ant){ var rr=reg(id,pa.mes,pa.ano); if(rr) ant=rr; else pa=anterior(pa.mes,pa.ano); tt++; }
+
+  ["BRL","USD"].forEach(function(cur){
+    var contas=contasDe(r,cur); if(!contas.length) return;
+    var fm=function(v){ return mo2(v,cur); };
+    var antC=ant?contasDe(ant,cur):[];
+    var achaAnt=function(nome){
+      for(var i=0;i<antC.length;i++){ if((antC[i].nome||"")===(nome||"")) return antC[i]; }
+      return null;
+    };
+
+    contas.forEach(function(c){
+      var nome=(c.nome||"sem nome")+(cur==="USD"?" (offshore)":"");
+      var saldo=n(c.saldo), rs=n(c.rendRs), pc=n(c.rendPct), apl=n(c.apl), res=n(c.res);
+      var base=saldo-rs-apl+res;
+
+      if(saldo===0&&rs===0&&pc===0&&apl===0&&res===0) return;
+
+      if(base<0){
+        add("alta",nome,"Saldo de abertura negativo",
+          "Pelo saldo final de "+fm(saldo)+", resultado de "+fm(rs)+", aplica\u00e7\u00f5es de "+fm(apl)+" e resgates de "+fm(res)+
+          ", a abertura do m\u00eas daria <i>"+fm(base)+"</i>. Algum dos quatro campos est\u00e1 trocado ou com sinal invertido.");
+      }else if(base===0&&saldo>0&&(rs!==0||apl!==0)){
+        add("atencao",nome,"Abertura zerada",
+          "A conta fecha em "+fm(saldo)+" mas a abertura calculada d\u00e1 zero. Confira se a aplica\u00e7\u00e3o e o resultado est\u00e3o certos.");
+      }
+
+      var foraEscala=Math.abs(pc)>50;
+      if(foraEscala){
+        add("alta",nome,"Rentabilidade fora de escala",
+          "Foi informado <i>"+pct(pc)+"</i> no m\u00eas. Se a inten\u00e7\u00e3o era "+pct(pc/100)+", o valor foi digitado cem vezes maior.");
+      }
+
+      if(base>0&&rs!==0&&pc!==0&&!foraEscala){
+        var impl=(rs/base)*100, dif=Math.abs(impl-pc);
+        var tol=Math.max(0.20,Math.abs(pc)*0.25);
+        if(dif>tol){
+          add(dif>Math.max(1,Math.abs(pc))?"alta":"atencao",nome,"Resultado e percentual n\u00e3o batem",
+            "O resultado de "+fm(rs)+" sobre uma abertura de "+fm(base)+" equivale a <i>"+pct(impl)+"</i>, mas foi informado <i>"+pct(pc)+"</i>. "+
+            "Os dois campos s\u00e3o independentes de prop\u00f3sito, ent\u00e3o alguma diferen\u00e7a \u00e9 normal \u2014 essa est\u00e1 grande.");
+        }
+      }
+      if(saldo>0&&pc!==0&&rs===0)
+        add("atencao",nome,"Falta o resultado em "+(cur==="USD"?"d\u00f3lar":"reais"),
+          "A rentabilidade de "+pct(pc)+" foi informada, mas o campo de resultado est\u00e1 zerado. Ele alimenta o resultado da carteira.");
+      if(saldo>0&&rs!==0&&pc===0)
+        add("atencao",nome,"Falta a rentabilidade em %",
+          "O resultado de "+fm(rs)+" foi informado, mas o percentual est\u00e1 zerado. Ele alimenta a rentabilidade da carteira, que \u00e9 m\u00e9dia ponderada.");
+      if(saldo>0&&rs===0&&pc===0&&apl===0)
+        add("atencao",nome,"M\u00eas sem resultado",
+          "A conta tem "+fm(saldo)+" em saldo e nenhum resultado informado. Se ficou parada mesmo, ignore.");
+
+      var a=achaAnt(c.nome);
+      if(a){
+        var fech=n(a.saldo), delta=base-fech, lim=Math.max(1,Math.abs(fech)*0.005);
+        if(Math.abs(delta)>lim){
+          add(Math.abs(delta)>Math.abs(fech)*0.05?"alta":"atencao",nome,"N\u00e3o fecha com o m\u00eas anterior",
+            "O m\u00eas anterior fechou em "+fm(fech)+" e a abertura deste m\u00eas d\u00e1 "+fm(base)+", diferen\u00e7a de <i>"+fm(delta)+"</i>. "+
+            "Costuma ser aplica\u00e7\u00e3o ou resgate que n\u00e3o foi lan\u00e7ado.");
+        }
+      }else if(ant&&antC.length&&saldo>0&&apl===0){
+        add("atencao",nome,"Conta nova sem aplica\u00e7\u00e3o",
+          "N\u00e3o existia no m\u00eas anterior e entrou com "+fm(saldo)+" sem aplica\u00e7\u00e3o lan\u00e7ada. O saldo inteiro vira abertura e derruba a rentabilidade ponderada.");
+      }
+
+      var hist=[],hp=anterior(mes,ano),h=0;
+      while(h<12){
+        var hr=reg(id,hp.mes,hp.ano);
+        if(hr){ var hc=contasDe(hr,cur).filter(function(x){return (x.nome||"")===(c.nome||"");})[0];
+                if(hc&&n(hc.rendPct)) hist.push(n(hc.rendPct)); }
+        hp=anterior(hp.mes,hp.ano); h++;
+      }
+      if(hist.length>=4&&pc!==0){
+        var m=hist.reduce(function(x,y){return x+y;},0)/hist.length;
+        var dv=Math.sqrt(hist.reduce(function(x,y){return x+(y-m)*(y-m);},0)/hist.length);
+        if(dv>0&&Math.abs(pc-m)>4*dv)
+          add("atencao",nome,"Fora do padr\u00e3o da conta",
+            "Os "+hist.length+" meses anteriores giraram em torno de "+pct(m)+". Este m\u00eas veio <i>"+pct(pc)+"</i>. Pode estar certo, mas vale conferir.");
+      }
+    });
+
+    antC.forEach(function(a){
+      var achou=contas.filter(function(x){return (x.nome||"")===(a.nome||"");})[0];
+      if(!achou&&n(a.saldo)>0)
+        add("atencao",(a.nome||"sem nome")+(cur==="USD"?" (offshore)":""),"Conta sumiu",
+          "Existia no m\u00eas anterior com "+mo2(n(a.saldo),cur)+" e n\u00e3o aparece neste m\u00eas. Se foi encerrada, lance o resgate para o hist\u00f3rico fechar.");
+    });
+
+    var t=totais(r,cur);
+    var somaBase=0; contas.forEach(function(c){ var b=n(c.saldo)-n(c.rendRs)-n(c.apl)+n(c.res); somaBase+=(b>0?b:n(c.saldo)); });
+    if(somaBase>0&&t.rendRs!==0&&t.rendPct!==0){
+      var implT=(t.rendRs/somaBase)*100, difT=Math.abs(implT-t.rendPct);
+      if(difT>Math.max(0.25,Math.abs(t.rendPct)*0.25))
+        add("alta",(cur==="USD"?"Carteira offshore":"Carteira onshore"),"Carteira: percentual e resultado divergem",
+          "A soma dos resultados d\u00e1 <i>"+pct(implT)+"</i> sobre a abertura total, mas a m\u00e9dia ponderada dos percentuais informados d\u00e1 <i>"+pct(t.rendPct)+"</i>.");
+    }
+  });
+
+  if(!n(r.ind&&r.ind.cdi))
+    add("info","Indicadores","CDI do m\u00eas em branco",
+      "Sem o CDI o relat\u00f3rio n\u00e3o consegue mostrar o comparativo nem o \u201c% do CDI\u201d.");
+  if(contasDe(r,"USD").length&&!n(r.ind&&r.ind.ptax))
+    add("info","Indicadores","PTAX em branco",
+      "H\u00e1 conta offshore neste m\u00eas e a PTAX de fechamento n\u00e3o foi informada.");
+
+  var ordem={alta:0,atencao:1,info:2};
+  out.sort(function(a,b){ return ordem[a.nivel]-ordem[b.nivel]; });
+  return out;
+}
+function painelConferencia(id,mes,ano){
+  var f=conferir(id,mes,ano);
+  var alta=f.filter(function(x){return x.nivel==="alta";}).length;
+  var aten=f.filter(function(x){return x.nivel==="atencao";}).length;
+  var tag = alta?'<span class="chk-tag al">'+alta+(alta===1?" cr\u00edtico":" cr\u00edticos")+'</span>':"";
+  tag += aten?'<span class="chk-tag at">'+aten+(aten===1?" a conferir":" a conferir")+'</span>':"";
+  if(!f.length) tag='<span class="chk-tag ok">nada a apontar</span>';
+  var corpo = f.length
+    ? f.map(function(x){
+        return '<div class="chk-item"><div class="chk-bar '+x.nivel+'"></div><div class="chk-txt">'+
+          '<span class="chk-onde">'+esc(x.onde)+'</span><b>'+esc(x.titulo)+'</b><span>'+x.detalhe+'</span></div></div>';
+      }).join("")
+    : '<div class="chk-vazio">Os lan\u00e7amentos deste m\u00eas passaram por todas as verifica\u00e7\u00f5es: saldos de abertura, coer\u00eancia entre resultado e percentual, continuidade com o m\u00eas anterior, contas novas ou encerradas e desvios em rela\u00e7\u00e3o ao hist\u00f3rico de cada conta.</div>';
+  return '<div class="chk no-print"><div class="chk-top"><h3>Confer\u00eancia dos lan\u00e7amentos</h3>'+tag+
+    '<button class="btn" onclick="S._chk=false;render()">Fechar</button></div>'+corpo+'</div>';
+}
+function rodarConferencia(){ S._chk=true; render(); }
 function tabelaBenchmarks(id,mes,ano,cur){
   var sMes=serieHist(id,mes,ano,cur,1),
       s12=serieHist(id,mes,ano,cur,12),
@@ -1447,6 +1599,7 @@ function viewRelatorio(){
   if(!r) return '<div class="card empty"><h2>Sem dados em '+MESES[S.mes-1]+'/'+S.ano+'</h2><p>Preencha o mês na aba “Preencher” para gerar o relatório.</p></div>';
 
   SNUM=0; SUM=[]; PGN=0;
+  var chk = S._chk ? painelConferencia(c.id,S.mes,S.ano) : "";
   var t=totais(r,"BRL"), serie=serieAno(c.id,S.ano,S.mes,"BRL"), inst=porInstituicao(r,"BRL");
   var offC=contasDe(r,"USD"), temOff=offC.length>0, ptax=n(r.ind&&r.ind.ptax);
   var cdi=n(r.ind.cdi), doCdi=cdi>0?(t.rendPct/cdi)*100:null;
@@ -1464,7 +1617,7 @@ function viewRelatorio(){
   if(!carta && (r.ind.carta||"").trim()){
     carta="<p>"+esc(r.ind.carta.trim()).split(/\n\s*\n/).join("</p><p>").replace(/\n/g,"<br>")+"</p>";
   }
-  var h='<div class="doc">';
+  var h=chk+'<div class="doc">';
   var PGS=[];
   function pag(conteudo,capa){ PGS.push({html:conteudo,capa:!!capa}); PGN=PGS.length; }
 
@@ -1819,6 +1972,7 @@ function render(){
   document.getElementById("tabR").className=S.tab==="relatorio"?"on":"";
   document.getElementById("tabH").className=S.tab==="historico"?"on":"";
   document.getElementById("btnPdf").style.display=S.tab==="relatorio"?"":"none";
+  document.getElementById("btnChk").style.display=S.tab==="relatorio"?"":"none";
   document.getElementById("view").innerHTML=
     S.tab==="preencher"?viewPreencher():
     (S.tab==="carta"?viewCarta():
