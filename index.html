@@ -254,6 +254,10 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .chk-txt span{display:block;font-size:12.5px;color:var(--ink-2);line-height:1.65}
 .chk-txt i{font-style:normal;font-family:var(--mono);color:var(--navy)}
 .chk-onde{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:block}
+.chk-mes{display:flex;align-items:baseline;gap:10px;padding:10px 20px;background:#F7F9FB;border-bottom:1px solid var(--line-2);border-top:1px solid var(--line-2)}
+.chk-mes b{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);font-weight:400}
+.chk-mes span{font-size:11px;color:var(--muted)}
+.chk-rodape{padding:14px 20px;font-size:12px;color:var(--muted);border-top:1px solid var(--line-2)}
 .chk-vazio{padding:22px 20px;font-size:13px;color:var(--ink-2)}
 .sum{margin-top:26px}
 .sum-row{display:flex;align-items:baseline;gap:12px;padding:13px 0;border-bottom:1px solid var(--line-2)}
@@ -379,7 +383,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.4</div>
+    <div class="rail-user" style="opacity:.6">versão 2.5</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -478,7 +482,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.4";
+var VERSAO="versão 2.5";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -1535,21 +1539,53 @@ function conferir(id,mes,ano){
   out.sort(function(a,b){ return ordem[a.nivel]-ordem[b.nivel]; });
   return out;
 }
-function painelConferencia(id,mes,ano){
-  var f=conferir(id,mes,ano);
-  var alta=f.filter(function(x){return x.nivel==="alta";}).length;
-  var aten=f.filter(function(x){return x.nivel==="atencao";}).length;
-  var tag = alta?'<span class="chk-tag al">'+alta+(alta===1?" cr\u00edtico":" cr\u00edticos")+'</span>':"";
-  tag += aten?'<span class="chk-tag at">'+aten+(aten===1?" a conferir":" a conferir")+'</span>':"";
-  if(!f.length) tag='<span class="chk-tag ok">nada a apontar</span>';
-  var corpo = f.length
-    ? f.map(function(x){
-        return '<div class="chk-item"><div class="chk-bar '+x.nivel+'"></div><div class="chk-txt">'+
-          '<span class="chk-onde">'+esc(x.onde)+'</span><b>'+esc(x.titulo)+'</b><span>'+x.detalhe+'</span></div></div>';
-      }).join("")
-    : '<div class="chk-vazio">Os lan\u00e7amentos deste m\u00eas passaram por todas as verifica\u00e7\u00f5es: saldos de abertura, coer\u00eancia entre resultado e percentual, continuidade com o m\u00eas anterior, contas novas ou encerradas e desvios em rela\u00e7\u00e3o ao hist\u00f3rico de cada conta.</div>';
+function mesesDoCliente(id){
+  var out=[];
+  Object.keys(db.dados).forEach(function(k){
+    if(k.indexOf(id+"|")!==0) return;
+    var mm=(k.split("|")[1]||"").split("-");
+    if(mm.length!==2) return;
+    out.push({ano:parseInt(mm[0],10),mes:parseInt(mm[1],10)});
+  });
+  out.sort(function(a,b){ return (b.ano-a.ano)||(b.mes-a.mes); });
+  return out;
+}
+function painelConferencia(id){
+  var meses=mesesDoCliente(id), grupos=[], alta=0, aten=0, limpos=0;
+  meses.forEach(function(p){
+    var f=conferir(id,p.mes,p.ano);
+    if(!f.length){ limpos++; return; }
+    alta+=f.filter(function(x){return x.nivel==="alta";}).length;
+    aten+=f.filter(function(x){return x.nivel==="atencao";}).length;
+    grupos.push({mes:p.mes,ano:p.ano,f:f});
+  });
+  var tag="";
+  if(alta) tag+='<span class="chk-tag al">'+alta+(alta===1?" cr\u00edtico":" cr\u00edticos")+'</span>';
+  if(aten) tag+='<span class="chk-tag at">'+aten+' a conferir</span>';
+  if(!grupos.length) tag='<span class="chk-tag ok">nada a apontar</span>';
+
+  var corpo;
+  if(!meses.length){
+    corpo='<div class="chk-vazio">Este cliente ainda n\u00e3o tem nenhum m\u00eas lan\u00e7ado.</div>';
+  }else if(!grupos.length){
+    corpo='<div class="chk-vazio">Os '+meses.length+(meses.length===1?" m\u00eas lan\u00e7ado passou":" meses lan\u00e7ados passaram")+
+      ' por todas as verifica\u00e7\u00f5es: saldos de abertura, coer\u00eancia entre resultado e percentual, continuidade entre um m\u00eas e o seguinte, contas novas ou encerradas e desvios em rela\u00e7\u00e3o ao hist\u00f3rico de cada conta.</div>';
+  }else{
+    corpo=grupos.map(function(g){
+      var a=g.f.filter(function(x){return x.nivel==="alta";}).length;
+      var t=g.f.filter(function(x){return x.nivel==="atencao";}).length;
+      var resumo=[]; if(a) resumo.push(a+(a===1?" cr\u00edtico":" cr\u00edticos")); if(t) resumo.push(t+" a conferir");
+      return '<div class="chk-mes"><b>'+MESES_C[g.mes-1]+"/"+String(g.ano).slice(2)+'</b><span>'+resumo.join(" \u00b7 ")+'</span></div>'+
+        g.f.map(function(x){
+          return '<div class="chk-item"><div class="chk-bar '+x.nivel+'"></div><div class="chk-txt">'+
+            '<span class="chk-onde">'+esc(x.onde)+'</span><b>'+esc(x.titulo)+'</b><span>'+x.detalhe+'</span></div></div>';
+        }).join("");
+    }).join("");
+    if(limpos) corpo+='<div class="chk-rodape">Outros '+limpos+(limpos===1?" m\u00eas passou":" meses passaram")+' sem apontamento.</div>';
+  }
   return '<div class="chk no-print"><div class="chk-top"><h3>Confer\u00eancia dos lan\u00e7amentos</h3>'+tag+
-    '<button class="btn" onclick="S._chk=false;render()">Fechar</button></div>'+corpo+'</div>';
+    '<button class="btn" onclick="S._chk=false;render()">Fechar</button></div>'+corpo+
+    '<div class="chk-rodape">Verificados '+meses.length+(meses.length===1?" m\u00eas":" meses")+' do hist\u00f3rico deste cliente, do mais recente ao mais antigo.</div></div>';
 }
 function rodarConferencia(){ S._chk=true; render(); }
 function tabelaBenchmarks(id,mes,ano,cur){
@@ -1599,7 +1635,7 @@ function viewRelatorio(){
   if(!r) return '<div class="card empty"><h2>Sem dados em '+MESES[S.mes-1]+'/'+S.ano+'</h2><p>Preencha o mês na aba “Preencher” para gerar o relatório.</p></div>';
 
   SNUM=0; SUM=[]; PGN=0;
-  var chk = S._chk ? painelConferencia(c.id,S.mes,S.ano) : "";
+  var chk = S._chk ? painelConferencia(c.id) : "";
   var t=totais(r,"BRL"), serie=serieAno(c.id,S.ano,S.mes,"BRL"), inst=porInstituicao(r,"BRL");
   var offC=contasDe(r,"USD"), temOff=offC.length>0, ptax=n(r.ind&&r.ind.ptax);
   var cdi=n(r.ind.cdi), doCdi=cdi>0?(t.rendPct/cdi)*100:null;
