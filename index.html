@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Cache-Control" content="no-store, max-age=0">
-<title>Adami Wealth — Consolidado de Carteiras</title>
+<title id="tituloPagina">Consolidado de Carteiras</title>
 <style>
 :root{
   --navy:#1B3A5F; --navy-d:#132B47; --ink:#16324F; --ink-2:#3C4C60; --muted:#7A8698;
@@ -383,7 +383,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.5</div>
+    <div class="rail-user" style="opacity:.6">versão 2.5.1</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -407,8 +407,25 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 
 <script>
 /* ============ conexão e sessão ============ */
-var SB_URL="https://mqhqbqiyrtlhhzjfuqxs.supabase.co";
-var SB_KEY="sb_publishable_7CLSR1wwXFAD2y-it_bo9A_GtjAUnm3";
+/* ============================================================
+   CONFIGURACAO DA EMPRESA
+   Este e o unico trecho que muda entre uma instalacao e outra.
+   Todo o resto do arquivo e identico, o que permite portar
+   melhorias de um portal para o outro copiando o resto.
+   ============================================================ */
+var EMPRESA={
+  nome:      "Adami Wealth",
+  dominio:   "adamiwealth.com.br",
+  produto:   "Consolidado de Carteiras",
+  chamada:   "Ambiente administrativo da Adami Wealth. Carteiras, planejamento e relat\u00f3rios em um s\u00f3 lugar.",
+  sb_url:    "https://mqhqbqiyrtlhhzjfuqxs.supabase.co",
+  sb_key:    "sb_publishable_7CLSR1wwXFAD2y-it_bo9A_GtjAUnm3"
+};
+var SB_URL=EMPRESA.sb_url;
+var SB_KEY=EMPRESA.sb_key;
+/* Os logos tambem trocam por instalacao: as variaveis LOGO_AZUL e
+   LOGO_BRANCO, logo abaixo, guardam as duas versoes da marca. */
+
 var SESSAO=null;
 try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
 var PERFIS={}, EU={admin:false,nome:"",id:null};
@@ -482,7 +499,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.5";
+var VERSAO="versão 2.5.1";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -1420,7 +1437,7 @@ function blocoRetornos(id,cur){
 }
 
 /* ============ view: relatório ============ */
-function marca(){ return '<div class="pg-mark"><img src="'+LOGO_AZUL+'" alt="Adami Wealth"></div>'; }
+function marca(){ return '<div class="pg-mark"><img src="'+LOGO_AZUL+'" alt="'+EMPRESA.nome+'"></div>'; }
 var SNUM=0;
 /* ===== conferencia de consistencia dos lancamentos =====
    Regras deterministicas: cada achado aponta a conta, o numero encontrado
@@ -1664,7 +1681,7 @@ function viewRelatorio(){
       '<div class="rule"></div>'+
       '<div class="ref">'+MESES[S.mes-1]+' de '+S.ano+'</div>'+
       '<div class="ref-base">Data-base '+dataBase(S.mes,S.ano)+'</div>'+
-      '<div class="mark"><img src="'+LOGO_BRANCO+'" alt="Adami Wealth"></div>'+
+      '<div class="mark"><img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'"></div>'+
       '<div class="foot">Performance</div>', true);
 
   /* --- carta do gestor --- */
@@ -1845,10 +1862,11 @@ function viewRelatorio(){
 }
 
 var avisoImpressao=true;
+try{ document.title=EMPRESA.nome+" \u2014 "+EMPRESA.produto; }catch(e){}
 function tituloPdf(){
   var c=cli(); if(!c) return "Carteira Consolidada";
   var m=MESES[S.mes-1]; m=m.charAt(0).toUpperCase()+m.slice(1);
-  return ("Carteira Consolidada "+c.nome+" "+m+" "+S.ano).replace(/[\\/:*?"<>|]/g," ").replace(/\s+/g," ").trim();
+  return (EMPRESA.produto.replace("Consolidado de Carteiras","Carteira Consolidada")+" "+c.nome+" "+m+" "+S.ano).replace(/[\\/:*?"<>|]/g," ").replace(/\s+/g," ").trim();
 }
 function imprimir(){
   var tituloAntigo=document.title;
@@ -1896,11 +1914,11 @@ function viewHub(){
   var hora=new Date().getHours();
   var saud=hora<12?"Bom dia":(hora<18?"Boa tarde":"Boa noite");
   return '<div class="hub">'+
-    '<div class="hub-top"><img src="'+LOGO_BRANCO+'" alt="Adami Wealth">'+
+    '<div class="hub-top"><img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'">'+
     '<button class="sai" onclick="sair()">Sair</button></div>'+
     '<div class="hub-body">'+
     '<div class="hub-hi">'+saud+(nome?", "+esc(nome):"")+'</div>'+
-    '<h1>Sistemas Adami Wealth</h1>'+
+    '<h1>Sistemas '+EMPRESA.nome+'</h1>'+
     '<p class="sub">Escolha abaixo a ferramenta que deseja abrir.</p>'+
     '<div class="hub-grid">'+
     APPS.map(function(a){
@@ -1910,7 +1928,7 @@ function viewHub(){
         '<div class="tag">'+esc(a.tag)+'</div></div>';
     }).join("")+
     '</div></div>'+
-    '<div class="hub-foot">Acesso restrito aos colaboradores. Todas as ações ficam registradas. &nbsp;·&nbsp; '+VERSAO+'<br>&copy; '+new Date().getFullYear()+' Adami Wealth. Todos os direitos reservados.</div>'+
+    '<div class="hub-foot">Acesso restrito aos colaboradores. Todas as ações ficam registradas. &nbsp;·&nbsp; '+VERSAO+'<br>&copy; '+new Date().getFullYear()+' '+EMPRESA.nome+'. Todos os direitos reservados.</div>'+
     '</div>';
 }
 function iconeOlho(aberto){
@@ -1933,21 +1951,21 @@ function verSenha(){
 function viewLogin(erro){
   return '<div class="auth">'+
     '<div class="auth-side">'+
-      '<img src="'+LOGO_BRANCO+'" alt="Adami Wealth">'+
+      '<img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'">'+
       '<div class="auth-say"><div class="rule"></div>'+
         '<h2>Apoiando famílias, planejando o futuro</h2>'+
-        '<p>Ambiente administrativo da Adami Wealth. Carteiras, planejamento e relatórios em um só lugar.</p>'+
+        '<p>'+EMPRESA.chamada+'</p>'+
       '</div>'+
       '<div class="auth-meta"><span>Acesso restrito</span><span>'+VERSAO+'</span></div>'+
-      '<div class="auth-copy">&copy; '+new Date().getFullYear()+' Adami Wealth. Todos os direitos reservados.</div>'+
+      '<div class="auth-copy">&copy; '+new Date().getFullYear()+' '+EMPRESA.nome+'. Todos os direitos reservados.</div>'+
     '</div>'+
     '<div class="auth-form"><div class="auth-card">'+
       '<div class="rule"></div>'+
-      '<h1>Admin Adami Wealth</h1>'+
+      '<h1>Admin '+EMPRESA.nome+'</h1>'+
       '<p class="hint">Entre com o e-mail cadastrado pela empresa.</p>'+
       (erro?'<div class="erro">'+esc(erro)+'</div>':'')+
       '<label for="lgEmail">E-mail</label>'+
-      '<div class="campo"><input type="email" id="lgEmail" autocomplete="username" placeholder="nome@adamiwealth.com.br"></div>'+
+      '<div class="campo"><input type="email" id="lgEmail" autocomplete="username" placeholder="nome@'+EMPRESA.dominio+'"></div>'+
       '<label for="lgSenha">Senha</label>'+
       '<div class="campo"><input type="password" id="lgSenha" autocomplete="current-password" placeholder="••••••••">'+
         '<button type="button" class="olho" id="lgOlho" onclick="verSenha()" aria-label="Mostrar senha" title="Mostrar senha">'+iconeOlho(false)+'</button></div>'+
@@ -2000,7 +2018,7 @@ function render(){
   document.querySelector(".main").style.margin="";
   document.querySelector(".main").style.padding="";
   var rb=document.getElementById("railBrand");
-  if(rb&&!rb.querySelector("img")) rb.insertAdjacentHTML("afterbegin",'<img src="'+LOGO_BRANCO+'" alt="Adami Wealth">');
+  if(rb&&!rb.querySelector("img")) rb.insertAdjacentHTML("afterbegin",'<img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'">');
   renderRail();
   var ru=document.getElementById("railUser"); if(ru) ru.textContent=SESSAO.email||"";
   document.getElementById("tabP").className=S.tab==="preencher"?"on":"";
