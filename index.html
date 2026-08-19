@@ -184,16 +184,16 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .pg-num{position:absolute;bottom:18px;right:56px;font-size:10.5px;color:var(--muted)}
 
 /* capa */
-.cover{background:var(--navy);border:0;padding:96px 62px 62px;min-height:820px;display:flex;flex-direction:column}
-.cover .eyebrow{font-size:9.5px;letter-spacing:.34em;text-transform:uppercase;color:#93AECB}
-.cover h1{font-family:var(--display);font-size:40px;line-height:1.18;color:#fff;font-weight:600;margin:16px 0 0;max-width:9.5em}
-.cover .cli{font-size:15px;color:#C3D2E2;margin-top:36px}
-.cover .rule{width:76px;height:1px;background:#6C86A3;margin:18px 0 22px}
-.cover .ref{font-size:13px;color:#C3D2E2}
-.cover .ref-base{font-family:var(--mono);font-size:11px;color:#93AECB;margin-top:7px;letter-spacing:.04em}
+.cover{background:#fff;border:1px solid var(--line);padding:96px 62px 62px;min-height:820px;display:flex;flex-direction:column}
+.cover .eyebrow{font-size:9.5px;letter-spacing:.34em;text-transform:uppercase;color:var(--blue-3)}
+.cover h1{font-family:var(--display);font-size:40px;line-height:1.18;color:var(--navy);font-weight:600;margin:16px 0 0;max-width:9.5em}
+.cover .cli{font-size:15px;color:var(--navy);margin-top:36px}
+.cover .rule{width:76px;height:1px;background:var(--gold);margin:18px 0 22px}
+.cover .ref{font-size:13px;color:var(--blue-3)}
+.cover .ref-base{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:7px;letter-spacing:.04em}
 .cover .mark{margin-top:auto;text-align:center}
 .cover .mark img{width:210px;max-width:56%;height:auto;display:block;margin:0 auto}
-.cover .foot{text-align:center;font-size:9.5px;letter-spacing:.34em;color:#93AECB;margin-top:54px}
+.cover .foot{text-align:center;font-size:9.5px;letter-spacing:.34em;color:var(--blue-3);margin-top:54px}
 
 /* cabeçalho de seção */
 .shead{display:flex;align-items:baseline;gap:11px;border-bottom:2px solid var(--navy);padding-bottom:7px;margin:34px 0 18px}
@@ -223,6 +223,13 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .pat-col.ant .n{font-size:20px;color:#61758C}
 .pat-col.atual .n{font-size:34px}
 .pat-sep{width:1px;height:46px;background:var(--line-2)}
+.pat-rend{margin-top:20px;padding-top:17px;border-top:1px solid var(--line);display:flex;align-items:baseline;justify-content:center;gap:12px;flex-wrap:wrap}
+.pat-rend .l{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.pat-rend b{font-family:var(--mono);font-size:21px;font-weight:500;color:var(--navy);font-variant-numeric:tabular-nums}
+.pat-rend b.pos{color:var(--green)} .pat-rend b.neg{color:var(--alert)}
+.pat-rend i{font-style:normal;font-family:var(--mono);font-size:13px;padding:3px 8px;border-radius:2px;background:#F4F7FA}
+.pat-rend i.pos{color:var(--green)} .pat-rend i.neg{color:var(--alert)}
+.pat-rend .s{font-size:11px;color:var(--muted)}
 .kgrid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);
   border-top:1px solid var(--line);border-bottom:3px solid var(--navy)}
 .kbox{padding:19px 22px;background:var(--surface)}
@@ -383,7 +390,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.5.1</div>
+    <div class="rail-user" style="opacity:.6">versão 2.6</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -499,7 +506,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.5.1";
+var VERSAO="versão 2.6";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -1235,6 +1242,7 @@ function viewCarta(){
   var h='';
   if(S.erro) h+='<div class="note err"><b>Sem conexão com o servidor.</b> '+esc(S.erro)+'</div>';
   h+='<div class="card"><div class="sec-title">Comentários do mês — '+MESES[S.mes-1]+' de '+S.ano+'</div>'+
+     '<div class="note" style="margin-bottom:14px">Manter sempre resumido, até meia página. Prompt sugerido: <i>“Resuma o Comentário do Mês de forma muito simples e direta. Use frases curtas, evite termos difíceis e escreva um texto curto para leigos.”</i></div>'+
      '<div class="sec-sub" id="avisoCarta">Escritos uma única vez por mês. Todos os relatórios deste mês, de todos os clientes, usam este texto automaticamente. Para trocar o mês, use o seletor no menu lateral.</div>'+
      '<div class="tb">'+
      '<button onclick="cmd(\'bold\')" title="Negrito"><b>N</b></button>'+
@@ -1681,7 +1689,7 @@ function viewRelatorio(){
       '<div class="rule"></div>'+
       '<div class="ref">'+MESES[S.mes-1]+' de '+S.ano+'</div>'+
       '<div class="ref-base">Data-base '+dataBase(S.mes,S.ano)+'</div>'+
-      '<div class="mark"><img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'"></div>'+
+      '<div class="mark"><img src="'+LOGO_AZUL+'" alt="'+EMPRESA.nome+'"></div>'+
       '<div class="foot">Performance</div>', true);
 
   /* --- carta do gestor --- */
@@ -1698,11 +1706,11 @@ function viewRelatorio(){
      '<div class="rep-ref">'+MESES[S.mes-1]+' de '+S.ano+' &nbsp;·&nbsp; data-base '+dataBase(S.mes,S.ano)+'</div>'+
      blocoPatrimonio(c.id,S.mes,S.ano,"BRL",t.pl,"Patrimônio"+(temOff?" onshore":""),"")+
      '<div class="kgrid">'+
-     '<div class="kbox"><div class="l">Rentabilidade no mês</div><div class="v '+sinal(t.rendPct)+'">'+nv(pct(t.rendPct))+'</div><div class="s">'+(doCdi!=null?"<b>"+pct(doCdi,0)+"</b> do CDI":"—")+'</div></div>'+
+     '<div class="kbox"><div class="l">Rentabilidade no mês</div><div class="v '+sinal(t.rendPct)+'">'+nv(pct(t.rendPct))+'</div><div class="s">'+ref(S.mes,S.ano)+'</div></div>'+
      '<div class="kbox"><div class="l">Resultado no mês</div><div class="v '+sinal(t.rendRs)+'">'+nv(brl(t.rendRs))+'</div><div class="s">'+ref(S.mes,S.ano)+'</div></div>'+
-     '<div class="kbox"><div class="l">Rentabilidade em 12 meses</div><div class="v '+sinal(a12.pct)+'">'+nv((a12.meses?pct(a12.pct):"—"))+'</div><div class="s">'+(do12!=null?"<b>"+pct(do12,0)+"</b> do CDI":a12.meses+(a12.meses===1?" mês":" meses")+" lançados")+'</div></div>'+
+     '<div class="kbox"><div class="l">Rentabilidade em 12 meses</div><div class="v '+sinal(a12.pct)+'">'+nv((a12.meses?pct(a12.pct):"—"))+'</div><div class="s">'+a12.meses+(a12.meses===1?" mês":" meses")+' lançados</div></div>'+
      '<div class="kbox"><div class="l">Resultado em 12 meses</div><div class="v '+sinal(a12.rs)+'">'+nv(brl(a12.rs))+'</div><div class="s">'+a12.meses+(a12.meses===1?" mês":" meses")+' lançados</div></div>'+
-     '<div class="kbox"><div class="l">Rentabilidade desde o início</div><div class="v '+sinal(aIni.pct)+'">'+nv((aIni.meses?pct(aIni.pct):"—"))+'</div><div class="s">'+(doIni!=null?"<b>"+pct(doIni,0)+"</b> do CDI":"acumulado")+'</div></div>'+
+     '<div class="kbox"><div class="l">Rentabilidade desde o início</div><div class="v '+sinal(aIni.pct)+'">'+nv((aIni.meses?pct(aIni.pct):"—"))+'</div><div class="s">'+(desdeQuando?"desde "+desdeQuando:"acumulado")+'</div></div>'+
      '<div class="kbox"><div class="l">Resultado desde o início</div><div class="v '+sinal(aIni.rs)+'">'+nv(brl(aIni.rs))+'</div><div class="s">'+(desdeQuando?"desde "+desdeQuando:"—")+'</div></div>'+
      '</div>';
 
@@ -1764,46 +1772,22 @@ function viewRelatorio(){
 
   /* --- offshore --- */
   if(temOff && secOn(r.ind,"offshore")){
-    var tU=totais(r,"USD"), serieU=serieAno(c.id,S.ano,S.mes,"USD"), instU=porInstituicao(r,"USD");
-    var s12U=serieHist(c.id,S.mes,S.ano,"USD",12), sIniU=serieHist(c.id,S.mes,S.ano,"USD",0);
-    var a12U=agregado(s12U), aIniU=agregado(sIniU);
-    var desdeU=sIniU.length?(MESES_C[sIniU[0].mes-1]+"/"+String(sIniU[0].ano).slice(2)):"";
-    var anoPctU=comp(serieU.map(function(s2){return s2.rendPct;}));
-    var anoRsU=serieU.reduce(function(a,s2){return a+s2.rendRs;},0);
+    var tU=totais(r,"USD"), serieU=serieAno(c.id,S.ano,S.mes,"USD");
+    var s12U=serieHist(c.id,S.mes,S.ano,"USD",12);
+    var a12U=agregado(s12U);
+    /* leitura no estilo do app do banco: patrimonio total e, logo abaixo,
+       quanto esse patrimonio rendeu nos ultimos doze meses */
+    var rend12 = a12U.meses
+      ? '<div class="pat-rend"><span class="l">Rendimento em 12 meses</span>'+
+        '<b class="'+sinal(a12U.rs)+'">'+nv(usd(a12U.rs))+'</b>'+
+        '<i class="'+sinal(a12U.pct)+'">'+(a12U.pct>0?"+":"")+pct(a12U.pct)+'</i>'+
+        '<span class="s">'+a12U.meses+(a12U.meses===1?" m\u00eas lan\u00e7ado":" meses lan\u00e7ados")+'</span></div>'
+      : "";
     var p3=shead(nx(),"Patrim\u00f4nio offshore","valores em d\u00f3lar norte-americano")+
       '<div class="panel">'+
       blocoPatrimonio(c.id,S.mes,S.ano,"USD",tU.pl,"Patrim\u00f4nio offshore",(ptax>0?'PTAX de fechamento '+ptaxFmt(ptax):''))+
-      '<div class="kgrid">'+
-      '<div class="kbox"><div class="l">Rentabilidade no m\u00eas</div><div class="v '+sinal(tU.rendPct)+'">'+nv(pct(tU.rendPct))+'</div><div class="s">em d\u00f3lar</div></div>'+
-      '<div class="kbox"><div class="l">Resultado no m\u00eas</div><div class="v '+sinal(tU.rendRs)+'">'+nv(usd(tU.rendRs))+'</div><div class="s">'+ref(S.mes,S.ano)+'</div></div>'+
-      '<div class="kbox"><div class="l">Rentabilidade em 12 meses</div><div class="v '+sinal(a12U.pct)+'">'+nv((a12U.meses?pct(a12U.pct):"\u2014"))+'</div><div class="s">em d\u00f3lar \u00b7 '+a12U.meses+(a12U.meses===1?" m\u00eas":" meses")+'</div></div>'+
-      '<div class="kbox"><div class="l">Resultado em 12 meses</div><div class="v '+sinal(a12U.rs)+'">'+nv(usd(a12U.rs))+'</div><div class="s">'+a12U.meses+(a12U.meses===1?" m\u00eas":" meses")+' lan\u00e7ados</div></div>'+
-      '<div class="kbox"><div class="l">Rentabilidade desde o in\u00edcio</div><div class="v '+sinal(aIniU.pct)+'">'+nv((aIniU.meses?pct(aIniU.pct):"\u2014"))+'</div><div class="s">em d\u00f3lar</div></div>'+
-      '<div class="kbox"><div class="l">Resultado desde o in\u00edcio</div><div class="v '+sinal(aIniU.rs)+'">'+nv(usd(aIniU.rs))+'</div><div class="s">'+(desdeU?"desde "+desdeU:"\u2014")+'</div></div>'+
-      '</div></div>';
+      rend12+'</div>';
 
-    p3+=shead(nx(),"Offshore \u00b7 retornos mensais","rentabilidade em d\u00f3lar")+
-      '<div class="panel tint">'+blocoRetornos(c.id,"USD")+'</div>';
-
-    p3+=shead(nx(),"Offshore \u00b7 desempenho por conta","")+
-      '<div class="panel"><table class="rt"><thead><tr><th>Conta</th><th class="n">Saldo</th><th class="n">% do offshore</th><th class="n">\u00daltimo m\u00eas</th><th class="n">No ano</th><th class="n">12 meses</th></tr></thead><tbody>'+
-      offC.map(function(x){
-        var noAnoU=contaAcum(c.id,x.nome,S.mes,S.ano,S.mes), m12U=contaAcum(c.id,x.nome,S.mes,S.ano,12);
-        return '<tr><td>'+esc(x.nome||"\u2014")+'</td><td class="n">'+usd(n(x.saldo))+'</td>'+
-        '<td class="n">'+pct(tU.pl>0?n(x.saldo)/tU.pl*100:0,1)+'</td>'+
-        '<td class="n '+sinal(n(x.rendPct))+'">'+pct(n(x.rendPct))+'</td>'+
-        '<td class="n '+sinal(noAnoU)+'">'+(noAnoU!=null?pct(noAnoU):"\u2014")+'</td>'+
-        '<td class="n '+sinal(m12U)+'">'+(m12U!=null?pct(m12U):"\u2014")+'</td></tr>';
-      }).join("")+
-      '<tr class="tot"><td>Total</td><td class="n">'+usd(tU.pl)+'</td><td class="n">100,0%</td><td class="n">'+pct(tU.rendPct)+'</td><td class="n">'+pct(anoPctU)+'</td><td class="n">'+(a12U.meses?pct(a12U.pct):"\u2014")+'</td></tr>'+
-      '</tbody></table></div>';
-
-    if(instU.length>1){
-      p3+=shead(nx(),"Offshore \u00b7 distribui\u00e7\u00e3o por institui\u00e7\u00e3o","posi\u00e7\u00e3o em "+dataBase(S.mes,S.ano))+
-        '<div class="panel" style="text-align:center">'+pizza(instU)+'<div class="dn-total">total <b>'+usd(tU.pl)+'</b></div>'+
-        '<div class="dn-leg">'+instU.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+'</div>'+
-        '<div class="dn-rows">'+instU.map(function(x){return '<div><span>'+esc(x.nome)+'</span><b>'+usd(x.valor)+'</b></div>';}).join("")+'</div></div>';
-    }
     if(serieU.length>1){
       p3+=shead(nx(),"Offshore \u00b7 evolu\u00e7\u00e3o do patrim\u00f4nio",serieU.length+" meses com saldo")+
         '<div class="panel tint">'+chartEvolucao(serieU,"USD")+'</div>';
@@ -1827,8 +1811,8 @@ function viewRelatorio(){
   }
 
   /* --- informações importantes --- */
-  sumAdd("","Informações importantes");
-  pag('<div class="dash"><i>—</i><h2>Informações importantes</h2></div>'+
+  sumAdd("","Disclaimer");
+  pag('<div class="dash"><i>—</i><h2>Disclaimer</h2></div>'+
      '<div class="panel disc">'+
      '<p>Este material foi preparado com finalidade exclusivamente informativa e não constitui oferta, recomendação individualizada de investimento, análise de valores mobiliários ou solicitação de compra ou venda de qualquer ativo.</p>'+
      '<p>As posições e os saldos aqui apresentados refletem as informações fornecidas pelas instituições custodiantes na data de referência e podem divergir dos extratos oficiais em razão de prazos de atualização, marcação a mercado, provisionamento de proventos e eventos societários. Em caso de divergência, prevalece sempre o extrato da instituição custodiante.</p>'+
