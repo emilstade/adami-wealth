@@ -393,9 +393,9 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.7.1</div>
+    <div class="rail-user" style="opacity:.6">versão 2.7.2</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
-    <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
+    <div class="mini" id="miniAcesso">Os dados ficam no servidor. Cada assessor enxerga apenas os próprios clientes.</div>
   </div>
 </nav>
 
@@ -509,7 +509,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.7.1";
+var VERSAO="versão 2.7.2";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -2015,6 +2015,8 @@ function render(){
   document.getElementById("tabH").className=S.tab==="historico"?"on":"";
   document.getElementById("btnPdf").style.display=S.tab==="relatorio"?"":"none";
   document.getElementById("btnChk").style.display=S.tab==="relatorio"?"":"none";
+  var ma=document.getElementById("miniAcesso");
+  if(ma) ma.textContent="Os dados ficam no servidor. "+(EU.admin?"Como administrador, voc\u00ea enxerga os clientes de todos os assessores.":"Cada assessor enxerga apenas os pr\u00f3prios clientes.");
   document.getElementById("view").innerHTML=
     S.tab==="preencher"?viewPreencher():
     (S.tab==="carta"?viewCarta():
