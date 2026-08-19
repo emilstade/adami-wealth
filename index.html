@@ -393,7 +393,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.7.3</div>
+    <div class="rail-user" style="opacity:.6">versão 2.8</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini" id="miniAcesso">Os dados ficam no servidor. Cada assessor enxerga apenas os próprios clientes.</div>
   </div>
@@ -509,7 +509,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.7.3";
+var VERSAO="versão 2.8";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -1071,7 +1071,8 @@ function restaurarBackup(id,rotulo){
 function exportar(){
   var b=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
   var a=document.createElement("a"); a.href=URL.createObjectURL(b);
-  a.download="adami-wealth-backup-"+new Date().toISOString().slice(0,10)+".json"; a.click();
+  var hoje=new Date().toISOString().slice(0,10);
+  a.download=nomeArquivo([EMPRESA.nome,hoje,"Backup"])+".json"; a.click();
 }
 
 /* ============ view: preencher ============ */
@@ -1828,10 +1829,17 @@ function viewRelatorio(){
 
 var avisoImpressao=true;
 try{ document.title=EMPRESA.nome+" \u2014 "+EMPRESA.produto; }catch(e){}
+/* Nome padrao de arquivo: empresa, ano-mes, cliente, tipo.
+   Ano-mes numerico faz a pasta Downloads ordenar cronologicamente;
+   por extenso, "Abril" viria antes de "Janeiro". */
+function nomeArquivo(partes){
+  return partes.filter(Boolean).join(" - ")
+    .replace(/[\\/:*?"<>|]/g," ").replace(/\s+/g," ").trim();
+}
+function refArquivo(mes,ano){ return ano+"-"+String(mes).padStart(2,"0"); }
 function tituloPdf(){
-  var c=cli(); if(!c) return "Carteira Consolidada";
-  var m=MESES[S.mes-1]; m=m.charAt(0).toUpperCase()+m.slice(1);
-  return (EMPRESA.produto.replace("Consolidado de Carteiras","Carteira Consolidada")+" "+c.nome+" "+m+" "+S.ano).replace(/[\\/:*?"<>|]/g," ").replace(/\s+/g," ").trim();
+  var c=cli();
+  return nomeArquivo([EMPRESA.nome, refArquivo(S.mes,S.ano), (c?c.nome:null), "Relat\u00f3rio Consolidado"]);
 }
 function imprimir(){
   var tituloAntigo=document.title;
