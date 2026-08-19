@@ -206,22 +206,25 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .dash h2{font-family:var(--display);font-size:22px;color:var(--navy)}
 
 /* cabeçalho do cliente */
-.rep-eyebrow{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
-.rep-name{font-family:var(--display);font-size:29px;color:var(--navy);margin-top:6px;font-weight:600}
-.rep-ref{font-size:12.5px;color:var(--muted);margin-top:2px}
+.rep-eyebrow{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--blue-3)}
+.rep-name{font-family:var(--display);font-size:32px;color:var(--navy);margin-top:8px;font-weight:600;letter-spacing:-.01em}
+.rep-name:after{content:"";display:block;width:44px;height:2px;background:var(--gold);margin-top:13px}
+.rep-ref{font-size:12.5px;color:var(--muted);margin-top:11px}
 
 /* patrimônio + kpis */
 .pat{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:22px 0;margin-top:20px;text-align:center}
 .pat .l{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted)}
 .pat .v{font-family:var(--mono);font-size:34px;color:var(--navy);letter-spacing:.03em;margin:9px 0 4px}
 .pat .s{font-size:11.5px;color:var(--muted)}
-.pat-duo{display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap;margin-top:16px}
+.pat-duo{display:flex;align-items:center;justify-content:center;gap:30px;flex-wrap:wrap;margin-top:18px}
 .pat-col{text-align:center;min-width:135px}
 .pat-col .d{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted)}
-.pat-col .n{font-family:var(--mono);color:var(--navy);letter-spacing:.03em;margin:7px 0 4px;line-height:1.1}
+.pat-col .n{font-family:var(--mono);color:var(--navy);font-variant-numeric:tabular-nums;margin:8px 0 5px;line-height:1.1}
 .pat-col .c{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#93A2B4}
-.pat-col.ant .n{font-size:20px;color:#61758C}
-.pat-col.atual .n{font-size:34px}
+.pat-col.ant .n{font-size:19px;color:#78899E;font-weight:500}
+.pat-col.atual .n{font-size:36px;font-weight:600;letter-spacing:-.02em}
+.pat-col.atual .d{color:var(--navy)}
+.pat-col.atual .c{color:var(--blue-3)}
 .pat-sep{width:1px;height:46px;background:var(--line-2)}
 .pat-rend{margin-top:20px;padding-top:17px;border-top:1px solid var(--line);display:flex;align-items:baseline;justify-content:center;gap:12px;flex-wrap:wrap}
 .pat-rend .l{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
@@ -232,16 +235,16 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .pat-rend .s{font-size:11px;color:var(--muted)}
 .kgrid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);
   border-top:1px solid var(--line);border-bottom:3px solid var(--navy)}
-.kbox{padding:19px 22px;background:var(--surface)}
-.kbox .l{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
-.kbox .v{font-family:var(--mono);font-size:27px;font-weight:500;color:var(--navy);
-  letter-spacing:-.015em;font-variant-numeric:tabular-nums;line-height:1.05;margin:10px 0 6px}
+.kbox{padding:21px 24px;background:var(--surface)}
+.kbox .l{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--blue-3)}
+.kbox .v{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--navy);
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.08;margin:11px 0 7px}
 .kbox .s{font-size:11px;color:var(--muted)}
 .kbox .s b{font-family:var(--mono);font-weight:400;color:var(--ink-2)}
 .kbox .v.pos{color:var(--green)} .kbox .v.neg{color:var(--alert)}
 /* simbolo de moeda e de porcentagem discretos: os digitos dominam */
-.uni{font-style:normal;font-weight:400;font-size:.5em;color:#93A2B4;letter-spacing:.03em}
-.kbox .v .uni:first-child,.pat .v .uni:first-child,.pat-col .n .uni:first-child{margin-right:.22em}
+.uni{font-style:normal;font-weight:500;font-size:.58em;color:#8FA3B8;letter-spacing:.02em}
+.kbox .v .uni:first-child,.pat .v .uni:first-child,.pat-col .n .uni:first-child{margin-right:.26em}
 .kbox .v .uni:last-child{margin-left:.1em}
 
 /* blocos */
@@ -347,11 +350,11 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
   .dn{max-height:42mm}
   .pat{padding:14px 0;margin-top:14px}
   .pat .v{font-size:26px}
-  .pat-col.atual .n{font-size:26px}
+  .pat-col.atual .n{font-size:28px}
   .pat-col.ant .n{font-size:17px}
   .pat-duo{gap:16px}
   .kbox{padding:13px 15px}
-  .kbox .v{font-size:20px;margin:7px 0 4px}
+  .kbox .v{font-size:21px;margin:8px 0 5px}
   .kbox .l{letter-spacing:.14em}
   .rep-name{font-size:24px}
   .rt.compact td,.rt.compact th{padding:5px 2px;font-size:7.6pt}
@@ -390,7 +393,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.6.1</div>
+    <div class="rail-user" style="opacity:.6">versão 2.7</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -506,7 +509,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.6.1";
+var VERSAO="versão 2.7";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -1778,10 +1781,10 @@ function viewRelatorio(){
     /* leitura no estilo do app do banco: patrimonio total e, logo abaixo,
        quanto esse patrimonio rendeu nos ultimos doze meses */
     var rend12 = a12U.meses
-      ? '<div class="pat-rend"><span class="l">Rendimento em 12 meses</span>'+
+      ? '<div class="pat-rend"><span class="l">Rendimento acumulado</span>'+
         '<b class="'+sinal(a12U.rs)+'">'+nv(usd(a12U.rs))+'</b>'+
         '<i class="'+sinal(a12U.pct)+'">'+(a12U.pct>0?"+":"")+pct(a12U.pct)+'</i>'+
-        '<span class="s">'+a12U.meses+(a12U.meses===1?" m\u00eas lan\u00e7ado":" meses lan\u00e7ados")+'</span></div>'
+        '<span class="s">'+(desdeU?"desde "+desdeU:a12U.meses+" meses")+'</span></div>'
       : "";
     var p3=shead(nx(),"Patrim\u00f4nio offshore","valores em d\u00f3lar norte-americano")+
       '<div class="panel">'+
