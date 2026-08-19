@@ -393,7 +393,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     <button onclick="exportar()">Baixar backup (.json)</button>
     <button onclick="sair()">Sair da conta</button>
     <div class="rail-user" id="railUser"></div>
-    <div class="rail-user" style="opacity:.6">versão 2.7</div>
+    <div class="rail-user" style="opacity:.6">versão 2.7.1</div>
     <div class="sync"><span class="dot" id="dot"></span><span id="syncTxt">Conectando…</span></div>
     <div class="mini">Os dados ficam no servidor. Qualquer assessor que abrir este link vê as mesmas carteiras.</div>
   </div>
@@ -509,7 +509,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.7";
+var VERSAO="versão 2.7.1";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -1776,15 +1776,16 @@ function viewRelatorio(){
   /* --- offshore --- */
   if(temOff && secOn(r.ind,"offshore")){
     var tU=totais(r,"USD"), serieU=serieAno(c.id,S.ano,S.mes,"USD");
-    var s12U=serieHist(c.id,S.mes,S.ano,"USD",12);
-    var a12U=agregado(s12U);
+    var sIniU=serieHist(c.id,S.mes,S.ano,"USD",0);
+    var acumU=agregado(sIniU);
+    var desdeU=sIniU.length?(MESES_C[sIniU[0].mes-1]+"/"+String(sIniU[0].ano).slice(2)):"";
     /* leitura no estilo do app do banco: patrimonio total e, logo abaixo,
-       quanto esse patrimonio rendeu nos ultimos doze meses */
-    var rend12 = a12U.meses
+       quanto esse patrimonio ja rendeu desde o primeiro mes lancado */
+    var rend12 = acumU.meses
       ? '<div class="pat-rend"><span class="l">Rendimento acumulado</span>'+
-        '<b class="'+sinal(a12U.rs)+'">'+nv(usd(a12U.rs))+'</b>'+
-        '<i class="'+sinal(a12U.pct)+'">'+(a12U.pct>0?"+":"")+pct(a12U.pct)+'</i>'+
-        '<span class="s">'+(desdeU?"desde "+desdeU:a12U.meses+" meses")+'</span></div>'
+        '<b class="'+sinal(acumU.rs)+'">'+nv(usd(acumU.rs))+'</b>'+
+        '<i class="'+sinal(acumU.pct)+'">'+(acumU.pct>0?"+":"")+pct(acumU.pct)+'</i>'+
+        '<span class="s">'+(desdeU?"desde "+desdeU:acumU.meses+" meses")+'</span></div>'
       : "";
     var p3=shead(nx(),"Patrim\u00f4nio offshore","valores em d\u00f3lar norte-americano")+
       '<div class="panel">'+
