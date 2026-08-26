@@ -233,7 +233,7 @@
     <img id="topLogo" alt="Adami Wealth" style="height:24px;width:auto;display:block;margin-bottom:5px;">
     <div class="subtitle">Plano de Liberdade Financeira</div>
   </div>
-  <div class="subtitle">Ferramenta interna · preencha ao vivo ou antes da reunião</div>
+  <div class="subtitle">Ferramenta interna · preencha ao vivo ou antes da reunião <span id="selo" style="opacity:.55;font-size:11px;letter-spacing:.5px"></span></div>
 </header>
 
 <div class="layout">
@@ -784,7 +784,7 @@ function render() {
   // seguro — sucessão + proteção de renda
   const custasPct = 0.05;
   const necessidadeSucessoria = (patrimonioTotal + patrimonioImobilizado) * (custasPct + itcmdPct / 100) + dividasRelevantes;
-  const anosProtecaoRenda = 10;
+  const anosProtecaoRenda = 5;
   const necessidadeProtecaoRenda = custoVidaMensal * 12 * anosProtecaoRenda;
   const necessidadeBrutaSeguro = necessidadeSucessoria + necessidadeProtecaoRenda;
   const gapSeguro = Math.max(0, necessidadeBrutaSeguro - coberturaAtual);
@@ -979,6 +979,9 @@ document.getElementById('topLogo').src = LOGO_WHITE;
 toggleSeguro();
 toggleSimConsorcio();
 render();
+/* selo de versao — serve para identificar cache antes de investigar bug */
+var VERSAO_DIAG = "versão 2.9.2";
+document.getElementById('selo').textContent = VERSAO_DIAG;
 </script>
 
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
