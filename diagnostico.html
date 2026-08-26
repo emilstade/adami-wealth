@@ -781,13 +781,32 @@ function render() {
   const carta50 = (rendaMensalGerada * 0.50) / taxaParcela;
   const carta100 = (rendaMensalGerada * 1.00) / taxaParcela;
 
-  // seguro — sucessão + proteção de renda
+  // seguro — molde de dois baldes: gastos vitalicios x gastos temporarios
+  // Vitalicio  -> Vida Inteira     (necessidade que nunca deixa de existir)
+  // Temporario -> Temp./Decrescente (necessidade com prazo definido)
   const custasPct = 0.05;
-  const necessidadeSucessoria = (patrimonioTotal + patrimonioImobilizado) * (custasPct + itcmdPct / 100) + dividasRelevantes;
+  const mesesManutencaoPadrao = 6;
+  const mesesReestabelecimento = 12;
+
+  // previdencia (VGBL/PGBL) nao entra em inventario, entao sai da base
+  const baseInventario = Math.max(0, patrimonioTotal - valorPrevAtual) + patrimonioImobilizado;
+  const custosInventario = baseInventario * (custasPct + itcmdPct / 100);
+
+  const reestabelecimentoVida = custoVidaMensal * mesesReestabelecimento;
+  const totalVitalicio = custosInventario + reestabelecimentoVida;
+
+  const projetosVida = objetivos.reduce((s, o) => s + (o.valor || 0), 0);
+  const manutencaoPadrao = custoVidaMensal * mesesManutencaoPadrao;
+  const totalTemporario = projetosVida + manutencaoPadrao + dividasRelevantes;
+
+  // invalidez/doenca grave: gatilho diferente de morte, produto diferente
   const anosProtecaoRenda = 5;
   const necessidadeProtecaoRenda = custoVidaMensal * 12 * anosProtecaoRenda;
-  const necessidadeBrutaSeguro = necessidadeSucessoria + necessidadeProtecaoRenda;
+
+  const gastosTotais = totalVitalicio + totalTemporario;
+  const necessidadeBrutaSeguro = gastosTotais + necessidadeProtecaoRenda;
   const gapSeguro = Math.max(0, necessidadeBrutaSeguro - coberturaAtual);
+  const pctVitalicio = gastosTotais > 0 ? Math.round(totalVitalicio / gastosTotais * 100) : 0;
 
   // previdência
   const alvoPrevValor = patrimonioTotal * 0.20;
@@ -928,19 +947,36 @@ function render() {
     html += `<p class="narrative">Preencha o patrimônio total e imobilizado na seção 2 para estimar a necessidade de proteção.</p>`;
   } else {
     html += `<div class="kpi-row"><span class="kpi-number">${fmtBRLCompact(gapSeguro)}</span><span class="kpi-caption">gap de proteção estimado${jaSeguro ? ' (considerando a cobertura atual de '+fmtBRLCompact(coberturaAtual)+')' : ''}</span></div>
-    <p class="narrative">A proteção patrimonial cobre duas frentes distintas: a liquidez sucessória (custos de transmissão do patrimônio) e a proteção de renda em caso de invalidez ou doença grave (capacidade de trabalho comprometida em vida).</p>
+    <p class="narrative">Os gastos que a família enfrenta na falta do titular se dividem em dois tipos, e cada um pede um produto diferente. Os <strong>vitalícios</strong> nunca deixam de existir — inventário e recomposição da vida — e pedem vida inteira. Os <strong>temporários</strong> têm prazo definido e pedem seguro temporário ou decrescente, mais barato pelo mesmo capital.</p>
+    <table class="mini-table">
+      <tr><th>Gasto futuro</th><th>Prazo</th><th>Valor</th></tr>
+      <tr><td>Custo de inventário — custas ${(custasPct*100).toFixed(0)}% + ITCMD ${itcmdPct}%</td><td class="num">vitalício</td><td class="num">${fmtBRLCompact(custosInventario)}</td></tr>
+      <tr><td>Reestabelecimento de vida</td><td class="num">${mesesReestabelecimento} meses</td><td class="num">${fmtBRLCompact(reestabelecimentoVida)}</td></tr>
+      <tr class="total-row"><td>Subtotal — vitalícios</td><td class="num">${pctVitalicio}%</td><td class="num">${fmtBRLCompact(totalVitalicio)}</td></tr>
+      ${projetosVida > 0 ? `<tr><td>Projetos de vida</td><td class="num">—</td><td class="num">${fmtBRLCompact(projetosVida)}</td></tr>` : ''}
+      <tr><td>Manutenção do padrão de vida</td><td class="num">${mesesManutencaoPadrao} meses</td><td class="num">${fmtBRLCompact(manutencaoPadrao)}</td></tr>
+      ${dividasRelevantes > 0 ? `<tr><td>Empréstimos e financiamentos</td><td class="num">—</td><td class="num">${fmtBRLCompact(dividasRelevantes)}</td></tr>` : ''}
+      <tr class="total-row"><td>Subtotal — temporários</td><td class="num">${100 - pctVitalicio}%</td><td class="num">${fmtBRLCompact(totalTemporario)}</td></tr>
+      <tr class="total-row"><td>Gastos totais</td><td></td><td class="num">${fmtBRLCompact(gastosTotais)}</td></tr>
+    </table>
+    <p class="narrative" style="margin-top:14px"><strong>Apólice sugerida</strong></p>
+    <div class="summary-strip">
+      <div class="stat-box"><div class="stat-value">${fmtBRLCompact(totalVitalicio)}</div><div class="stat-label">Vida inteira</div></div>
+      <div class="stat-box"><div class="stat-value">${fmtBRLCompact(totalTemporario)}</div><div class="stat-label">Temporário / decrescente</div></div>
+    </div>
+    <p class="narrative" style="margin-top:14px"><strong>Proteção de renda — invalidez e doença grave</strong></p>
+    <p class="narrative">Gatilho distinto do da morte: a capacidade de trabalho é comprometida em vida, e a família passa a conviver com a despesa sem a renda. Por isso entra em apólice própria, e não somada às de cima.</p>
     <table class="mini-table">
       <tr><th>Componente</th><th>Base de cálculo</th><th>Valor</th></tr>
-      <tr><td>Custas e honorários de inventário</td><td class="num">5% do patrimônio</td><td class="num">${fmtBRLCompact((patrimonioTotal+patrimonioImobilizado)*custasPct)}</td></tr>
-      <tr><td>ITCMD (estimativa ajustável)</td><td class="num">${itcmdPct}% do patrimônio</td><td class="num">${fmtBRLCompact((patrimonioTotal+patrimonioImobilizado)*itcmdPct/100)}</td></tr>
-      ${dividasRelevantes > 0 ? `<tr><td>Dívidas relevantes</td><td class="num">—</td><td class="num">${fmtBRLCompact(dividasRelevantes)}</td></tr>` : ''}
-      <tr><td>Subtotal — liquidez sucessória</td><td class="num">—</td><td class="num">${fmtBRLCompact(necessidadeSucessoria)}</td></tr>
-      <tr><td>Proteção de renda — invalidez/doença grave</td><td class="num">${anosProtecaoRenda} anos de custo de vida</td><td class="num">${fmtBRLCompact(necessidadeProtecaoRenda)}</td></tr>
-      ${jaSeguro && coberturaAtual > 0 ? `<tr><td>(–) Cobertura atual</td><td class="num">—</td><td class="num">-${fmtBRLCompact(coberturaAtual)}</td></tr>` : ''}
-      <tr class="total-row"><td>Cobertura total sugerida</td><td></td><td class="num">${fmtBRLCompact(gapSeguro)}</td></tr>
+      <tr><td>Invalidez / doença grave</td><td class="num">${anosProtecaoRenda} anos de custo de vida</td><td class="num">${fmtBRLCompact(necessidadeProtecaoRenda)}</td></tr>
+    </table>
+    <table class="mini-table" style="margin-top:14px">
+      <tr><td>Soma das três coberturas</td><td class="num">${fmtBRLCompact(necessidadeBrutaSeguro)}</td></tr>
+      ${jaSeguro && coberturaAtual > 0 ? `<tr><td>(–) Cobertura atual</td><td class="num">-${fmtBRLCompact(coberturaAtual)}</td></tr>` : ''}
+      <tr class="total-row"><td>Gap de proteção</td><td class="num">${fmtBRLCompact(gapSeguro)}</td></tr>
     </table>`;
     if (custoVidaMensal <= 0) {
-      html += `<p class="narrative" style="font-size:12px;color:var(--muted);margin-top:10px">Preencha o custo de vida mensal da família na seção 5 para incluir a proteção de renda por invalidez/doença grave (hoje considerando apenas a liquidez sucessória).</p>`;
+      html += `<p class="narrative" style="font-size:12px;color:var(--muted);margin-top:10px">Preencha o custo de vida mensal da família na seção 5. Sem ele ficam zeradas a manutenção do padrão de vida, o reestabelecimento e a proteção por invalidez — restando apenas o custo de inventário.</p>`;
     }
     if (estadoCivil || filhos.length > 0) {
       let contextoFamilia = [];
@@ -980,7 +1016,7 @@ toggleSeguro();
 toggleSimConsorcio();
 render();
 /* selo de versao — serve para identificar cache antes de investigar bug */
-var VERSAO_DIAG = "versão 2.9.2";
+var VERSAO_DIAG = "versão 2.10";
 document.getElementById('selo').textContent = VERSAO_DIAG;
 </script>
 
