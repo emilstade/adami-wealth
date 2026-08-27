@@ -105,7 +105,7 @@
 
 <header>
   <span class="mark">ADAMI</span>
-  <span class="sub">Mesa RV</span><span class="sub" style="opacity:.6">versão 2.12</span><span class="sub" id="selPerm" style="display:none;color:#C9A24B"></span>
+  <span class="sub">Mesa RV</span><span class="sub" style="opacity:.6">versão 2.13</span><span class="sub" id="selPerm" style="display:none;color:#C9A24B"></span>
   <nav><button onclick="location.href='index.html'">← Hub</button>
     <button id="navNova" class="on" onclick="verView('nova')">Nova operação</button>
     <button id="navHist" onclick="verView('hist')">Histórico</button>
@@ -242,8 +242,8 @@
    Leitura liberada a todo assessor autenticado.
    Escrita só para quem tem perfis.mesa_rv ou perfis.admin — isso é
    garantido pela RLS no banco, não por esconder botão aqui.        */
-var SB_URL="https://mqhqbqiyrtlhhzjfuqxs.supabase.co";
-var SB_KEY="sb_publishable_7CLSR1wwXFAD2y-it_bo9A_GtjAUnm3";
+var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
+var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
 var SESSAO=null;
 try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
 if(!SESSAO||!SESSAO.access_token) location.replace("index.html");
