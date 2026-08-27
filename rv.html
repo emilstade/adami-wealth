@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mesa RV — recomendações e histórico</title>
+<style>
+  :root{
+    --navy:#1B2A4A; --navy-pale:#EDF0F5; --gold:#C9A24B; --cream:#F7F4EE;
+    --ink:#26313F; --muted:#8A93A6; --red:#B5563A; --green:#5C7A5C;
+    --serif:Georgia,'Times New Roman',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font-family:var(--sans);color:var(--ink)}
+  header{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:16px}
+  header .mark{font-family:var(--serif);font-size:17px;letter-spacing:2px}
+  header .sub{font-size:12px;color:#9FB0CC}
+  header nav{margin-left:auto;display:flex;gap:6px}
+  header nav button{background:transparent;border:1px solid rgba(255,255,255,.25);color:#C9D4E6;
+    padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;font-family:var(--sans)}
+  header nav button.on{background:var(--gold);border-color:var(--gold);color:#26313F;font-weight:600}
+
+  .layout{display:grid;grid-template-columns:420px 1fr;gap:24px;padding:24px;align-items:start}
+  @media(max-width:900px){.layout{grid-template-columns:1fr}}
+  .wrap{padding:24px;max-width:1080px;margin:0 auto}
+  .pane{background:#fff;border:1px solid #E3E7EE;border-radius:14px;padding:20px}
+  .pane h2{font-family:var(--serif);color:var(--navy);font-size:16px;margin:0 0 14px}
+
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+  .tab{padding:8px 12px;border:1px solid #D8DEE8;background:#fff;border-radius:8px;
+       font-size:12.5px;cursor:pointer;color:var(--muted);font-family:var(--sans)}
+  .tab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+        color:var(--muted);margin:0 0 4px}
+  input,select{width:100%;padding:9px 10px;border:1px solid #D8DEE8;border-radius:8px;
+        font-size:14px;font-family:var(--sans);color:var(--ink);background:#fff}
+  input:focus,select:focus{outline:2px solid var(--gold);outline-offset:-1px;border-color:var(--gold)}
+  .field{margin-bottom:12px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1.4fr 1fr auto;gap:8px;align-items:end}
+
+  fieldset{border:1px solid #E3E7EE;border-radius:10px;padding:14px;margin:0 0 12px}
+  legend{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:0 6px}
+
+  .derived{background:var(--navy-pale);border-radius:10px;padding:12px 14px;margin-top:6px}
+  .derived div{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0}
+  .derived .k{color:var(--muted)}
+  .derived .v{font-family:var(--serif);color:var(--navy);font-weight:bold}
+  .derived .v.warn{color:var(--red)}
+  .sep{display:block;border-top:1px solid #D8DEE8;margin:7px 0}
+
+  .btn{width:100%;padding:11px;border:0;border-radius:9px;background:var(--navy);color:#fff;
+       font-size:13.5px;cursor:pointer;margin-top:10px;font-family:var(--sans)}
+  .btn:hover{background:#24365C}
+  .btn.ghost{background:#fff;color:var(--navy);border:1px solid #D8DEE8}
+  .btn.gold{background:var(--gold);color:#26313F;font-weight:600}
+  .btn.gold:hover{background:#D9B45F}
+  .btn.mini{width:auto;padding:8px 12px;font-size:12px;margin:0}
+
+  canvas{width:100%;max-width:540px;height:auto;border-radius:12px;
+         box-shadow:0 6px 24px rgba(27,42,74,.16);display:block}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.55}
+  .alerta{font-size:12px;color:var(--red);margin-top:10px;line-height:1.5;min-height:1em}
+
+  /* histórico */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+  .stat{background:#fff;border:1px solid #E3E7EE;border-radius:12px;padding:14px 16px}
+  .stat .n{font-family:var(--serif);font-size:26px;color:var(--navy);font-weight:bold}
+  .stat .n.pos{color:var(--green)} .stat .n.neg{color:var(--red)}
+  .stat .l{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:3px}
+
+  .op{background:#fff;border:1px solid #E3E7EE;border-radius:12px;padding:16px 18px;margin-bottom:12px}
+  .op-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .op-tk{font-family:var(--serif);font-size:22px;font-weight:bold;color:var(--navy)}
+  .op-tipo{font-size:11px;letter-spacing:1px;color:var(--gold);text-transform:uppercase}
+  .op-data{font-size:12px;color:var(--muted);margin-left:auto}
+  .badge{font-size:11px;padding:3px 9px;border-radius:20px;letter-spacing:.4px}
+  .badge.aberta{background:#EAF0FA;color:#3D5178}
+  .badge.ganho{background:#E7F0E7;color:#3F5C3F}
+  .badge.perda{background:#F8E9E5;color:#8E402A}
+  .badge.neutra{background:#EFEFEF;color:#6A6A6A}
+  .op-res{font-size:13px;color:var(--muted);margin:8px 0 0}
+  .op-res b{font-family:var(--serif);color:var(--ink)}
+
+  .aloc{margin-top:12px;border-top:1px solid #EDF0F5;padding-top:12px}
+  .aloc table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
+  .aloc td{padding:5px 0;border-bottom:1px solid #F2F4F8}
+  .aloc td.num{text-align:right;font-family:var(--serif)}
+  .aloc td.x{width:26px;text-align:right}
+  .aloc .rm{border:0;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1}
+  .aloc .rm:hover{color:var(--red)}
+  .aloc-tot{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);
+    padding-top:6px;border-top:1px solid #E3E7EE}
+  .aloc-tot b{font-family:var(--serif);color:var(--navy)}
+  .vazio{color:var(--muted);font-size:12.5px;padding:8px 0}
+  .acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .filtro-linha{display:grid;grid-template-columns:1.6fr 1fr 1fr auto;gap:8px;align-items:center}
+  @media(max-width:700px){.filtro-linha{grid-template-columns:1fr}}
+  .fecha{background:#FBF6EA;border:1px solid #E8DBBB;border-radius:10px;padding:12px 14px;margin-top:10px}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="mark">ADAMI</span>
+  <span class="sub">Mesa RV</span><span class="sub" style="opacity:.6">versão 2.11</span>
+  <nav><button onclick="location.href='index.html'">← Hub</button>
+    <button id="navNova" class="on" onclick="verView('nova')">Nova operação</button>
+    <button id="navHist" onclick="verView('hist')">Histórico</button>
+  </nav>
+</header>
+
+<!-- ============ NOVA OPERAÇÃO ============ -->
+<div id="viewNova">
+<div class="layout">
+  <div class="pane">
+    <div class="tabs" id="tabs"></div>
+
+    <div class="row2">
+      <div class="field"><label for="ticker">Ativo</label>
+        <input id="ticker" value="BBDC4" oninput="desenhar()"></div>
+      <div class="field"><label for="empresa">Nome da empresa</label>
+        <input id="empresa" value="Bradesco PN" oninput="desenhar()"></div>
+    </div>
+
+    <div id="b_ordem" style="display:none">
+      <div class="row2">
+        <div class="field"><label for="direcao">Operação</label>
+          <select id="direcao" onchange="desenhar()">
+            <option value="compra">Compra</option>
+            <option value="venda">Venda</option>
+          </select></div>
+        <div class="field"><label for="oPreco">Preço (R$)</label>
+          <input id="oPreco" value="15,89" oninput="desenhar()"></div>
+      </div>
+      <div class="field">
+        <label><input type="checkbox" id="temAlvo" checked onchange="desenhar()"
+          style="width:auto;margin-right:7px;vertical-align:-1px">Definir alvo</label>
+        <input id="oAlvo" value="17,00" oninput="desenhar()">
+      </div>
+      <div class="field">
+        <label><input type="checkbox" id="temStop" checked onchange="desenhar()"
+          style="width:auto;margin-right:7px;vertical-align:-1px">Com stop</label>
+        <input id="oStop" value="15,25" oninput="desenhar()">
+      </div>
+      <div class="field"><label for="oObs">Observação</label>
+        <input id="oObs" value="Ordem a mercado" oninput="desenhar()"></div>
+      <div class="derived" id="derOrdem"></div>
+    </div>
+
+    <div id="b_swing">
+      <div class="field"><label for="atual">Preço atual (R$)</label>
+        <input id="atual" value="15,89" oninput="desenhar()"></div>
+      <div class="row2">
+        <div class="field"><label for="alvo">Alvo (R$)</label>
+          <input id="alvo" value="17,00" oninput="desenhar()"></div>
+        <div class="field"><label for="stop">Stop (R$)</label>
+          <input id="stop" value="15,25" oninput="desenhar()"></div>
+      </div>
+      <div class="field"><label for="obs">Observação</label>
+        <input id="obs" value="Ordem lançada no preço de fechamento" oninput="desenhar()"></div>
+      <div class="derived" id="derSwing"></div>
+    </div>
+
+    <div id="b_coupon" style="display:none">
+      <div class="row2">
+        <div class="field"><label for="venc">Vencimento</label>
+          <input id="venc" type="date" value="2026-10-05" oninput="ajustarIR();desenhar()"></div>
+        <div class="field"><label for="barreira">Barreira de baixa (%)</label>
+          <input id="barreira" value="12" oninput="desenhar()"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="premio">Prêmio bruto (%)</label>
+          <input id="premio" value="2,32" oninput="desenhar()"></div>
+        <div class="field"><label for="fee">Fee de estruturação (%)</label>
+          <input id="fee" value="1" oninput="desenhar()"></div>
+      </div>
+      <fieldset>
+        <legend>Comparação com o CDI</legend>
+        <div class="field"><label for="cdi">CDI bruto (% a.a.)</label>
+          <input id="cdi" value="14,90" oninput="desenhar()"></div>
+        <div class="row2">
+          <div class="field"><label for="irOp">IR da operação (%)</label>
+            <input id="irOp" value="15" oninput="desenhar()"></div>
+          <div class="field"><label for="irCdi">IR do CDI (%)</label>
+            <input id="irCdi" value="22,5" oninput="desenhar()"></div>
+        </div>
+      </fieldset>
+      <div class="derived" id="derCoupon"></div>
+    </div>
+
+    <div id="b_generica" style="display:none">
+      <div class="field"><label for="gVenc">Vencimento</label>
+        <input id="gVenc" type="date" value="2026-10-05" oninput="desenhar()"></div>
+      <fieldset>
+        <legend>Parâmetros da estrutura</legend>
+        <div class="row2">
+          <div class="field"><label for="gR1">Rótulo 1</label><input id="gR1" value="Proteção" oninput="desenhar()"></div>
+          <div class="field"><label for="gV1">Valor 1</label><input id="gV1" value="−10%" oninput="desenhar()"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="gR2">Rótulo 2</label><input id="gR2" value="Participação" oninput="desenhar()"></div>
+          <div class="field"><label for="gV2">Valor 2</label><input id="gV2" value="100%" oninput="desenhar()"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="gR3">Rótulo 3</label><input id="gR3" value="Teto" oninput="desenhar()"></div>
+          <div class="field"><label for="gV3">Valor 3</label><input id="gV3" value="+18%" oninput="desenhar()"></div>
+        </div>
+      </fieldset>
+      <div class="field"><label for="gPayoff">Como funciona (uma frase)</label>
+        <input id="gPayoff" value="Protege a queda até 10% e mantém a alta até 18%." oninput="desenhar()"></div>
+    </div>
+
+    <button class="btn" onclick="baixar()">Baixar imagem para o grupo</button>
+    <button class="btn ghost" onclick="copiar()">Copiar imagem</button>
+    <button class="btn gold" onclick="registrar()">Registrar no histórico</button>
+    <p class="hint" id="hintReg">Registrar é opcional. Só o que for registrado entra nas
+      estatísticas e aceita alocação de clientes.</p>
+  </div>
+
+  <div class="pane">
+    <h2>Prévia</h2>
+    <canvas id="cv" width="1080" height="1080"></canvas>
+    <p class="alerta" id="aviso"></p>
+  </div>
+</div>
+</div>
+
+<!-- ============ HISTÓRICO ============ -->
+<div id="viewHist" style="display:none">
+<div class="wrap">
+  <div class="pane" style="margin-bottom:20px"><div id="filtros"></div></div>
+  <div class="stats" id="stats"></div>
+  <div id="lista"></div>
+</div>
+</div>
+
+<script>
+/* ===================== ARMAZENAMENTO =====================
+   Camada única de acesso aos dados. Hoje grava no navegador.
+   Ao migrar para o Supabase, só estas quatro funções mudam.   */
+var CHAVE='rv_operacoes';
+function carregar(){
+  try{
+    var b=localStorage.getItem(CHAVE);
+    if(!b) return [];
+    var v=JSON.parse(b);
+    return Array.isArray(v)?v:[];
+  }catch(e){ return []; }
+}
+function gravar(ops){
+  try{ localStorage.setItem(CHAVE,JSON.stringify(ops)); return true; }
+  catch(e){ alert('Não foi possível gravar (memória do navegador cheia).'); return false; }
+}
+var OPS=carregar();
+function salvarTudo(){ if(gravar(OPS)) renderHist(); }
+
+/* ===================== TIPOS ===================== */
+var TIPOS=[
+  {id:'ordem',   rotulo:'Compra / Venda',  eyebrow:'ORDEM',           render:'ordem'},
+  {id:'swing',   rotulo:'Swing Trade',     eyebrow:'SWING TRADE',     render:'swing'},
+  {id:'coupon',  rotulo:'Stock or Coupon', eyebrow:'STOCK OR COUPON', render:'coupon'},
+  {id:'hedge',   rotulo:'Smart Hedge',     eyebrow:'SMART HEDGE',     render:'generica'},
+  {id:'acel',    rotulo:'Aceleradora',     eyebrow:'ACELERADORA',     render:'generica'},
+  {id:'fence',   rotulo:'Fence',           eyebrow:'FENCE',           render:'generica'},
+  {id:'booster', rotulo:'Booster',         eyebrow:'BOOSTER',         render:'generica'},
+  {id:'autocall',rotulo:'Autocall',        eyebrow:'AUTOCALL',        render:'generica'},
+  {id:'outra',   rotulo:'Outra',           eyebrow:'OPERAÇÃO ESTRUTURADA', render:'generica'}
+];
+var tipo='swing';
+var C={navy:'#1B2A4A',gold:'#C9A24B',white:'#FFFFFF',muted:'#8A93A6',
+       mutedLight:'#9FB0CC',green:'#7FA37F',red:'#D4806A'};
+
+function montarTabs(){
+  var h='';
+  TIPOS.forEach(function(t){
+    h+='<button class="tab'+(t.id===tipo?' on':'')+'" onclick="setTipo(\''+t.id+'\')">'+t.rotulo+'</button>';
+  });
+  document.getElementById('tabs').innerHTML=h;
+}
+function tipoAtual(){ for(var i=0;i<TIPOS.length;i++) if(TIPOS[i].id===tipo) return TIPOS[i]; return TIPOS[0]; }
+function tipoPorId(id){ for(var i=0;i<TIPOS.length;i++) if(TIPOS[i].id===id) return TIPOS[i]; return TIPOS[TIPOS.length-1]; }
+function setTipo(id){
+  tipo=id; montarTabs();
+  var r=tipoAtual().render;
+  document.getElementById('b_ordem').style.display   = r==='ordem'?'':'none';
+  document.getElementById('b_swing').style.display   = r==='swing'?'':'none';
+  document.getElementById('b_coupon').style.display  = r==='coupon'?'':'none';
+  document.getElementById('b_generica').style.display= r==='generica'?'':'none';
+  desenhar();
+}
+function verView(v){
+  document.getElementById('viewNova').style.display = v==='nova'?'':'none';
+  document.getElementById('viewHist').style.display = v==='hist'?'':'none';
+  document.getElementById('navNova').classList.toggle('on',v==='nova');
+  document.getElementById('navHist').classList.toggle('on',v==='hist');
+  if(v==='hist') renderHist();
+}
+
+/* ===================== UTIL =====================
+   Parser tolerante: aceita "15,89", "15.89", "1.234,56", "R$ 1.234,56" e "7%".
+   O separador decimal é o ÚLTIMO que aparecer; ponto isolado seguido de exatamente
+   3 dígitos é tratado como milhar.                                            */
+function parseNum(t){
+  t=String(t==null?'':t).trim().replace(/\s/g,'').replace(/R\$|%/g,'');
+  if(!t) return NaN;
+  var temV=t.indexOf(',')>=0, temP=t.indexOf('.')>=0;
+  if(temV&&temP){
+    t = t.lastIndexOf(',')>t.lastIndexOf('.')
+        ? t.replace(/\./g,'').replace(',','.')
+        : t.replace(/,/g,'');
+  } else if(temV){
+    t=t.replace(/,/g,'.');
+  } else if(temP){
+    var p=t.split('.');
+    var milhar = p.length>2 || (p.length===2 && /^\d{3}$/.test(p[1]) && p[0].replace('-','').length<=3);
+    if(milhar) t=t.replace(/\./g,'');
+  }
+  var v=parseFloat(t);
+  return isNaN(v)?NaN:v;
+}
+function n(id){ var v=parseNum(document.getElementById(id).value); return isNaN(v)?0:v; }
+function s(id){ return document.getElementById(id).value.trim(); }
+function moeda(v){ return 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function moedaC(v){
+  if(Math.abs(v)>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:2})+'M';
+  if(Math.abs(v)>=1e3) return 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k';
+  return moeda(v);
+}
+function pct(v,c){ c=c===undefined?2:c;
+  return (v>=0?'+':'−')+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c})+'%'; }
+function pctS(v,c){ c=c===undefined?2:c;
+  return v.toLocaleString('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c})+'%'; }
+function num(v,c){ c=c===undefined?2:c;
+  return v.toLocaleString('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c}); }
+function esc(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function dataBR(iso){ var d=new Date(iso); return isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR'); }
+function diasAte(id){
+  var hoje=new Date(); hoje.setHours(0,0,0,0);
+  var v=document.getElementById(id).value;
+  var dv=v?new Date(v+'T00:00:00'):hoje;
+  return {dias:Math.max(1,Math.round((dv-hoje)/86400000)),data:dv};
+}
+function irRegressivo(d){ return d<=180?22.5:(d<=360?20:(d<=720?17.5:15)); }
+function ajustarIR(){
+  document.getElementById('irCdi').value=String(irRegressivo(diasAte('venc').dias)).replace('.',',');
+}
+
+/* ===================== CÁLCULOS ===================== */
+function calcOrdem(){
+  var dir=document.getElementById('direcao').value;
+  var sinal = dir==='compra' ? 1 : -1;
+  var p=n('oPreco'), al=n('oAlvo'), st=n('oStop');
+  var temA=document.getElementById('temAlvo').checked;
+  var temS=document.getElementById('temStop').checked;
+  var pAlvo = (temA && p>0) ? sinal*(al/p-1)*100 : null;
+  var pStop = (temS && p>0) ? sinal*(st/p-1)*100 : null;
+  var rr = (pAlvo!==null && pStop!==null && pStop<0) ? Math.abs(pAlvo/pStop) : null;
+  return {dir:dir,sinal:sinal,p:p,al:al,st:st,temAlvo:temA,temStop:temS,
+          pAlvo:pAlvo,pStop:pStop,rr:rr};
+}
+function calcSwing(){
+  var a=n('atual'),al=n('alvo'),st=n('stop');
+  var pAlvo=a>0?(al/a-1)*100:0,pStop=a>0?(st/a-1)*100:0;
+  return {a:a,al:al,st:st,pAlvo:pAlvo,pStop:pStop,rr:pStop<0?Math.abs(pAlvo/pStop):0};
+}
+function calcCoupon(){
+  var d=diasAte('venc'),pr=n('premio'),fe=n('fee');
+  var cdi=n('cdi'),irOp=n('irOp'),irCdi=n('irCdi');
+  var liq=pr-fe;
+  var anual=function(p){ return (Math.pow(1+p/100,365/d.dias)-1)*100; };
+  var aBruto=anual(pr),aPosFee=anual(liq),aPosIR=aPosFee*(1-irOp/100);
+  var equiv=irCdi<100?aPosIR/(1-irCdi/100):0;
+  return {pr:pr,fe:fe,liq:liq,dias:d.dias,data:d.data,barreira:n('barreira'),
+    aBruto:aBruto,aPosFee:aPosFee,aPosIR:aPosIR,equiv:equiv,
+    cdi:cdi,cdiPosIR:cdi*(1-irCdi/100),doCDI:cdi>0?equiv/cdi*100:0,irOp:irOp,irCdi:irCdi};
+}
+
+/* ===================== CANVAS ===================== */
+function txt(x,y,t,font,cor,align,tr){
+  var g=cv.getContext('2d');
+  g.font=font; g.fillStyle=cor; g.textAlign=align||'left'; g.textBaseline='alphabetic';
+  if(tr){
+    var str=String(t),tot=0,i;
+    for(i=0;i<str.length;i++) tot+=g.measureText(str[i]).width+tr;
+    tot-=tr;
+    var cx=align==='center'?x-tot/2:(align==='right'?x-tot:x);
+    g.textAlign='left';
+    for(i=0;i<str.length;i++){ g.fillText(str[i],cx,y); cx+=g.measureText(str[i]).width+tr; }
+  } else g.fillText(t,x,y);
+}
+function linha(x1,y,x2,cor,e){
+  var g=cv.getContext('2d'); g.strokeStyle=cor; g.lineWidth=e||1;
+  g.beginPath(); g.moveTo(x1,y); g.lineTo(x2,y); g.stroke();
+}
+function quebra(t,x,y,maxW,lh,font,cor){
+  var g=cv.getContext('2d'); g.font=font; g.fillStyle=cor; g.textAlign='left';
+  var pal=String(t).split(' '),ln='',yy=y;
+  for(var i=0;i<pal.length;i++){
+    var tst=ln?ln+' '+pal[i]:pal[i];
+    if(g.measureText(tst).width>maxW&&ln){ g.fillText(ln,x,yy); ln=pal[i]; yy+=lh; }
+    else ln=tst;
+  }
+  if(ln) g.fillText(ln,x,yy);
+  return yy;
+}
+function colunas(rots,vals,subs,cores){
+  var M=80,col=[M,M+320,M+640];
+  for(var i=0;i<3;i++){
+    txt(col[i],450,rots[i],'15px -apple-system,Helvetica,Arial,sans-serif',C.muted,'left',2.5);
+    txt(col[i],510,vals[i],'bold 42px Georgia,serif',cores[i]||C.white);
+    if(subs[i]) txt(col[i],554,subs[i],'19px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
+  }
+}
+function desenhar(){
+  var g=cv.getContext('2d'),M=80,W=1080,T=tipoAtual();
+  g.fillStyle=C.navy; g.fillRect(0,0,W,1080);
+  txt(M,92,'ADAMI CAPITAL WEALTH','600 21px Georgia,serif',C.gold,'left',4.5);
+  txt(W-M,92,new Date().toLocaleDateString('pt-BR'),
+      '19px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight,'right');
+  linha(M,124,W-M,'rgba(201,162,75,.45)',1);
+
+  var tk=s('ticker')||'—';
+  txt(M,206,T.eyebrow,'16px -apple-system,Helvetica,Arial,sans-serif',C.gold,'left',3.5);
+  txt(M,290,tk,'bold 78px Georgia,serif',C.white);
+
+  if(T.render==='ordem'){
+    var o=calcOrdem();
+    txt(M,332,s('empresa'),'22px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
+    linha(M,392,W-M,'rgba(255,255,255,.13)',1);
+    var rots=['OPERAÇÃO','PREÇO',''], vals=[o.dir==='compra'?'COMPRA':'VENDA',moeda(o.p),''],
+        cores=[o.dir==='compra'?C.green:C.red,C.white,C.white];
+    if(o.temAlvo){ rots[2]='ALVO'; vals[2]=moeda(o.al); }
+    else if(o.temStop){ rots[2]='STOP'; vals[2]=moeda(o.st); }
+    colunas(rots,vals,['','',''],cores);
+    if(o.temAlvo&&o.pAlvo!==null) txt(M+640,554,pct(o.pAlvo),'bold 26px Georgia,serif',C.green);
+    else if(o.temStop&&o.pStop!==null) txt(M+640,554,pct(o.pStop),'bold 26px Georgia,serif',C.red);
+
+    linha(M,630,W-M,'rgba(255,255,255,.13)',1);
+    if(o.temStop&&o.pStop!==null){
+      txt(M,694,'STOP','15px -apple-system,Helvetica,Arial,sans-serif',C.muted,'left',2.5);
+      txt(M,750,moeda(o.st),'bold 38px Georgia,serif',C.white);
+      txt(M+270,750,pct(o.pStop),'bold 30px Georgia,serif',C.red);
+      if(o.rr!==null){
+        txt(M+640,694,'RISCO / RETORNO','15px -apple-system,Helvetica,Arial,sans-serif',C.muted,'left',2.5);
+        txt(M+640,750,num(o.rr)+' : 1','bold 34px Georgia,serif',C.gold);
+      }
+    } else {
+      txt(M,694,'SEM STOP','15px -apple-system,Helvetica,Arial,sans-serif',C.muted,'left',2.5);
+      quebra('Ordem sem stop definido: a posição não tem saída automática se o preço virar.',
+        M,748,W-2*M,34,'22px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
+    }
+    if(s('oObs')) txt(M,834,s('oObs'),'italic 21px Georgia,serif',C.mutedLight);
+
+  } else if(T.render==='swing'){
+    var d=calcSwing();
+    txt(M,332,s('empresa'),'22px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
+    linha(M,392,W-M,'rgba(255,255,255,.13)',1);
+    colunas(['PREÇO ATUAL','ALVO','STOP'],[moeda(d.a),moeda(d.al),moeda(d.st)],['','',''],
+            [C.white,C.white,C.white]);
+    txt(M+320,554,pct(d.pAlvo),'bold 26px Georgia,serif',C.green);
+    txt(M+640,554,pct(d.pStop),'bold 26px Georgia,serif',C.red);
+    linha(M,630,W-M,'rgba(255,255,255,.13)',1);
+    txt(M,694,'RISCO / RETORNO','15px -apple-system,Helvetica,Arial,sans-serif',C.muted,'left',2.5);
+    txt(M,750,d.rr>0?num(d.rr)+' : 1':'—','bold 40px Georgia,serif',C.gold);
+    quebra('Ganha '+pctS(Math.abs(d.pAlvo))+' se o alvo for atingido, perde '+
+      pctS(Math.abs(d.pStop))+' se acionar o stop.',M+330,750,W-M-330-10,32,
+      '21px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
+    if(s('obs')) txt(M,816,s('obs'),'italic 21px Georgia,serif',C.mutedLight);
+  } else if(T.render==='coupon'){
+    var c=calcCoupon();
+    txt(M,332,'Vencimento '+c.data.toLocaleDateString('pt-BR')+'  ·  '+c.dias+' dias',
+        '22px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
+    linha(M,392,W-M,'rgba(255,255,255,.13)',1);
+    colunas(['BARREIRA DE BAIXA','PRÊMIO NO PERÍODO','EQUIVALE A'],
+            ['−'+pctS(c.barreira,0),pctS(c.liq),pctS(c.doCDI,0)+' do CDI'],
+            ['','depois do fee','já ajustado por IR'],[C.white,C.white,C.gold]);
+    linha(M,630,W-M,'rgba(255,255,255,.13)',1);
+    var fim=quebra('Se '+tk+' não cair mais de '+pctS(c.barreira,0)+' até '+
+      c.data.toLocaleDateString('pt-BR')+', o prêmio é pago no vencimento. Abaixo da barreira, '+
+      'o investidor fica com o ativo.',M,694,W-2*M,36,
+      '23px -apple-system,Helvetica,Arial,sans-serif',C.white);
+    txt(M,fim+54,'Prêmio bruto '+pctS(c.pr)+'  ·  fee '+pctS(c.fe)+'  ·  '+pctS(c.aPosIR,1)+
+      ' a.a. no bolso contra CDI de '+pctS(c.cdiPosIR,1)+' a.a. no bolso',
+      '19px -apple-system,Helvetica,Arial,sans-serif',C.muted);
+  } else {
+    var dg=diasAte('gVenc');
+    txt(M,332,'Vencimento '+dg.data.toLocaleDateString('pt-BR')+'  ·  '+dg.dias+' dias',
+        '22px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight);
+    linha(M,392,W-M,'rgba(255,255,255,.13)',1);
+    colunas([s('gR1').toUpperCase(),s('gR2').toUpperCase(),s('gR3').toUpperCase()],
+            [s('gV1'),s('gV2'),s('gV3')],['','',''],[C.white,C.white,C.gold]);
+    linha(M,630,W-M,'rgba(255,255,255,.13)',1);
+    quebra(s('gPayoff'),M,694,W-2*M,36,'23px -apple-system,Helvetica,Arial,sans-serif',C.white);
+  }
+  linha(M,896,W-M,'rgba(201,162,75,.45)',1);
+  quebra('Material de caráter informativo, sem garantia de rentabilidade. Rentabilidade '+
+    'passada não representa garantia de resultado futuro. Avalie a adequação ao seu perfil '+
+    'antes de investir.',M,948,W-2*M,28,'18px -apple-system,Helvetica,Arial,sans-serif',C.muted);
+  painel();
+}
+function painel(){
+  var T=tipoAtual(),av=document.getElementById('aviso');
+  if(T.render==='ordem'){
+    var o=calcOrdem();
+    var h='<div><span class="k">Direção</span><span class="v">'+
+          (o.dir==='compra'?'Compra':'Venda')+'</span></div>';
+    if(o.pAlvo!==null) h+='<div><span class="k">Ganho até o alvo</span><span class="v">'+pct(o.pAlvo)+'</span></div>';
+    if(o.pStop!==null) h+='<div><span class="k">Risco até o stop</span><span class="v">'+pct(o.pStop)+'</span></div>';
+    h+='<div><span class="k">Risco / retorno</span><span class="v'+
+       (o.rr!==null&&o.rr<1.5?' warn':'')+'">'+(o.rr!==null?num(o.rr)+' : 1':'—')+'</span></div>';
+    document.getElementById('derOrdem').innerHTML=h;
+    av.textContent = !o.temStop
+      ? 'Ordem sem stop: a perda não tem limite definido. Confirme se é intencional.'
+      : (o.rr!==null&&o.rr<1.5?'Risco/retorno abaixo de 1,5:1 — ganho pequeno frente ao risco.':'');
+  } else if(T.render==='swing'){
+    var d=calcSwing(),fraco=d.rr>0&&d.rr<1.5;
+    document.getElementById('derSwing').innerHTML=
+      '<div><span class="k">Ganho até o alvo</span><span class="v">'+pct(d.pAlvo)+'</span></div>'+
+      '<div><span class="k">Risco até o stop</span><span class="v">'+pct(d.pStop)+'</span></div>'+
+      '<div><span class="k">Risco / retorno</span><span class="v'+(fraco?' warn':'')+'">'+
+        (d.rr>0?num(d.rr)+' : 1':'—')+'</span></div>';
+    av.textContent=fraco?'Risco/retorno abaixo de 1,5:1 — ganho pequeno frente ao risco assumido.':'';
+  } else if(T.render==='coupon'){
+    var c=calcCoupon();
+    document.getElementById('derCoupon').innerHTML=
+      '<div><span class="k">Prazo</span><span class="v">'+c.dias+' dias</span></div>'+
+      '<div><span class="k">Prêmio depois do fee</span><span class="v">'+pctS(c.liq)+'</span></div>'+
+      '<span class="sep"></span>'+
+      '<div><span class="k">Anualizado bruto</span><span class="v">'+pctS(c.aBruto,1)+' a.a.</span></div>'+
+      '<div><span class="k">Depois do fee</span><span class="v">'+pctS(c.aPosFee,1)+' a.a.</span></div>'+
+      '<div><span class="k">No bolso, após IR de '+pctS(c.irOp,1)+'</span><span class="v">'+pctS(c.aPosIR,1)+' a.a.</span></div>'+
+      '<span class="sep"></span>'+
+      '<div><span class="k">CDI no bolso (IR '+pctS(c.irCdi,1)+')</span><span class="v">'+pctS(c.cdiPosIR,1)+' a.a.</span></div>'+
+      '<div><span class="k">Gross up: CDI bruto equivalente</span><span class="v">'+pctS(c.equiv,1)+' a.a.</span></div>'+
+      '<div><span class="k">Percentual do CDI</span><span class="v'+(c.doCDI<100?' warn':'')+'">'+pctS(c.doCDI,0)+'</span></div>';
+    av.textContent=c.liq<=0
+      ?'O fee consome todo o prêmio: o cliente assume o risco da barreira sem retorno.'
+      :(c.doCDI<100?'Rende menos que o CDI mesmo com a vantagem tributária — e com risco de ação.':'');
+  } else av.textContent='';
+}
+
+/* ===================== REGISTRO ===================== */
+function registrar(){
+  var T=tipoAtual(), tk=s('ticker');
+  if(!tk){ alert('Informe o ativo antes de registrar.'); return; }
+  var op={ id:'op_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
+    tipo:T.id, ativo:tk, empresa:s('empresa'), criadoEm:new Date().toISOString(),
+    status:'aberta', desfecho:null, resultadoPct:null, encerradoEm:null, alocacoes:[] };
+
+  if(T.render==='ordem'){
+    var o=calcOrdem();
+    op.params={direcao:o.dir,preco:o.p,alvo:o.temAlvo?o.al:null,stop:o.temStop?o.st:null,
+               pAlvo:o.pAlvo,pStop:o.pStop,rr:o.rr,temStop:o.temStop,obs:s('oObs')};
+    op.resumo=(o.dir==='compra'?'Compra':'Venda')+' a '+moeda(o.p)+
+      (o.temAlvo&&o.pAlvo!==null?' · alvo '+pct(o.pAlvo):'')+
+      (o.temStop&&o.pStop!==null?' · stop '+pct(o.pStop):' · sem stop')+
+      (o.rr!==null?' · R/R '+num(o.rr)+':1':'');
+  } else if(T.render==='swing'){
+    var d=calcSwing();
+    op.params={entrada:d.a,alvo:d.al,stop:d.st,pAlvo:d.pAlvo,pStop:d.pStop,rr:d.rr,obs:s('obs')};
+    op.resumo='Entrada '+moeda(d.a)+' · alvo '+pct(d.pAlvo)+' · stop '+pct(d.pStop)+
+              ' · R/R '+num(d.rr)+':1';
+  } else if(T.render==='coupon'){
+    var c=calcCoupon();
+    op.params={venc:s('venc'),barreira:c.barreira,premio:c.pr,fee:c.fe,liq:c.liq,
+               dias:c.dias,aPosIR:c.aPosIR,doCDI:c.doCDI};
+    op.resumo='Barreira −'+pctS(c.barreira,0)+' · prêmio líquido '+pctS(c.liq)+
+              ' · '+pctS(c.doCDI,0)+' do CDI · vence '+c.data.toLocaleDateString('pt-BR');
+  } else {
+    op.params={venc:s('gVenc'),r1:s('gR1'),v1:s('gV1'),r2:s('gR2'),v2:s('gV2'),
+               r3:s('gR3'),v3:s('gV3'),payoff:s('gPayoff')};
+    op.resumo=s('gR1')+' '+s('gV1')+' · '+s('gR2')+' '+s('gV2')+' · '+s('gR3')+' '+s('gV3');
+  }
+  OPS.unshift(op);
+  if(gravar(OPS)){
+    document.getElementById('hintReg').textContent=
+      tk+' registrada. Abra o Histórico para lançar os clientes.';
+    renderHist();
+  }
+}
+function acharOp(id){ for(var i=0;i<OPS.length;i++) if(OPS[i].id===id) return OPS[i]; return null; }
+
+function hoje(){ return new Date().toISOString().slice(0,10); }
+function sugestao(op,desfecho){
+  if(op.tipo==='swing'||op.tipo==='ordem'){
+    if(desfecho==='alvo'&&op.params.pAlvo!=null) return op.params.pAlvo;
+    if(desfecho==='stop'&&op.params.pStop!=null) return op.params.pStop;
+  } else if(op.tipo==='coupon'){
+    if(desfecho==='alvo') return op.params.liq;
+    if(desfecho==='stop') return 0;
+  }
+  return null;
+}
+/* abre o formulário de encerramento dentro do card, sem prompt do navegador */
+function abrirFecha(id,desfecho){
+  var op=acharOp(id); if(!op) return;
+  fechando={id:id,desfecho:desfecho};
+  renderHist();
+  var el=document.getElementById('res_'+id);
+  if(el){ el.focus(); el.select(); }
+}
+function cancelarFecha(){ fechando=null; renderHist(); }
+function confirmarFecha(id){
+  var op=acharOp(id); if(!op) return;
+  var resEl=document.getElementById('res_'+id), dtEl=document.getElementById('dt_'+id);
+  var v=parseNum(resEl.value);
+  if(isNaN(v)){ alert('Informe o resultado em %. Aceita vírgula ou ponto.'); resEl.focus(); return; }
+  var dt=dtEl.value||hoje();
+  if(new Date(dt+'T00:00:00') < new Date(op.criadoEm.slice(0,10)+'T00:00:00')){
+    if(!confirm('A data de fechamento é anterior à de abertura. Confirmar assim mesmo?')) return;
+  }
+  op.status='encerrada';
+  op.desfecho=fechando?fechando.desfecho:'manual';
+  op.resultadoPct=v;
+  op.encerradoEm=new Date(dt+'T12:00:00').toISOString();
+  fechando=null;
+  salvarTudo();
+}
+function reabrir(id){
+  var op=acharOp(id); if(!op) return;
+  op.status='aberta'; op.desfecho=null; op.resultadoPct=null; op.encerradoEm=null;
+  salvarTudo();
+}
+function apagar(id){
+  var op=acharOp(id); if(!op) return;
+  if(!confirm('Apagar a operação '+op.ativo+' e as '+op.alocacoes.length+
+     ' alocação(ões) de cliente? Não dá para desfazer.')) return;
+  OPS=OPS.filter(function(o){ return o.id!==id; });
+  salvarTudo();
+}
+function addAloc(id){
+  var op=acharOp(id); if(!op) return;
+  var nomeEl=document.getElementById('cli_'+id), valEl=document.getElementById('val_'+id);
+  var nome=nomeEl.value.trim();
+  var val=parseNum(valEl.value);
+  if(!nome){ alert('Informe o nome do cliente.'); nomeEl.focus(); return; }
+  if(isNaN(val)||val<=0){ alert('Informe o valor enviado para esse cliente.'); valEl.focus(); return; }
+  op.alocacoes.push({cliente:nome,valor:val,em:new Date().toISOString()});
+  nomeEl.value=''; valEl.value='';
+  salvarTudo();
+}
+function rmAloc(id,i){
+  var op=acharOp(id); if(!op) return;
+  op.alocacoes.splice(i,1);
+  salvarTudo();
+}
+
+/* ===================== HISTÓRICO ===================== */
+var fechando=null;
+var FILTRO={texto:'',status:'todas',tipo:'todos'};
+function setFiltro(campo,valor){ FILTRO[campo]=valor; fechando=null; renderHist(); }
+function limparFiltro(){
+  FILTRO={texto:'',status:'todas',tipo:'todos'}; fechando=null; renderHist();
+}
+function filtradas(){
+  var t=FILTRO.texto.trim().toLowerCase();
+  return OPS.filter(function(o){
+    if(FILTRO.status==='abertas'   && o.status!=='aberta')    return false;
+    if(FILTRO.status==='encerradas'&& o.status!=='encerrada') return false;
+    if(FILTRO.tipo!=='todos' && o.tipo!==FILTRO.tipo) return false;
+    if(!t) return true;
+    if(String(o.ativo).toLowerCase().indexOf(t)>=0) return true;
+    if(String(o.empresa||'').toLowerCase().indexOf(t)>=0) return true;
+    for(var i=0;i<o.alocacoes.length;i++)
+      if(String(o.alocacoes[i].cliente).toLowerCase().indexOf(t)>=0) return true;
+    return false;
+  });
+}
+function estatisticas(lista){
+  var OPS=lista;
+  var enc=OPS.filter(function(o){ return o.status==='encerrada' && typeof o.resultadoPct==='number'; });
+  var ganhos=enc.filter(function(o){ return o.resultadoPct>0; });
+  var perdas=enc.filter(function(o){ return o.resultadoPct<=0; });
+  var med=function(a){ return a.length? a.reduce(function(s,o){ return s+o.resultadoPct; },0)/a.length : 0; };
+  var alocTotal=0, resultadoRs=0, clientes={};
+  OPS.forEach(function(o){
+    o.alocacoes.forEach(function(a){
+      alocTotal+=a.valor;
+      clientes[a.cliente]=true;
+      if(o.status==='encerrada'&&typeof o.resultadoPct==='number')
+        resultadoRs += a.valor*o.resultadoPct/100;
+    });
+  });
+  var taxa = enc.length? ganhos.length/enc.length*100 : 0;
+  var mg=med(ganhos), mp=med(perdas);
+  return {total:OPS.length,abertas:OPS.length-enc.length,encerradas:enc.length,
+    taxa:taxa,mediaGanho:mg,mediaPerda:mp,
+    expectativa: enc.length? (taxa/100*mg)+((1-taxa/100)*mp) : 0,
+    alocTotal:alocTotal,resultadoRs:resultadoRs,nClientes:Object.keys(clientes).length};
+}
+function renderHist(){
+  var lista=filtradas();
+  var e=estatisticas(lista);
+  var filtrando = FILTRO.texto || FILTRO.status!=='todas' || FILTRO.tipo!=='todos';
+
+  var opts=TIPOS.map(function(t){
+    return '<option value="'+t.id+'"'+(FILTRO.tipo===t.id?' selected':'')+'>'+t.rotulo+'</option>';
+  }).join('');
+  document.getElementById('filtros').innerHTML=
+    '<div class="filtro-linha">'+
+      '<input id="fTexto" placeholder="Filtrar por ativo ou cliente" value="'+esc(FILTRO.texto)+'" '+
+        'oninput="setFiltro(\'texto\',this.value)">'+
+      '<select onchange="setFiltro(\'status\',this.value)">'+
+        '<option value="todas"'+(FILTRO.status==='todas'?' selected':'')+'>Todas</option>'+
+        '<option value="abertas"'+(FILTRO.status==='abertas'?' selected':'')+'>Em aberto</option>'+
+        '<option value="encerradas"'+(FILTRO.status==='encerradas'?' selected':'')+'>Encerradas</option>'+
+      '</select>'+
+      '<select onchange="setFiltro(\'tipo\',this.value)">'+
+        '<option value="todos"'+(FILTRO.tipo==='todos'?' selected':'')+'>Todos os tipos</option>'+opts+
+      '</select>'+
+      (filtrando?'<button class="btn ghost mini" onclick="limparFiltro()">Limpar</button>':'')+
+    '</div>'+
+    (filtrando?'<p class="hint" style="margin:8px 0 0">Mostrando '+lista.length+' de '+
+      OPS.length+' operações. Os números abaixo consideram só o filtro.</p>':'');
+
+  document.getElementById('stats').innerHTML=
+    '<div class="stat"><div class="n">'+e.total+'</div><div class="l">Operações</div></div>'+
+    '<div class="stat"><div class="n">'+e.abertas+'</div><div class="l">Em aberto</div></div>'+
+    '<div class="stat"><div class="n">'+(e.encerradas?pctS(e.taxa,0):'—')+'</div><div class="l">Taxa de acerto</div></div>'+
+    '<div class="stat"><div class="n'+(e.expectativa>0?' pos':(e.expectativa<0?' neg':''))+'">'+
+      (e.encerradas?pct(e.expectativa):'—')+'</div><div class="l">Expectativa por operação</div></div>'+
+    '<div class="stat"><div class="n">'+moedaC(e.alocTotal)+'</div><div class="l">Alocado · '+e.nClientes+' clientes</div></div>'+
+    '<div class="stat"><div class="n'+(e.resultadoRs>0?' pos':(e.resultadoRs<0?' neg':''))+'">'+
+      moedaC(e.resultadoRs)+'</div><div class="l">Resultado realizado</div></div>';
+
+  if(!OPS.length){
+    document.getElementById('lista').innerHTML=
+      '<div class="pane"><p class="vazio">Nenhuma operação registrada ainda. '+
+      'Monte o card em "Nova operação" e clique em Registrar no histórico.</p></div>';
+    return;
+  }
+  if(!lista.length){
+    document.getElementById('lista').innerHTML=
+      '<div class="pane"><p class="vazio">Nenhuma operação corresponde ao filtro.</p></div>';
+    return;
+  }
+  var h='';
+  lista.forEach(function(o){
+    var T=tipoPorId(o.tipo);
+    var badge='aberta',rot='Em aberto';
+    if(o.status==='encerrada'){
+      if(o.resultadoPct>0){ badge='ganho'; rot='Ganho '+pct(o.resultadoPct); }
+      else if(o.resultadoPct<0){ badge='perda'; rot='Perda '+pct(o.resultadoPct); }
+      else { badge='neutra'; rot='Zero a zero'; }
+    }
+    var totAloc=o.alocacoes.reduce(function(s,a){ return s+a.valor; },0);
+    var resRs=(o.status==='encerrada'&&typeof o.resultadoPct==='number')?totAloc*o.resultadoPct/100:null;
+
+    h+='<div class="op">'+
+      '<div class="op-top"><span class="op-tk">'+esc(o.ativo)+'</span>'+
+        '<span class="op-tipo">'+esc(T.rotulo)+'</span>'+
+        '<span class="badge '+badge+'">'+rot+'</span>'+
+        '<span class="op-data">'+dataBR(o.criadoEm)+
+          (o.encerradoEm?' → '+dataBR(o.encerradoEm):'')+'</span></div>'+
+      '<p class="op-res">'+esc(o.resumo)+'</p>';
+
+    if(fechando&&fechando.id===o.id){
+      var sug=sugestao(o,fechando.desfecho);
+      h+='<div class="fecha">'+
+        '<div class="row3">'+
+          '<div><label for="res_'+o.id+'">Resultado (%)</label>'+
+            '<input id="res_'+o.id+'" value="'+(sug!=null?num(sug):'')+'" placeholder="ex.: 6,99 ou -4,03"></div>'+
+          '<div><label for="dt_'+o.id+'">Data do fechamento</label>'+
+            '<input id="dt_'+o.id+'" type="date" value="'+hoje()+'"></div>'+
+          '<button class="btn gold mini" onclick="confirmarFecha(\''+o.id+'\')">Confirmar</button>'+
+        '</div>'+
+        '<div style="margin-top:8px"><button class="btn ghost mini" onclick="cancelarFecha()">Cancelar</button>'+
+        (sug!=null?'<span class="hint" style="margin-left:10px">Sugestão calculada dos parâmetros originais. Ajuste se saiu em outro preço.</span>':'')+
+        '</div></div>';
+    }
+
+    h+='<div class="aloc">';
+    if(o.alocacoes.length){
+      h+='<table>';
+      o.alocacoes.forEach(function(a,i){
+        h+='<tr><td>'+esc(a.cliente)+'</td><td class="num">'+moeda(a.valor)+'</td>'+
+           '<td class="x"><button class="rm" title="remover" onclick="rmAloc(\''+o.id+'\','+i+')">×</button></td></tr>';
+      });
+      h+='</table><div class="aloc-tot"><span>'+o.alocacoes.length+' cliente(s)</span>'+
+         '<span>Total <b>'+moeda(totAloc)+'</b>'+
+         (resRs!==null?' · resultado <b>'+moeda(resRs)+'</b>':'')+'</span></div>';
+    } else {
+      h+='<p class="vazio">Nenhum cliente lançado nesta operação.</p>';
+    }
+    h+='<div class="row3" style="margin-top:10px">'+
+        '<div><label for="cli_'+o.id+'">Cliente</label>'+
+          '<input id="cli_'+o.id+'" list="listaClientes" placeholder="Nome do cliente"></div>'+
+        '<div><label for="val_'+o.id+'">Valor (R$)</label>'+
+          '<input id="val_'+o.id+'" placeholder="0,00"></div>'+
+        '<button class="btn ghost mini" onclick="addAloc(\''+o.id+'\')">Adicionar</button>'+
+      '</div></div>';
+
+    h+='<div class="acoes">';
+    if(o.status==='aberta'){
+      h+='<button class="btn ghost mini" onclick="abrirFecha(\''+o.id+'\',\'alvo\')">Atingiu o alvo</button>'+
+         '<button class="btn ghost mini" onclick="abrirFecha(\''+o.id+'\',\'stop\')">Stopou</button>'+
+         '<button class="btn ghost mini" onclick="abrirFecha(\''+o.id+'\',\'manual\')">Encerrar manualmente</button>';
+    } else {
+      h+='<button class="btn ghost mini" onclick="reabrir(\''+o.id+'\')">Reabrir</button>';
+    }
+    h+='<button class="btn ghost mini" onclick="apagar(\''+o.id+'\')">Apagar</button></div></div>';
+  });
+  var nomes={};
+  OPS.forEach(function(o){ o.alocacoes.forEach(function(a){ nomes[a.cliente]=true; }); });
+  h+='<datalist id="listaClientes">'+Object.keys(nomes).map(function(x){
+    return '<option value="'+esc(x)+'">'; }).join('')+'</datalist>';
+  document.getElementById('lista').innerHTML=h;
+}
+
+/* ===================== EXPORTAÇÃO ===================== */
+function baixar(){
+  cv.toBlob(function(b){
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(b);
+    a.download='ADAMI_'+(s('ticker')||'RV')+'_'+new Date().toISOString().slice(0,10)+'.png';
+    a.click(); URL.revokeObjectURL(a.href);
+  },'image/png');
+}
+function copiar(){
+  if(!navigator.clipboard||!window.ClipboardItem){ alert('Este navegador não copia imagem. Use "Baixar imagem".'); return; }
+  cv.toBlob(function(b){
+    navigator.clipboard.write([new ClipboardItem({'image/png':b})])
+      .then(function(){ document.getElementById('aviso').textContent='Imagem copiada. Cole no WhatsApp.'; })
+      .catch(function(){ alert('Não foi possível copiar. Use "Baixar imagem".'); });
+  },'image/png');
+}
+
+var cv=document.getElementById('cv');
+montarTabs(); ajustarIR(); desenhar(); renderHist();
+</script>
+</body>
+</html>
