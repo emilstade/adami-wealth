@@ -509,7 +509,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.10";
+var VERSAO="versão 2.11";
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 var MESES_C=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var CORES=["#1B3A5F","#3D6D9E","#7FA0C4","#A9C0D8","#C0A265","#5D7186","#2E6E8E","#D9C79B","#8C6A9E","#4C8577"];
@@ -1863,6 +1863,8 @@ var APPS=[
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3v18h18"/><path d="M7 15l4-5 3.5 3L21 6"/></svg>'},
   {id:"imobiliario",nome:"Relatório Imobiliário",desc:"Imóveis, projetos, histórico de retornos e apresentação para clientes private.",tag:"Disponível",ativo:true,url:"imobiliario.html",
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>'},
+  {id:"rv",nome:"Mesa RV",desc:"Recomendações de renda variável, card para o grupo e histórico das operações.",tag:"Disponível",ativo:true,url:"rv.html",
+   ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 17.5 9 11l4 3.5L21 6"/><path d="M15.5 6H21v5.5"/><path d="M3 21h18"/></svg>'},
   {id:"crm",nome:"CRM",desc:"Relacionamento com clientes, prospecção e acompanhamento comercial.",tag:"Em breve",ativo:false,
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20v-1.4A4.6 4.6 0 0 1 8.1 14h1.8a4.6 4.6 0 0 1 4.6 4.6V20"/><path d="M16.5 7.2a3 3 0 0 1 0 5.6"/><path d="M18 20v-1.6a4.3 4.3 0 0 0-2.3-3.8"/></svg>'}
 ];
@@ -1893,7 +1895,7 @@ function viewHub(){
     '<button class="sai" onclick="sair()">Sair</button></div>'+
     '<div class="hub-body">'+
     '<div class="hub-hi">'+saud+(nome?", "+esc(nome):"")+'</div>'+
-    '<h1>Sistemas '+EMPRESA.nome+'</h1>'+
+    '<h1>HUB Adami Capital</h1>'+
     '<p class="sub">Escolha abaixo a ferramenta que deseja abrir.</p>'+
     '<div class="hub-grid">'+
     APPS.map(function(a){
