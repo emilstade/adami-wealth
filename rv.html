@@ -105,7 +105,7 @@
 
 <header>
   <span class="mark">ADAMI</span>
-  <span class="sub">Mesa RV</span><span class="sub" style="opacity:.6">versão 2.11</span>
+  <span class="sub">Mesa RV</span><span class="sub" style="opacity:.6">versão 2.12</span><span class="sub" id="selPerm" style="display:none;color:#C9A24B"></span>
   <nav><button onclick="location.href='index.html'">← Hub</button>
     <button id="navNova" class="on" onclick="verView('nova')">Nova operação</button>
     <button id="navHist" onclick="verView('hist')">Histórico</button>
@@ -215,7 +215,7 @@
 
     <button class="btn" onclick="baixar()">Baixar imagem para o grupo</button>
     <button class="btn ghost" onclick="copiar()">Copiar imagem</button>
-    <button class="btn gold" onclick="registrar()">Registrar no histórico</button>
+    <button class="btn gold" id="btnReg" onclick="registrar()">Registrar no histórico</button>
     <p class="hint" id="hintReg">Registrar é opcional. Só o que for registrado entra nas
       estatísticas e aceita alocação de clientes.</p>
   </div>
@@ -238,24 +238,94 @@
 </div>
 
 <script>
-/* ===================== ARMAZENAMENTO =====================
-   Camada única de acesso aos dados. Hoje grava no navegador.
-   Ao migrar para o Supabase, só estas quatro funções mudam.   */
-var CHAVE='rv_operacoes';
-function carregar(){
-  try{
-    var b=localStorage.getItem(CHAVE);
-    if(!b) return [];
-    var v=JSON.parse(b);
-    return Array.isArray(v)?v:[];
-  }catch(e){ return []; }
+/* ===================== SUPABASE =====================
+   Leitura liberada a todo assessor autenticado.
+   Escrita só para quem tem perfis.mesa_rv ou perfis.admin — isso é
+   garantido pela RLS no banco, não por esconder botão aqui.        */
+var SB_URL="https://mqhqbqiyrtlhhzjfuqxs.supabase.co";
+var SB_KEY="sb_publishable_7CLSR1wwXFAD2y-it_bo9A_GtjAUnm3";
+var SESSAO=null;
+try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
+if(!SESSAO||!SESSAO.access_token) location.replace("index.html");
+
+var PODE_EDITAR=false, CLIENTES=[], OPS=[], carregando=true, erroCarga=null;
+
+function guardarSessao(d){
+  SESSAO={access_token:d.access_token,refresh_token:d.refresh_token,
+          email:(d.user&&d.user.email)||(SESSAO&&SESSAO.email),
+          id:(d.user&&d.user.id)||(SESSAO&&SESSAO.id)};
+  try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){}
+  return SESSAO;
 }
-function gravar(ops){
-  try{ localStorage.setItem(CHAVE,JSON.stringify(ops)); return true; }
-  catch(e){ alert('Não foi possível gravar (memória do navegador cheia).'); return false; }
+function renovar(){
+  if(!SESSAO||!SESSAO.refresh_token) return Promise.reject(new Error("sem sessão"));
+  return fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{
+    method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({refresh_token:SESSAO.refresh_token})
+  }).then(function(res){
+    if(!res.ok) throw new Error("sessão expirada");
+    return res.json().then(guardarSessao);
+  });
 }
-var OPS=carregar();
-function salvarTudo(){ if(gravar(OPS)) renderHist(); }
+function api(path,opts,jaTentou){
+  opts=opts||{};
+  var tk=(SESSAO&&SESSAO.access_token)||SB_KEY;
+  var h={"apikey":SB_KEY,"Authorization":"Bearer "+tk,"Content-Type":"application/json"};
+  if(opts.prefer) h["Prefer"]=opts.prefer;
+  return fetch(SB_URL+"/rest/v1/"+path,{method:opts.method||"GET",headers:h,
+      body:opts.body?JSON.stringify(opts.body):undefined})
+    .then(function(res){
+      if(res.status===401&&SESSAO&&!jaTentou){
+        return renovar().then(function(){ return api(path,opts,true); })
+          .catch(function(){ location.replace("index.html"); throw new Error("sessão expirada"); });
+      }
+      if(!res.ok) return res.text().then(function(t){ throw new Error(t||("HTTP "+res.status)); });
+      return res.status===204?null:res.json();
+    });
+}
+function avisarErro(e){
+  var m=String(e&&e.message||e);
+  if(/row-level security|permission denied|42501/i.test(m))
+    m='Você tem acesso apenas de leitura na Mesa RV.';
+  alert(m);
+}
+
+/* monta a lista OPS no formato que a tela usa, a partir das duas tabelas */
+function baixarTudo(){
+  carregando=true; erroCarga=null; renderHist();
+  return Promise.all([
+    api("rv_operacoes?select=*&order=criado_em.desc"),
+    api("rv_alocacoes?select=*&order=em.asc")
+  ]).then(function(r){
+    var ops=r[0]||[], als=r[1]||[];
+    var porOp={};
+    ops.forEach(function(o){
+      o.alocacoes=[];
+      o.criadoEm=o.criado_em; o.encerradoEm=o.encerrado_em;
+      o.resultadoPct=(o.resultado_pct==null?null:Number(o.resultado_pct));
+      porOp[o.id]=o;
+    });
+    als.forEach(function(a){
+      if(porOp[a.operacao_id]) porOp[a.operacao_id].alocacoes.push(
+        {id:a.id,cliente:a.cliente_nome,cliente_id:a.cliente_id,valor:Number(a.valor),em:a.em});
+    });
+    OPS=ops; carregando=false; renderHist();
+  }).catch(function(e){
+    carregando=false; erroCarga=String(e.message||e); OPS=[]; renderHist();
+  });
+}
+function checarPermissao(){
+  return api("perfis?select=admin,mesa_rv&user_id=eq."+encodeURIComponent(SESSAO.id||""))
+    .then(function(r){
+      var p=(r&&r[0])||{};
+      PODE_EDITAR=!!(p.mesa_rv||p.admin);
+    }).catch(function(){ PODE_EDITAR=false; });
+}
+function baixarClientes(){
+  return api("clientes?select=id,nome&order=nome.asc")
+    .then(function(r){ CLIENTES=r||[]; }).catch(function(){ CLIENTES=[]; });
+}
+function acharOp(id){ for(var i=0;i<OPS.length;i++) if(OPS[i].id===id) return OPS[i]; return null; }
 
 /* ===================== TIPOS ===================== */
 var TIPOS=[
@@ -547,42 +617,43 @@ function painel(){
 function registrar(){
   var T=tipoAtual(), tk=s('ticker');
   if(!tk){ alert('Informe o ativo antes de registrar.'); return; }
-  var op={ id:'op_'+Date.now()+'_'+Math.random().toString(36).slice(2,7),
-    tipo:T.id, ativo:tk, empresa:s('empresa'), criadoEm:new Date().toISOString(),
-    status:'aberta', desfecho:null, resultadoPct:null, encerradoEm:null, alocacoes:[] };
+  var reg={ tipo:T.id, ativo:tk, empresa:s('empresa'), status:'aberta',
+            criado_por:(SESSAO&&SESSAO.id)||null };
 
   if(T.render==='ordem'){
     var o=calcOrdem();
-    op.params={direcao:o.dir,preco:o.p,alvo:o.temAlvo?o.al:null,stop:o.temStop?o.st:null,
+    reg.params={direcao:o.dir,preco:o.p,alvo:o.temAlvo?o.al:null,stop:o.temStop?o.st:null,
                pAlvo:o.pAlvo,pStop:o.pStop,rr:o.rr,temStop:o.temStop,obs:s('oObs')};
-    op.resumo=(o.dir==='compra'?'Compra':'Venda')+' a '+moeda(o.p)+
+    reg.resumo=(o.dir==='compra'?'Compra':'Venda')+' a '+moeda(o.p)+
       (o.temAlvo&&o.pAlvo!==null?' · alvo '+pct(o.pAlvo):'')+
       (o.temStop&&o.pStop!==null?' · stop '+pct(o.pStop):' · sem stop')+
       (o.rr!==null?' · R/R '+num(o.rr)+':1':'');
   } else if(T.render==='swing'){
     var d=calcSwing();
-    op.params={entrada:d.a,alvo:d.al,stop:d.st,pAlvo:d.pAlvo,pStop:d.pStop,rr:d.rr,obs:s('obs')};
-    op.resumo='Entrada '+moeda(d.a)+' · alvo '+pct(d.pAlvo)+' · stop '+pct(d.pStop)+
+    reg.params={entrada:d.a,alvo:d.al,stop:d.st,pAlvo:d.pAlvo,pStop:d.pStop,rr:d.rr,obs:s('obs')};
+    reg.resumo='Entrada '+moeda(d.a)+' · alvo '+pct(d.pAlvo)+' · stop '+pct(d.pStop)+
               ' · R/R '+num(d.rr)+':1';
   } else if(T.render==='coupon'){
     var c=calcCoupon();
-    op.params={venc:s('venc'),barreira:c.barreira,premio:c.pr,fee:c.fe,liq:c.liq,
+    reg.params={venc:s('venc'),barreira:c.barreira,premio:c.pr,fee:c.fe,liq:c.liq,
                dias:c.dias,aPosIR:c.aPosIR,doCDI:c.doCDI};
-    op.resumo='Barreira −'+pctS(c.barreira,0)+' · prêmio líquido '+pctS(c.liq)+
+    reg.resumo='Barreira −'+pctS(c.barreira,0)+' · prêmio líquido '+pctS(c.liq)+
               ' · '+pctS(c.doCDI,0)+' do CDI · vence '+c.data.toLocaleDateString('pt-BR');
   } else {
-    op.params={venc:s('gVenc'),r1:s('gR1'),v1:s('gV1'),r2:s('gR2'),v2:s('gV2'),
+    reg.params={venc:s('gVenc'),r1:s('gR1'),v1:s('gV1'),r2:s('gR2'),v2:s('gV2'),
                r3:s('gR3'),v3:s('gV3'),payoff:s('gPayoff')};
-    op.resumo=s('gR1')+' '+s('gV1')+' · '+s('gR2')+' '+s('gV2')+' · '+s('gR3')+' '+s('gV3');
+    reg.resumo=s('gR1')+' '+s('gV1')+' · '+s('gR2')+' '+s('gV2')+' · '+s('gR3')+' '+s('gV3');
   }
-  OPS.unshift(op);
-  if(gravar(OPS)){
-    document.getElementById('hintReg').textContent=
-      tk+' registrada. Abra o Histórico para lançar os clientes.';
-    renderHist();
-  }
+  var btn=document.getElementById('btnReg'); if(btn) btn.disabled=true;
+  api("rv_operacoes",{method:"POST",body:reg,prefer:"return=representation"})
+    .then(function(){
+      document.getElementById('hintReg').textContent=
+        tk+' registrada. Abra o Histórico para lançar os clientes.';
+      return baixarTudo();
+    })
+    .catch(avisarErro)
+    .then(function(){ if(btn) btn.disabled=false; });
 }
-function acharOp(id){ for(var i=0;i<OPS.length;i++) if(OPS[i].id===id) return OPS[i]; return null; }
 
 function hoje(){ return new Date().toISOString().slice(0,10); }
 function sugestao(op,desfecho){
@@ -595,7 +666,7 @@ function sugestao(op,desfecho){
   }
   return null;
 }
-/* abre o formulário de encerramento dentro do card, sem prompt do navegador */
+/* formulário de encerramento dentro do card, sem prompt do navegador */
 function abrirFecha(id,desfecho){
   var op=acharOp(id); if(!op) return;
   fechando={id:id,desfecho:desfecho};
@@ -610,43 +681,46 @@ function confirmarFecha(id){
   var v=parseNum(resEl.value);
   if(isNaN(v)){ alert('Informe o resultado em %. Aceita vírgula ou ponto.'); resEl.focus(); return; }
   var dt=dtEl.value||hoje();
-  if(new Date(dt+'T00:00:00') < new Date(op.criadoEm.slice(0,10)+'T00:00:00')){
+  if(new Date(dt+'T00:00:00') < new Date(String(op.criadoEm).slice(0,10)+'T00:00:00')){
     if(!confirm('A data de fechamento é anterior à de abertura. Confirmar assim mesmo?')) return;
   }
-  op.status='encerrada';
-  op.desfecho=fechando?fechando.desfecho:'manual';
-  op.resultadoPct=v;
-  op.encerradoEm=new Date(dt+'T12:00:00').toISOString();
+  var corpo={status:'encerrada',desfecho:(fechando?fechando.desfecho:'manual'),
+             resultado_pct:v,encerrado_em:new Date(dt+'T12:00:00').toISOString()};
   fechando=null;
-  salvarTudo();
+  api("rv_operacoes?id=eq."+encodeURIComponent(id),{method:"PATCH",body:corpo})
+    .then(baixarTudo).catch(avisarErro);
 }
 function reabrir(id){
-  var op=acharOp(id); if(!op) return;
-  op.status='aberta'; op.desfecho=null; op.resultadoPct=null; op.encerradoEm=null;
-  salvarTudo();
+  api("rv_operacoes?id=eq."+encodeURIComponent(id),
+      {method:"PATCH",body:{status:'aberta',desfecho:null,resultado_pct:null,encerrado_em:null}})
+    .then(baixarTudo).catch(avisarErro);
 }
 function apagar(id){
   var op=acharOp(id); if(!op) return;
   if(!confirm('Apagar a operação '+op.ativo+' e as '+op.alocacoes.length+
      ' alocação(ões) de cliente? Não dá para desfazer.')) return;
-  OPS=OPS.filter(function(o){ return o.id!==id; });
-  salvarTudo();
+  api("rv_operacoes?id=eq."+encodeURIComponent(id),{method:"DELETE"})
+    .then(baixarTudo).catch(avisarErro);
 }
 function addAloc(id){
   var op=acharOp(id); if(!op) return;
-  var nomeEl=document.getElementById('cli_'+id), valEl=document.getElementById('val_'+id);
-  var nome=nomeEl.value.trim();
+  var sel=document.getElementById('cli_'+id), valEl=document.getElementById('val_'+id);
+  var cid=sel.value;
+  if(!cid){ alert('Escolha o cliente.'); sel.focus(); return; }
+  var nome='';
+  for(var i=0;i<CLIENTES.length;i++) if(CLIENTES[i].id===cid) nome=CLIENTES[i].nome;
   var val=parseNum(valEl.value);
-  if(!nome){ alert('Informe o nome do cliente.'); nomeEl.focus(); return; }
   if(isNaN(val)||val<=0){ alert('Informe o valor enviado para esse cliente.'); valEl.focus(); return; }
-  op.alocacoes.push({cliente:nome,valor:val,em:new Date().toISOString()});
-  nomeEl.value=''; valEl.value='';
-  salvarTudo();
+  api("rv_alocacoes",{method:"POST",body:{operacao_id:id,cliente_id:cid,cliente_nome:nome,
+      valor:val,lancado_por:(SESSAO&&SESSAO.id)||null}})
+    .then(baixarTudo).catch(avisarErro);
 }
 function rmAloc(id,i){
   var op=acharOp(id); if(!op) return;
-  op.alocacoes.splice(i,1);
-  salvarTudo();
+  var a=op.alocacoes[i]; if(!a||!a.id) return;
+  if(!confirm('Remover '+a.cliente+' desta operação?')) return;
+  api("rv_alocacoes?id=eq."+encodeURIComponent(a.id),{method:"DELETE"})
+    .then(baixarTudo).catch(avisarErro);
 }
 
 /* ===================== HISTÓRICO ===================== */
@@ -727,10 +801,23 @@ function renderHist(){
     '<div class="stat"><div class="n'+(e.resultadoRs>0?' pos':(e.resultadoRs<0?' neg':''))+'">'+
       moedaC(e.resultadoRs)+'</div><div class="l">Resultado realizado</div></div>';
 
+  if(carregando){
+    document.getElementById('lista').innerHTML=
+      '<div class="pane"><p class="vazio">Carregando operações…</p></div>';
+    return;
+  }
+  if(erroCarga){
+    document.getElementById('lista').innerHTML=
+      '<div class="pane"><p class="vazio">Não foi possível carregar: '+esc(erroCarga)+
+      '<br><br>Se a mensagem falar em tabela inexistente, o script SQL da Mesa RV '+
+      'ainda não foi rodado no Supabase.</p></div>';
+    return;
+  }
   if(!OPS.length){
     document.getElementById('lista').innerHTML=
-      '<div class="pane"><p class="vazio">Nenhuma operação registrada ainda. '+
-      'Monte o card em "Nova operação" e clique em Registrar no histórico.</p></div>';
+      '<div class="pane"><p class="vazio">'+(PODE_EDITAR
+        ?'Nenhuma operação registrada ainda. Monte o card em "Nova operação" e clique em Registrar no histórico.'
+        :'Nenhuma operação registrada ainda.')+'</p></div>';
     return;
   }
   if(!lista.length){
@@ -778,7 +865,7 @@ function renderHist(){
       h+='<table>';
       o.alocacoes.forEach(function(a,i){
         h+='<tr><td>'+esc(a.cliente)+'</td><td class="num">'+moeda(a.valor)+'</td>'+
-           '<td class="x"><button class="rm" title="remover" onclick="rmAloc(\''+o.id+'\','+i+')">×</button></td></tr>';
+           '<td class="x">'+(PODE_EDITAR?'<button class="rm" title="remover" onclick="rmAloc(\''+o.id+'\','+i+')">×</button>':'')+'</td></tr>';
       });
       h+='</table><div class="aloc-tot"><span>'+o.alocacoes.length+' cliente(s)</span>'+
          '<span>Total <b>'+moeda(totAloc)+'</b>'+
@@ -786,28 +873,32 @@ function renderHist(){
     } else {
       h+='<p class="vazio">Nenhum cliente lançado nesta operação.</p>';
     }
-    h+='<div class="row3" style="margin-top:10px">'+
-        '<div><label for="cli_'+o.id+'">Cliente</label>'+
-          '<input id="cli_'+o.id+'" list="listaClientes" placeholder="Nome do cliente"></div>'+
-        '<div><label for="val_'+o.id+'">Valor (R$)</label>'+
-          '<input id="val_'+o.id+'" placeholder="0,00"></div>'+
-        '<button class="btn ghost mini" onclick="addAloc(\''+o.id+'\')">Adicionar</button>'+
-      '</div></div>';
-
-    h+='<div class="acoes">';
-    if(o.status==='aberta'){
-      h+='<button class="btn ghost mini" onclick="abrirFecha(\''+o.id+'\',\'alvo\')">Atingiu o alvo</button>'+
-         '<button class="btn ghost mini" onclick="abrirFecha(\''+o.id+'\',\'stop\')">Stopou</button>'+
-         '<button class="btn ghost mini" onclick="abrirFecha(\''+o.id+'\',\'manual\')">Encerrar manualmente</button>';
-    } else {
-      h+='<button class="btn ghost mini" onclick="reabrir(\''+o.id+'\')">Reabrir</button>';
+    if(PODE_EDITAR){
+      var opc=CLIENTES.map(function(c){
+        return '<option value="'+esc(c.id)+'">'+esc(c.nome)+'</option>'; }).join('');
+      h+='<div class="row3" style="margin-top:10px">'+
+          '<div><label for="cli_'+o.id+'">Cliente</label>'+
+            '<select id="cli_'+o.id+'"><option value="">Selecione…</option>'+opc+'</select></div>'+
+          '<div><label for="val_'+o.id+'">Valor (R$)</label>'+
+            '<input id="val_'+o.id+'" placeholder="0,00"></div>'+
+          '<button class="btn ghost mini" onclick="addAloc(\''+o.id+'\')">Adicionar</button>'+
+        '</div>';
     }
-    h+='<button class="btn ghost mini" onclick="apagar(\''+o.id+'\')">Apagar</button></div></div>';
+    h+='</div>';
+
+    if(PODE_EDITAR){
+      h+='<div class="acoes">';
+      if(o.status==='aberta'){
+        h+='<button class="btn ghost mini" onclick="abrirFecha(\''+o.id+'\',\'alvo\')">Atingiu o alvo</button>'+
+           '<button class="btn ghost mini" onclick="abrirFecha(\''+o.id+'\',\'stop\')">Stopou</button>'+
+           '<button class="btn ghost mini" onclick="abrirFecha(\''+o.id+'\',\'manual\')">Encerrar manualmente</button>';
+      } else {
+        h+='<button class="btn ghost mini" onclick="reabrir(\''+o.id+'\')">Reabrir</button>';
+      }
+      h+='<button class="btn ghost mini" onclick="apagar(\''+o.id+'\')">Apagar</button></div>';
+    }
+    h+='</div>';
   });
-  var nomes={};
-  OPS.forEach(function(o){ o.alocacoes.forEach(function(a){ nomes[a.cliente]=true; }); });
-  h+='<datalist id="listaClientes">'+Object.keys(nomes).map(function(x){
-    return '<option value="'+esc(x)+'">'; }).join('')+'</datalist>';
   document.getElementById('lista').innerHTML=h;
 }
 
@@ -831,6 +922,23 @@ function copiar(){
 
 var cv=document.getElementById('cv');
 montarTabs(); ajustarIR(); desenhar(); renderHist();
+
+/* ===================== ARRANQUE ===================== */
+function aplicarPermissao(){
+  var btn=document.getElementById('btnReg');
+  var hint=document.getElementById('hintReg');
+  if(!PODE_EDITAR){
+    if(btn) btn.style.display='none';
+    if(hint) hint.textContent='Seu acesso à Mesa RV é somente leitura. '+
+      'Você pode gerar e baixar cards, mas o registro no histórico é feito pela mesa.';
+    var s=document.getElementById('selPerm');
+    if(s){ s.textContent='somente leitura'; s.style.display=''; }
+  }
+}
+checarPermissao()
+  .then(function(){ return PODE_EDITAR ? baixarClientes() : null; })
+  .then(function(){ aplicarPermissao(); return baixarTudo(); })
+  .catch(function(e){ aplicarPermissao(); erroCarga=String(e.message||e); carregando=false; renderHist(); });
 </script>
 </body>
 </html>
