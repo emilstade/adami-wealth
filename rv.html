@@ -112,7 +112,7 @@
 
 <header>
   <span class="mark">ADAMI</span>
-  <span class="sub">Mesa RV</span><span class="sub" style="opacity:.6">versão 2.17</span><span class="sub" id="selPerm" style="display:none;color:#C9A24B"></span>
+  <span class="sub">Mesa RV</span><span class="sub" style="opacity:.6">versão 2.16</span><span class="sub" id="selPerm" style="display:none;color:#C9A24B"></span>
   <nav>
     <button id="navNova" class="on" onclick="verView('nova')">Nova operação</button>
     <button id="navHist" onclick="verView('hist')">Histórico</button>
@@ -295,13 +295,7 @@ function api(path,opts,jaTentou){
           .catch(function(){ location.replace("index.html"); throw new Error("sessão expirada"); });
       }
       if(!res.ok) return res.text().then(function(t){ throw new Error(t||("HTTP "+res.status)); });
-      /* PostgREST devolve 201/204 com corpo VAZIO quando nao se pede
-         return=representation. Ler como json direto estoura
-         "Unexpected end of JSON input" mesmo com a gravacao tendo dado certo. */
-      return res.text().then(function(t){
-        if(!t) return null;
-        try{ return JSON.parse(t); }catch(e){ return null; }
-      });
+      return res.status===204?null:res.json();
     });
 }
 function avisarErro(e){
@@ -731,39 +725,44 @@ function apagar(id){
   api("rv_operacoes?id=eq."+encodeURIComponent(id),{method:"DELETE"})
     .then(baixarTudo).catch(avisarErro);
 }
-/* Nomes ja usados na Mesa RV + os do cadastro de Carteiras, só como
-   sugestao. O campo aceita qualquer texto: cliente novo, apelido ou
-   numero de conta, sem depender de estar cadastrado em outro modulo. */
-function sugestoesCliente(){
-  var vistos={}, saida=[];
-  OPS.forEach(function(o){ o.alocacoes.forEach(function(a){
-    var n=(a.cliente||'').trim();
-    if(n && !vistos[n.toLowerCase()]){ vistos[n.toLowerCase()]=1; saida.push(n); }
-  }); });
-  CLIENTES.forEach(function(c){
-    var n=(c.nome||'').trim();
-    if(n && !vistos[n.toLowerCase()]){ vistos[n.toLowerCase()]=1; saida.push(n); }
-  });
-  return saida.sort(function(a,b){ return a.localeCompare(b,'pt-BR'); });
+
+/* ===== formatacao do campo de valor enquanto digita =====
+   1000 vira 1.000 e 1250000 vira 1.250.000. Aceita virgula para os
+   centavos. O cursor volta para depois do mesmo digito, senao ele
+   pula para o fim a cada tecla e digitar no meio fica impossivel.  */
+function fmtMilhar(txt){
+  var neg=/^\s*-/.test(txt);
+  var t=String(txt).replace(/[^\d,]/g,'');
+  if(!t) return neg?'-':'';
+  var p=t.split(',');
+  var inteiro=p[0].replace(/^0+(?=\d)/,'');
+  var dec=(p.length>1)?','+p.slice(1).join('').slice(0,2):'';
+  inteiro=inteiro.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  return (neg?'-':'')+inteiro+dec;
 }
+function onValor(el){
+  var pos=el.selectionStart==null?el.value.length:el.selectionStart;
+  var digitosAntes=el.value.slice(0,pos).replace(/[^\d]/g,'').length;
+  var novo=fmtMilhar(el.value);
+  if(novo===el.value) return;
+  el.value=novo;
+  var i=0,d=0;
+  while(i<novo.length && d<digitosAntes){ if(/\d/.test(novo.charAt(i))) d++; i++; }
+  try{ el.setSelectionRange(i,i); }catch(e){}
+}
+
 function addAloc(id){
   var op=acharOp(id); if(!op) return;
-  var cliEl=document.getElementById('cli_'+id), valEl=document.getElementById('val_'+id);
-  var nome=(cliEl.value||'').trim();
-  if(!nome){ alert('Informe o cliente.'); cliEl.focus(); return; }
+  var sel=document.getElementById('cli_'+id), valEl=document.getElementById('val_'+id);
+  var cid=sel.value;
+  if(!cid){ alert('Escolha o cliente.'); sel.focus(); return; }
+  var nome='';
+  for(var i=0;i<CLIENTES.length;i++) if(CLIENTES[i].id===cid) nome=CLIENTES[i].nome;
   var val=parseNum(valEl.value);
   if(isNaN(val)||val<=0){ alert('Informe o valor enviado para esse cliente.'); valEl.focus(); return; }
-
-  /* se o nome digitado for exatamente um cliente do cadastro, guarda o
-     vinculo; se nao for, grava so o nome e segue em frente.            */
-  var cid=null;
-  for(var i=0;i<CLIENTES.length;i++)
-    if((CLIENTES[i].nome||'').trim().toLowerCase()===nome.toLowerCase()){ cid=CLIENTES[i].id; nome=CLIENTES[i].nome; }
-
   api("rv_alocacoes",{method:"POST",body:{operacao_id:id,cliente_id:cid,cliente_nome:nome,
       valor:val,lancado_por:(SESSAO&&SESSAO.id)||null}})
-    .then(function(){ cliEl.value=''; valEl.value=''; return baixarTudo(); })
-    .catch(avisarErro);
+    .then(baixarTudo).catch(avisarErro);
 }
 function rmAloc(id,i){
   var op=acharOp(id); if(!op) return;
@@ -1117,11 +1116,13 @@ function renderHist(){
       h+='<p class="vazio">Nenhum cliente lançado nesta operação.</p>';
     }
     if(PODE_EDITAR){
+      var opc=CLIENTES.map(function(c){
+        return '<option value="'+esc(c.id)+'">'+esc(c.nome)+'</option>'; }).join('');
       h+='<div class="row3" style="margin-top:10px">'+
           '<div><label for="cli_'+o.id+'">Cliente</label>'+
-            '<input id="cli_'+o.id+'" list="listaClientes" autocomplete="off" placeholder="Nome, apelido ou conta"></div>'+
+            '<select id="cli_'+o.id+'"><option value="">Selecione…</option>'+opc+'</select></div>'+
           '<div><label for="val_'+o.id+'">Valor (R$)</label>'+
-            '<input id="val_'+o.id+'" placeholder="0,00"></div>'+
+            '<input id="val_'+o.id+'" inputmode="decimal" placeholder="0,00" oninput="onValor(this)"></div>'+
           '<button class="btn ghost mini" onclick="addAloc(\''+o.id+'\')">Adicionar</button>'+
         '</div>';
     }
@@ -1140,8 +1141,6 @@ function renderHist(){
     }
     h+='</div>';
   });
-  h+='<datalist id="listaClientes">'+sugestoesCliente().map(function(x){
-    return '<option value="'+esc(x)+'"></option>'; }).join('')+'</datalist>';
   document.getElementById('lista').innerHTML=h;
 }
 
