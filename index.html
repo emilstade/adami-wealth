@@ -104,6 +104,31 @@ input,select,textarea{font-family:inherit;font-size:13px}
 .hub-top{display:flex;align-items:center;justify-content:space-between;gap:16px;
   padding:26px 40px;border-bottom:1px solid #24405F;flex-wrap:wrap}
 .hub-top img{height:30px;width:auto;flex:none}
+
+.eqv{position:fixed;inset:0;background:rgba(12,20,34,.72);z-index:9000;display:flex;
+     align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+.eqx{background:#fff;border-radius:10px;max-width:760px;width:100%;padding:26px 28px;
+     box-shadow:0 18px 60px rgba(0,0,0,.35)}
+.eqx h2{margin:0 0 4px;font-family:Georgia,serif;color:#12263F;font-size:19px}
+.eqx .eqsub{color:#7D8A9B;font-size:12.5px;margin:0 0 18px;line-height:1.5}
+.eqx table{width:100%;border-collapse:collapse;font-size:13.5px}
+.eqx th{text-align:left;font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;
+        color:#8A93A6;font-weight:600;padding:0 8px 8px 0;border-bottom:1px solid #E3E7EE}
+.eqx td{padding:11px 8px 11px 0;border-bottom:1px solid #F1F4F8;vertical-align:middle}
+.eqx td.c{text-align:center;width:96px}
+.eqx .eqnome{font-weight:600;color:#12263F}
+.eqx .eqmail{color:#8A93A6;font-size:12px}
+.eqsw{width:40px;height:22px;border-radius:22px;border:0;background:#D3DAE4;position:relative;
+      cursor:pointer;transition:background .15s;padding:0}
+.eqsw.on{background:#4C7A4C}
+.eqsw:disabled{opacity:.4;cursor:not-allowed}
+.eqsw span{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;
+           background:#fff;transition:left .15s}
+.eqsw.on span{left:21px}
+.eqtag{font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:#C9A24B}
+.eqfoot{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:12px}
+.eqmsg{font-size:12.5px;color:#8A93A6;min-height:1em}
+.eqmsg.err{color:#B5563A}
 .hub-top .sai{background:transparent;border:1px solid #35516F;color:#C3D2E2;border-radius:3px;padding:8px 16px}
 .hub-top .sai:hover{background:#1B3A5F;color:#fff}
 .hub-body{max-width:1040px;margin:0 auto;padding:64px 40px 80px}
@@ -438,7 +463,7 @@ var SB_KEY=EMPRESA.sb_key;
 
 var SESSAO=null;
 try{ SESSAO=JSON.parse(localStorage.getItem("aw_sessao")||"null"); }catch(e){}
-var PERFIS={}, EU={admin:false,nome:"",id:null};
+var PERFIS={}, EU={admin:false,super:false,nome:"",id:null};
 
 function idDoToken(tk){
   try{
@@ -477,6 +502,74 @@ function renovar(){
     return res.json().then(guardarSessao);
   });
 }
+
+/* ===================== EQUIPE (somente o supremo) =====================
+   A escrita em admin/mesa_rv esta bloqueada na API de proposito.
+   Toda mudanca passa pela funcao definir_privilegio no banco, que
+   confere de novo quem esta chamando antes de gravar.               */
+var EQUIPE=[];
+function abrirEquipe(){
+  if(!EU.super) return;
+  if(!document.getElementById("eqv")){
+    var d=document.createElement("div");
+    d.id="eqv"; d.className="eqv";
+    d.onclick=function(e){ if(e.target===d) fecharEquipe(); };
+    d.innerHTML='<div class="eqx" id="eqx"></div>';
+    document.body.appendChild(d);
+  }
+  document.getElementById("eqv").style.display="flex";
+  pintarEquipe("<p class='eqsub'>Carregando…</p>");
+  api("rpc/listar_equipe",{method:"POST",body:{}})
+    .then(function(r){ EQUIPE=r||[]; pintarEquipe(); })
+    .catch(function(e){ pintarEquipe("<p class='eqsub err'>"+esc(e.message||e)+"</p>"); });
+}
+function fecharEquipe(){
+  var d=document.getElementById("eqv"); if(d) d.style.display="none";
+}
+function pintarEquipe(aviso){
+  var h='<h2>Equipe</h2>'+
+    '<p class="eqsub">Usuário novo é criado no Supabase, em Authentication &rarr; Users. '+
+    'Ele já entra funcionando, enxergando apenas os próprios clientes. '+
+    'Use os controles abaixo só para dar acesso além disso.</p>';
+  if(aviso){ pintar(h+aviso); return; }
+  if(!EQUIPE.length){ pintar(h+'<p class="eqsub">Nenhum usuário encontrado.</p>'); return; }
+  h+='<table><tr><th>Pessoa</th><th class="c">Administrador</th><th class="c">Mesa RV</th></tr>';
+  EQUIPE.forEach(function(p,i){
+    var trava=p.super;
+    h+='<tr><td><div class="eqnome">'+esc(p.nome||p.email.split("@")[0])+
+       (trava?' <span class="eqtag">supremo</span>':'')+'</div>'+
+       '<div class="eqmail">'+esc(p.email)+'</div></td>'+
+       '<td class="c"><button class="eqsw'+(p.admin||trava?' on':'')+'"'+(trava?' disabled':'')+
+         ' onclick="alternarPriv('+i+',\'admin\')"><span></span></button></td>'+
+       '<td class="c"><button class="eqsw'+(p.mesa_rv||p.admin||trava?' on':'')+'"'+
+         (trava||p.admin?' disabled':'')+' onclick="alternarPriv('+i+',\'mesa_rv\')"><span></span></button></td></tr>';
+  });
+  h+='</table><div class="eqfoot"><span class="eqmsg" id="eqmsg">'+
+     'Administrador vê os clientes de todos e edita a Mesa RV por herança.</span>'+
+     '<button class="btn" onclick="fecharEquipe()">Fechar</button></div>';
+  pintar(h);
+}
+function pintar(html){ var x=document.getElementById("eqx"); if(x) x.innerHTML=html; }
+function alternarPriv(i,campo){
+  var p=EQUIPE[i]; if(!p||p.super) return;
+  var novo=!p[campo];
+  var msg=document.getElementById("eqmsg");
+  if(msg){ msg.className="eqmsg"; msg.textContent="Salvando…"; }
+  api("rpc/definir_privilegio",{method:"POST",
+      body:{p_user_id:p.user_id,p_campo:campo,p_valor:novo}})
+    .then(function(){
+      p[campo]=novo;
+      pintarEquipe();
+      var m=document.getElementById("eqmsg");
+      if(m) m.textContent=(campo==="admin"?"Administrador":"Mesa RV")+
+        (novo?" concedido a ":" removido de ")+(p.nome||p.email);
+    })
+    .catch(function(e){
+      var m=document.getElementById("eqmsg");
+      if(m){ m.className="eqmsg err"; m.textContent=String(e.message||e); }
+    });
+}
+
 function sair(){
   if(!confirm("Sair da conta?")) return;
   var tk=SESSAO&&SESSAO.access_token;
@@ -509,7 +602,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.13";
+var VERSAO="versão 2.14";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -607,12 +700,13 @@ function carregar(){
     api("clientes?select=id,nome,assessor_id&order=nome.asc").catch(function(){ return api("clientes?select=id,nome&order=nome.asc"); }),
     api("lancamentos?select=cliente_id,mes,ano,contas,indicadores"),
     api("cartas?select=mes,ano,conteudo").catch(function(){ return []; }),
-    api("perfis?select=user_id,nome,admin").catch(function(){ return []; })
+    api("perfis?select=user_id,nome,admin,mesa_rv,super").catch(function(){ return api("perfis?select=user_id,nome,admin").catch(function(){ return []; }); })
   ]).then(function(r){
     if(SESSAO&&!SESSAO.id){ SESSAO.id=idDoToken(SESSAO.access_token||""); try{ localStorage.setItem("aw_sessao",JSON.stringify(SESSAO)); }catch(e){} }
-    PERFIS={}; (r[3]||[]).forEach(function(x){ PERFIS[x.user_id]={nome:x.nome||"",admin:!!x.admin}; });
+    PERFIS={}; (r[3]||[]).forEach(function(x){ PERFIS[x.user_id]={nome:x.nome||"",admin:!!x.admin,mesa_rv:!!x.mesa_rv,super:!!x.super}; });
     EU.id=(SESSAO&&SESSAO.id)||null;
-    EU.admin=!!(EU.id&&PERFIS[EU.id]&&PERFIS[EU.id].admin);
+    EU.admin=!!(EU.id&&PERFIS[EU.id]&&(PERFIS[EU.id].admin||PERFIS[EU.id].super));
+    EU.super=!!(EU.id&&PERFIS[EU.id]&&PERFIS[EU.id].super);
     EU.nome=(EU.id&&PERFIS[EU.id]&&PERFIS[EU.id].nome)||((SESSAO&&SESSAO.email)||"").split("@")[0];
     db.clientes=r[0]||[];
     db.dados={};
@@ -1894,7 +1988,7 @@ function viewHub(){
   var saud=hora<12?"Bom dia":(hora<18?"Boa tarde":"Boa noite");
   return '<div class="hub">'+
     '<div class="hub-top"><img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'">'+
-    '<button class="sai" onclick="sair()">Sair</button></div>'+
+    (EU.super?'<button class="sai" onclick="abrirEquipe()" style="margin-right:8px">Equipe</button>':'')+'<button class="sai" onclick="sair()">Sair</button></div>'+
     '<div class="hub-body">'+
     '<div class="hub-hi">'+saud+(nome?", "+esc(nome):"")+'</div>'+
     '<h1>Hub Adami Captal</h1>'+
