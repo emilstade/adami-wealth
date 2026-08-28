@@ -49,6 +49,8 @@
   .derived .k{color:var(--muted)}
   .derived .v{font-family:var(--serif);color:var(--navy);font-weight:bold}
   .derived .v.warn{color:var(--red)}
+  .derived .v.pos{color:var(--green)}
+  .derived .v.neg{color:var(--red)}
   .sep{display:block;border-top:1px solid #D8DEE8;margin:7px 0}
 
   .btn{width:100%;padding:11px;border:0;border-radius:9px;background:var(--navy);color:#fff;
@@ -96,17 +98,22 @@
   .aloc-tot b{font-family:var(--serif);color:var(--navy)}
   .vazio{color:var(--muted);font-size:12.5px;padding:8px 0}
   .acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-  .filtro-linha{display:grid;grid-template-columns:1.6fr 1fr 1fr auto;gap:8px;align-items:center}
+  .filtro-linha{display:grid;grid-template-columns:1.6fr 1fr 1fr auto auto;gap:8px;align-items:center}
   @media(max-width:700px){.filtro-linha{grid-template-columns:1fr}}
   .fecha{background:#FBF6EA;border:1px solid #E8DBBB;border-radius:10px;padding:12px 14px;margin-top:10px}
+  #awVoltar{position:fixed;bottom:18px;left:18px;z-index:99999;background:#1B3A5F;color:#fff;border:0;
+  border-radius:999px;padding:10px 18px;font:500 13px "Segoe UI",system-ui,Arial,sans-serif;cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.92}
+  #awVoltar:hover{background:#132B47;opacity:1}
+  @media print{#awVoltar{display:none!important}}
 </style>
 </head>
 <body>
 
 <header>
   <span class="mark">ADAMI</span>
-  <span class="sub">Mesa RV</span><span class="sub" style="opacity:.6">versão 2.13</span><span class="sub" id="selPerm" style="display:none;color:#C9A24B"></span>
-  <nav><button onclick="location.href='index.html'">← Hub</button>
+  <span class="sub">Mesa RV</span><span class="sub" style="opacity:.6">versão 2.15</span><span class="sub" id="selPerm" style="display:none;color:#C9A24B"></span>
+  <nav>
     <button id="navNova" class="on" onclick="verView('nova')">Nova operação</button>
     <button id="navHist" onclick="verView('hist')">Histórico</button>
   </nav>
@@ -242,6 +249,14 @@
    Leitura liberada a todo assessor autenticado.
    Escrita só para quem tem perfis.mesa_rv ou perfis.admin — isso é
    garantido pela RLS no banco, não por esconder botão aqui.        */
+var LOGO_BRANCO="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVgAAABPCAYAAACuyN3XAAAVUElEQVR42u1dabQV1ZX+9uOBgAgGURRQJASxg6KAOCsoOJJWNA4QBxSUtNHWLEUNxrajRo2aOLWzRruJSxpFHFATjbaJIwZnRSbFAZFBBhkEhAdf/7j7LorjqXur6tS99xH3t9Zd792qs3ftOqfOd0/ts88+gkYOkscDGOI5tRTAFACTROQVGAwGgyE1wf4Ly2MlyUtJbm41ZjAYDMkJtjWTYwXJs63WDAaDITnJfsZ0eJZkU6s5g8FgKE+wFzA9ZpBsbbVnMBgMpQm2J7NhMsl6q0GDwWCIJ9gtmB2XWg0aDAZDaZKdHECyXawGDQZDtVG3Cdl6X4DsY9bUBoPBCDYe/wiQ7UlyK2tug8FgBOvHFADfBsgPs+Y2GAyGGJB8MsAPO9tq0GAw2Ag2Hn8JkO1EUqzJDQaDEawfLwfKd7QmNxgMhng3waIAN8GdVoMGg8EQT7CPBhAsrQYNBoO5COLxgjWbwWAwgq0MHgscAR9szW4wGAzxJPl5gJdgstWgwWCwEWw83gqQ7W7NbjAYjGDjMSFAthXJZtb0BoPhe0mwJLci2ZXkHiRHkrzRKfI4gPUZ1QuAkdb0BoPhewOS3UheSfIrj990nbuhIclPAvywH1iNGwyG7wOxdkwY2zrSkXskgGC/TmCXkOxqLWQwGDZVcj1Zt9xOgicd2WMYhq5lbJtPcqG1ksFg2NSIVUhenZIQP3N0NCW5JoBgbyxh3/tJR7oGg8HQ2Ah2dEZS3M7RExIP+06MbRMiZWwEazAYNilyPTCAFM9wdI0L0LXKY9stTpkF1mIGgyErahGm9X8Bsj2c77cE6GpO8sgIuf4GwDlOmdX2iBgMhhQDyOd0cLacZIe6Kl/87wCaBKiYG/0iIq8AWBOg7zi1awiAy1CIkW0MjTSQ5DMkj8tZbzOSd6nu4melforfLya5RZXv936Sz1RAbxe9p9/kqPNhkvcFyB+uNg02Ospch31IXkpyy0Zm11YABujXVgB+Vs2L15FsCJz57+HRuzhA31SSPy11vgaNtJNjw9k56n47Zf38nWTbCt/vtMj1Vua16wTJJs69/CkHnaviJl0Typ/s2LSf0WXqOhzg1GGLRmRbO8e2C6s5gv1t4Oh1mYhM8RwfH6Bz5zLyN9egnV5xvp+fB+mQ3AzA7inFDgSwiOT1JJtW4IHsio1zQ7QAcFJO6t3VekNCdhYmeRiA5pFDO2RQs5Nrk1FmanRyvm/TmI2tJsEeEyj/fszx/wjQ2QBgVsy5P4lIVXdA0FdzlwR+CKDWKRZHAZhcgdGC7wfsqpx0u26OegA3BugbU4F67WN8+c+NahJsp0D5F30HRWR+Rn2r1Edyvm8UKSKn1qA9HoDfDzyqQte7A8BeAHbRz4kAngSwxFN2NwCv5jWSJdkGwCGeUzuQ7Fmh+x1KskMGW49p7CMlw/fbb9KH4ehZQv+ytCFaJAcUR43OgoWPSdbVqJ5KrWrbMdRF4NE5OKZsE5KXOD7HIn6X071eU+Je/5yD/otidN+dQdcneWw/RPIKR8Wrxg6p63BYuXmZGtr2HR9sfZWufUqg/HIRea/E+d+leLVcBmBPEZmuI+DlmoR7XwCLAfQUkfU1aJyLUPBBxuHnAEZXwxYRWQfgapITADwPIDrqu5jktSKyJOBe6wEMK1GkH8k2IrK0Ard3OskrRWR2QltPALBjIyedfii44HYFUFwC3gBgCoC/AhgrIotS6GsK4HgAhwHYA0Ax0dIaAJMAPAXgERFpyGDrgQAGA+gdqde1AKahEMI5VkTmpVD5NMl7AMyJ4w4AT4jImjJ29ULBJ94bQLfIqVkozIuMEZGZjfUBmBw4en2/jP7NE+qZ7ZsVJ3kdyYUkO9awjj5zbJ3nfF9KsmU1RrCOXA+Sax255wPv9XiPLeud77+v0AiWJG9LoWd6Xhto5j2C1UU77yZ47lfotesT6BypeTjK4QuSp6SwdXeS/0igd62G7TVPOIJNgsdL2NWF5GsJdKwjOZFkuzQj2GqRx4pAgr2tjP66BDpe8SXaJtlZH6jtazkC8ZDNzp57OLHaBKuyt+S5Oy/JvznqppO81zn2ZQUJtoFkpwQ6Tshzh+I8CZbkeRnCHifH/UirW2hChr55ewJbf0pydUq9s33x2BkJdmqMXf1JfpNS1wKSuzUagiW5bw7+190SXOeDEvLXkGzikempI9dv434xq0SwLuEs0+OPO8dn1ohgt/LItspox4998c0k6z3Hh1aIYEnyvxLomJYzwd6XB8GWyCQ3luRxJPcjeZk+2y5e8s0x6KjRxUp9uzuM5BEkb4i57lUlbN0/JinTUzpa3l/baoanzELX1gwEO51kn5iBle8H6jmS5ypvnR0zul3iW+RQK4K9NpBcv0l4nVNj5I/1xZGS3MeZxOldI3Ld1tPQh0d+ABJP9lWKYFX+Q0f2zIx23OGxo6mem5HXBpUJCHY9yfYl5I8t92BmsGlMKMGSbOshrDExo706JTB39DjQKbeX5/ZOinnja0ZylKf89j5frofkX4shJyHZ3bNw6LkyBHtS2klpvZY7MT4pLk6a5I6e+7i/sRDsy4EE+0XC67R3k2rHheSQHKw+lSguqBHB3hjXcfVB+LxUXtwqEuwTjuydGWxo7an3cyLnu3ls3Dkngp3liYq4vYS86y/8tftDWCOCvckdiZdbiKIE4fWhKwm7PvajE9hxRrl7ITnEKfN6Alvb6HyDt549BNs5Qx0e5CHXujIyzT1RPtvVlGCVIL4NJNgxCa/VLDIymVDCnptirvNmDci1TpNCRHFfgpH5ljUg2Acd2b9ksOFkjw1bOfXhEvAdORHsNJJDPddvk9An3qrWBOtxoyxOIftzJdK1JPtGjm/j6JyQQqc7eGrmnH/DqcMOCfW6k6DX5EywSx272iaUO7TUnEgtCHb/Kvlfm5D8rf7CnBBTpiXJKWWu9YMqE6yPcJp57F4Tmp8gB4IdFzKSVvJ0X7Mmesr9MgkJZiFYPT7XOX6v50f4DafMJXqu1gS7hSP/hxyewaGl3AcJJq+iaBs516pcW5fRHX1WFuVMsCFtsCAi+2w5gq10QH3oEs8GEXm3zA13A7AUwJEA2onIQ54y3QEsBPDjMtfrVkVyFQDuL9x7bryeiKwE4Pp7bk0ScpMz3LX3L6WU74nvLgO+wlPOl5Tl2Bzv49fO9xHO6rS9sPES1rUorHhrDHAjAPLIQLZH9LEUkedSyLqrK/eO/O+OCtO6tqKxsM0qWKfvpCz/cuT/Q8oVrjTBDgiUX1NmRDZaK+gKEemtZOSWOwfAhygdxF+JjlwOfZR0ohinM8QbfQB84pHfuVqG6qh6V+fwxBTyAuBOT9t28tzrgQDcH9Vr81qiKyL3AXAXGTxQHGV77LwqZFFFztjd+f5pDjp3ify/IGVdfuUcOqBE8W9T2vVNlXgqbdum2uWkvoKdsjkKq6NC8GiM7r0BjAMwE0AH34ofnSF+AMDAFNc7i+QlVVrJ9e+eY2kSnTwDoFoLI4Zjw2qeYuf6MIV8Gx0ZwhmVJPX3ba3kMjmn+7nKIdITSI5AYRVU1CW1DsC9Odbj4kD5153v3QHMCNT5AYBD9f/2JJvoSr4kfbx1iuukDetrWaVnO23u49ZOHTQVkbW1GMH2yoHAr3NuZmuSD+ro6QIRGRhDrkNQWHo3MEPlVdwPq+QfmkymQzVid7UTXeYc/jylmotyMOWGvO5JRO4C8IXnFXacc+xOEZmTY3UuC5R3l6YelLIt23n82W4K0DSDokNTlD087fMdMPot3u95JF8ofhK4SMrpa6JvWIkHqZUk2P1y6AjvFV/dSF4MYKq+FnURkfE+MtBlcWMBbJnxst2r8Ks5NCc9D1WYXJvoNbZzTh2TQocgnxwK+5PMM6OV+7bQz2n7BgDXoHHB3UduWNIfWZInA/gSwEKSB5dw9Zwf+BYWh0Ekd0ho62nY2If7VOR/N0/BZiVUHQmgf+Tjq8e+JLskvIcBnr5QGxcBgKNz6uRHoZA3dBoKSVpmxZQbDuAPcLaVyYBfATiqgqTVDMDlzuGvANyaQLwfNp44PLKCdrYD8DSAvs6p9wG8nULVwTFvJuUWkGwL4Czn2KicRsMQkTtJ/qdex4f7cx695mHzOpKXYcPkYFsAf0SZJOW6OOVeAEU/9oXYsDfeEhT2nisS9WCSg0XksTI6/80zmnPdQi7GkdyvlAtOw/bcPBTRqJnVnpHxDI+ezbCxT/ityP/DdRBW5MBHSfYt9aqvERJjGsWDoMlX1gWGZ72qy1/nkNyl1Ou2bv2yVsNG6p1Qiiyoq2Dd7Om5Xt+Estt4Vn2NSiibKEyLZF9NarEmj1A2Tx6K11PI3u3JIVCfUNYbpuWUOaNEwpFtPOVDw7SCcxFoIL6LJ3yrrrT8zzyrlo5yyhzruf9flbDh2pj+HY1X3TWmbt8oYWsvkl855T9yCdg5v8YXqkXy8rjQxpjcJe/EJXIhuYMmt/GhheOCqXwcLMneOcS/Lie5WymyI/msBgo/Ew2+J/nHwGu3qCDBTvcEwEsK+bcc+fkBBPstN2x6uDJBveyc8l5bhSSsoT+P8L/mRbBa7mvPNR6OKVtzglU9A3xLyjWh0Xm6lv6hmKxYr7h5OZRwXo3JBfCw6jtP+9mSyPnVukIuDcEWCfwjFnIOn0vyNk3u4iPtlp77n+h5ju/WJb8XxJBhe0eHL5nSGo2VH6123U7yU8eudxoDwZ4eSHAHliHWa7WRlseMNI4OvP5xFaoXH+EMT6ljULmHJwXBJsUqkttmuF83ucl8ptxfzLNkdW3OBOtb7LFtYyZY1XVihnacpK/OPn3NS4zS4tCL5PsJCXYEyS9T6u8Y50ZIuUL0FzF6Dkppz3jP81ITgn09Q+N/TXKPUhMukWWja0qRIMntAgn28wrVSwtunPd0ZdwDX0bPgiwdnenT260leXnA/Z7v6LsrByL5OKFcj7j1956y0RwF40uUi7pNFmS4l9GOTecGPk9b60hwfZl2XEfypoQ6b07g3ltcXIdP8pFoVrQSBHtahBvWl0nC8ybL5D4m2SGBK7CB5MgyerrEvMW49XeDlt8lYv/nnjeBryP30b8SJNI8RQdepxmUdi2hryXJ4Vp+BRNuWUJyZgjDVtBFMEhfvRaSPCKjjq4qv4Tk1SnkdlUf15ISn7kk/0ryoJzu9wPVOylAx83qR5wX57+LkfuzXntWgg57QrlMZZokaJF++mW8lxfVpul5rcbTH+7LVOdctW8+C1vdXJJR50Xah+ZHnovXWdiRwFcv3TzP2ncIVs9toW0zT3Uv1rmWuzP4+PvrW87cyOdjXYSURk8vza0wL9IXZvv6l2bAO4X+FKjFgWDnShHIjxLw10qST5ZKsqCTV1dH8i/ekNKOWwJHsdUKdDYY/ungeYM4zWoln4o9tQRpfUTy0gQTG49p+U/T/hLl6Ie93lrTYMjMAzsYwVamYic5FbtCncMHlPElnRnJffpqmkxPMTrblAg1ShTFYK1pMBjBNqZK7R3xrb6oqcXi9gCqV9/Nk07C3ydytOfNAIJday1qMBjB1roid9c4tqks7PczrFRIjwY1P8T4jRAH5WjbrYFugr7WwgbD94NgI/G1W+j3I1hiK6lixEDeRjTV1HLjdcbtefV3lopZO4+Fjf1WJSC1HXO0tX8gwY63rmIwZOp7bqhk/02QYNeTfKziBKszgjdpUPFcnd3vRc/OokrAJ7Kwa+SnKWMvV/tCHwLsrmPYluFzrasYDJn6nmh4XXFOpdkmYHPuBCsxgvsAGIFCxu4tUUjjdjsKiYoXi0h0Y74uAI4HcDoKySfaInsSmYkiclTOlfYmgKw7xjaISFPrLgZD5v7XEsCqKGc45zdX7pgiIi9Ejh8PoD2A24qymmrxFAAzROTZSNl9AYxEITvgTBG5MuZag1HIBCcAXhQRd7ugiQB+AqC1iCwnuR6F5Eb3OKr+W0RWkPwaQBsREY3P7wBgDgobAKwqKu3OwlbKS3Q981QNMm6vAcxSrCidlBqjroEVOku/guQ9JI/KIf/A0Ao0cKgf9hTrJgZDxQi4o2+VX2Q1aF3kWFc99mDk2PSYFYgjImVaxORlWBldEBAzgvWhU3QEq7zpXn9QUWl0xdPH6itdpq/2a5VEl5J8XBMp7B1TUSNyINgeFWjAXQJtetm6gcHQ+AhWI5Cok+bFgWDniFtyez021c1JoPNG63VFpIS4CEi+FTm2nx5bVjxQT3Kf0Oz4GRJFVC0sKsFa41KYY93AYGhcBMsNW5h/qYn2o599ijojE913e649PJpwKYBg653jRd9z3zoRaRCR10RkdWBdhe4P9VQF2zEkeUuH4i+hwWBoNCjmjdgOhV2lo59ilrKu2LBLxf94dBSTjgeFY4qIu5VPMe9G19ySTeSg5m8VbIyx+O6uqGkwBIAtnTUYqg/fRHwDNuwGOwPxm2fORmHjSsC/w0Iq3tLMd4cA+EREpiSRyStz/5k56Kikr/MOACE7xQ6y59xgqAjW6N/dnOPFHMfRzQ+Le3p9LCKfoLCFdmcA14vI6OJHB2sfobDzcpFXro+mBlXXw+8T2Ldj5P8eKOxhdnK1/SgfBfpfv8krdVsJG0O2kVlq/cBgqFjfLCZV/19NaP10JJ/rKpK/IHmOpmFsKO6socepfXuUyt6mx2YX36x1VwaS/JDkSC33UiRG/g4t5/pgV+qy/yvVX1vczeBgPe+NgyU5VMsNyauCVgQS7BNVaMRzAm3c27qCwVCRvrm1ZyuW0SR30ln+6JYuZzmyZ3pWiD5dDKXSMvVKvNFFT1+QHFiGYDs6W+Q0RBPQJyFYyaFyfgBgUYyvJClOFJGHqtCQ6wPsvE5ELrbuYDBUpG/WAfgRgGYA5onIwsi54qann4rICo9sUwA7ad9eKCLzYq7RtuhyEJEPNDxraxQWQizXhQybAfgqsrhB1DUAPT4/+sNQUCULnOs0B9AawLI8KubCwJHhHFZwF1fH1nsC7HzDuoHBYKj2L8+7gQR7WhVtbRJg5zpf7gWDwWCIQx4jx04Bsm/DH59WEYjIOgAnBdTVwfbIGAyGqhCs5n1tm1F8sYj0jksCUUGMBTAto+xB9sgYDIZqjWCzvt4vQyF+repQQu8DYEUG8WPskTEYDNUi2J9kkJkpIm18s4FVJNmVKCyj+zKlaGdbNmswGKpFsN1SlJ0FYKSI7NQYblxDKzoDGAMgTR6GPe2xMRgMSZB59RTJLQG8FXO6nf5dCGAqgDEi8k5ju3lN0jCM5C8BnAHgAADlEmy3t8fGYDAkwf8DaUlX4t8Ux9oAAAAASUVORK5CYII=";
+/* white label: o logo entra como imagem no card. Enquanto nao carrega,
+   ou se falhar, cai no nome em texto para o card nunca sair vazio.      */
+var LOGO_IMG=new Image(), LOGO_OK=false;
+LOGO_IMG.onload=function(){ LOGO_OK=true; try{ desenhar(); }catch(e){} };
+LOGO_IMG.onerror=function(){ LOGO_OK=false; };
+LOGO_IMG.src=LOGO_BRANCO;
+
 var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
 var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
 var SESSAO=null;
@@ -399,6 +414,9 @@ function moedaC(v){
   if(Math.abs(v)>=1e3) return 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k';
   return moeda(v);
 }
+/* cor sempre pelo SINAL do numero, nunca pelo papel do campo:
+   numa venda o alvo pode ser negativo, e verde ali seria mentira. */
+function corPct(v){ return (v==null||isNaN(v)) ? C.white : (v>=0 ? C.green : C.red); }
 function pct(v,c){ c=c===undefined?2:c;
   return (v>=0?'+':'−')+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:c,maximumFractionDigits:c})+'%'; }
 function pctS(v,c){ c=c===undefined?2:c;
@@ -488,7 +506,12 @@ function colunas(rots,vals,subs,cores){
 function desenhar(){
   var g=cv.getContext('2d'),M=80,W=1080,T=tipoAtual();
   g.fillStyle=C.navy; g.fillRect(0,0,W,1080);
-  txt(M,92,'ADAMI CAPITAL WEALTH','600 21px Georgia,serif',C.gold,'left',4.5);
+  if(LOGO_OK && LOGO_IMG.naturalWidth){
+    var alt=34, larg=alt*(LOGO_IMG.naturalWidth/LOGO_IMG.naturalHeight);
+    g.drawImage(LOGO_IMG,M,62,larg,alt);
+  } else {
+    txt(M,92,'ADAMI CAPTAL','600 21px Georgia,serif',C.gold,'left',4.5);
+  }
   txt(W-M,92,new Date().toLocaleDateString('pt-BR'),
       '19px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight,'right');
   linha(M,124,W-M,'rgba(201,162,75,.45)',1);
@@ -506,14 +529,14 @@ function desenhar(){
     if(o.temAlvo){ rots[2]='ALVO'; vals[2]=moeda(o.al); }
     else if(o.temStop){ rots[2]='STOP'; vals[2]=moeda(o.st); }
     colunas(rots,vals,['','',''],cores);
-    if(o.temAlvo&&o.pAlvo!==null) txt(M+640,554,pct(o.pAlvo),'bold 26px Georgia,serif',C.green);
-    else if(o.temStop&&o.pStop!==null) txt(M+640,554,pct(o.pStop),'bold 26px Georgia,serif',C.red);
+    if(o.temAlvo&&o.pAlvo!==null) txt(M+640,554,pct(o.pAlvo),'bold 26px Georgia,serif',corPct(o.pAlvo));
+    else if(o.temStop&&o.pStop!==null) txt(M+640,554,pct(o.pStop),'bold 26px Georgia,serif',corPct(o.pStop));
 
     linha(M,630,W-M,'rgba(255,255,255,.13)',1);
     if(o.temStop&&o.pStop!==null){
       txt(M,694,'STOP','15px -apple-system,Helvetica,Arial,sans-serif',C.muted,'left',2.5);
       txt(M,750,moeda(o.st),'bold 38px Georgia,serif',C.white);
-      txt(M+270,750,pct(o.pStop),'bold 30px Georgia,serif',C.red);
+      txt(M+270,750,pct(o.pStop),'bold 30px Georgia,serif',corPct(o.pStop));
       if(o.rr!==null){
         txt(M+640,694,'RISCO / RETORNO','15px -apple-system,Helvetica,Arial,sans-serif',C.muted,'left',2.5);
         txt(M+640,750,num(o.rr)+' : 1','bold 34px Georgia,serif',C.gold);
@@ -531,8 +554,8 @@ function desenhar(){
     linha(M,392,W-M,'rgba(255,255,255,.13)',1);
     colunas(['PREÇO ATUAL','ALVO','STOP'],[moeda(d.a),moeda(d.al),moeda(d.st)],['','',''],
             [C.white,C.white,C.white]);
-    txt(M+320,554,pct(d.pAlvo),'bold 26px Georgia,serif',C.green);
-    txt(M+640,554,pct(d.pStop),'bold 26px Georgia,serif',C.red);
+    txt(M+320,554,pct(d.pAlvo),'bold 26px Georgia,serif',corPct(d.pAlvo));
+    txt(M+640,554,pct(d.pStop),'bold 26px Georgia,serif',corPct(d.pStop));
     linha(M,630,W-M,'rgba(255,255,255,.13)',1);
     txt(M,694,'RISCO / RETORNO','15px -apple-system,Helvetica,Arial,sans-serif',C.muted,'left',2.5);
     txt(M,750,d.rr>0?num(d.rr)+' : 1':'—','bold 40px Georgia,serif',C.gold);
@@ -578,8 +601,8 @@ function painel(){
     var o=calcOrdem();
     var h='<div><span class="k">Direção</span><span class="v">'+
           (o.dir==='compra'?'Compra':'Venda')+'</span></div>';
-    if(o.pAlvo!==null) h+='<div><span class="k">Ganho até o alvo</span><span class="v">'+pct(o.pAlvo)+'</span></div>';
-    if(o.pStop!==null) h+='<div><span class="k">Risco até o stop</span><span class="v">'+pct(o.pStop)+'</span></div>';
+    if(o.pAlvo!==null) h+='<div><span class="k">Ganho até o alvo</span><span class="v '+(o.pAlvo>=0?'pos':'neg')+'">'+pct(o.pAlvo)+'</span></div>';
+    if(o.pStop!==null) h+='<div><span class="k">Risco até o stop</span><span class="v '+(o.pStop>=0?'pos':'neg')+'">'+pct(o.pStop)+'</span></div>';
     h+='<div><span class="k">Risco / retorno</span><span class="v'+
        (o.rr!==null&&o.rr<1.5?' warn':'')+'">'+(o.rr!==null?num(o.rr)+' : 1':'—')+'</span></div>';
     document.getElementById('derOrdem').innerHTML=h;
@@ -766,6 +789,56 @@ function estatisticas(lista){
     expectativa: enc.length? (taxa/100*mg)+((1-taxa/100)*mp) : 0,
     alocTotal:alocTotal,resultadoRs:resultadoRs,nClientes:Object.keys(clientes).length};
 }
+
+/* ===================== EXPORTAR PARA EXCEL =====================
+   Uma linha por alocacao, com os dados da operacao repetidos ao lado.
+   Esse formato e o que o Excel precisa para tabela dinamica.
+   Sai como CSV com BOM e ponto e virgula: o Excel em portugues abre
+   direto, com acento certo e coluna separada.                      */
+function csvCampo(v){
+  var t=(v==null?'':String(v));
+  return /[";\n]/.test(t) ? '"'+t.replace(/"/g,'""')+'"' : t;
+}
+function dataISOparaBR(iso){
+  if(!iso) return '';
+  var d=new Date(iso);
+  return isNaN(d.getTime())?'':d.toLocaleDateString('pt-BR');
+}
+function exportarExcel(){
+  var lista=filtradas();
+  if(!lista.length){ alert('Não há operações no filtro atual para exportar.'); return; }
+
+  var col=['Aberta em','Tipo','Ativo','Empresa','Status','Desfecho','Resultado %',
+           'Fechada em','Cliente','Valor alocado','Resultado R$','Detalhes'];
+  var linhas=[col.join(';')];
+
+  lista.forEach(function(o){
+    var T=tipoPorId(o.tipo);
+    var res=(typeof o.resultadoPct==='number')?o.resultadoPct:null;
+    var base=[dataISOparaBR(o.criadoEm), T.rotulo, o.ativo, o.empresa||'',
+              (o.status==='encerrada'?'Encerrada':'Em aberto'),
+              (o.desfecho==='alvo'?'Alvo':(o.desfecho==='stop'?'Stop':(o.desfecho?'Manual':''))),
+              (res===null?'':num(res).replace('.','')),
+              dataISOparaBR(o.encerradoEm)];
+    if(!o.alocacoes.length){
+      linhas.push(base.concat(['','','',o.resumo||'']).map(csvCampo).join(';'));
+    } else {
+      o.alocacoes.forEach(function(a){
+        var rs=(res===null)?'':(a.valor*res/100);
+        linhas.push(base.concat([a.cliente,
+          num(a.valor), (rs===''?'':num(rs)), o.resumo||'']).map(csvCampo).join(';'));
+      });
+    }
+  });
+
+  var txt='\ufeff'+linhas.join('\r\n');
+  var b=new Blob([txt],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='ADAMI_MesaRV_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click(); URL.revokeObjectURL(a.href);
+}
+
 function renderHist(){
   var lista=filtradas();
   var e=estatisticas(lista);
@@ -786,7 +859,7 @@ function renderHist(){
       '<select onchange="setFiltro(\'tipo\',this.value)">'+
         '<option value="todos"'+(FILTRO.tipo==='todos'?' selected':'')+'>Todos os tipos</option>'+opts+
       '</select>'+
-      (filtrando?'<button class="btn ghost mini" onclick="limparFiltro()">Limpar</button>':'')+
+      (filtrando?'<button class="btn ghost mini" onclick="limparFiltro()">Limpar</button>':'')+'<button class="btn ghost mini" onclick="exportarExcel()">Exportar</button>'+
     '</div>'+
     (filtrando?'<p class="hint" style="margin:8px 0 0">Mostrando '+lista.length+' de '+
       OPS.length+' operações. Os números abaixo consideram só o filtro.</p>':'');
@@ -940,5 +1013,6 @@ checarPermissao()
   .then(function(){ aplicarPermissao(); return baixarTudo(); })
   .catch(function(e){ aplicarPermissao(); erroCarga=String(e.message||e); carregando=false; renderHist(); });
 </script>
+<button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 </body>
 </html>
