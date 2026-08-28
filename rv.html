@@ -112,7 +112,7 @@
 
 <header>
   <span class="mark">ADAMI</span>
-  <span class="sub">Mesa RV</span><span class="sub" style="opacity:.6">versão 2.15</span><span class="sub" id="selPerm" style="display:none;color:#C9A24B"></span>
+  <span class="sub">Mesa RV</span><span class="sub" style="opacity:.6">versão 2.16</span><span class="sub" id="selPerm" style="display:none;color:#C9A24B"></span>
   <nav>
     <button id="navNova" class="on" onclick="verView('nova')">Nova operação</button>
     <button id="navHist" onclick="verView('hist')">Histórico</button>
@@ -790,15 +790,157 @@ function estatisticas(lista){
     alocTotal:alocTotal,resultadoRs:resultadoRs,nClientes:Object.keys(clientes).length};
 }
 
-/* ===================== EXPORTAR PARA EXCEL =====================
-   Uma linha por alocacao, com os dados da operacao repetidos ao lado.
-   Esse formato e o que o Excel precisa para tabela dinamica.
-   Sai como CSV com BOM e ponto e virgula: o Excel em portugues abre
-   direto, com acento certo e coluna separada.                      */
-function csvCampo(v){
-  var t=(v==null?'':String(v));
-  return /[";\n]/.test(t) ? '"'+t.replace(/"/g,'""')+'"' : t;
+/* ===================== GERADOR DE XLSX =====================
+   Um .xlsx e um ZIP com alguns XMLs dentro. Em vez de embutir uma
+   biblioteca de 400 KB, monta-se o ZIP a mao usando o metodo STORE
+   (sem compressao), que o Excel aceita normalmente. ~120 linhas.
+
+   Suporta: texto, numero, data, negrito no cabecalho, largura de
+   coluna, painel congelado na primeira linha.                     */
+
+var CRC_TAB=(function(){
+  var t=new Int32Array(256),c,k,i;
+  for(i=0;i<256;i++){
+    c=i;
+    for(k=0;k<8;k++) c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1);
+    t[i]=c;
+  }
+  return t;
+})();
+function crc32(bytes){
+  var c=-1;
+  for(var i=0;i<bytes.length;i++) c=(c>>>8) ^ CRC_TAB[(c ^ bytes[i]) & 0xFF];
+  return (c ^ -1)>>>0;
 }
+function utf8(str){
+  var out=[],i,cp;
+  for(i=0;i<str.length;i++){
+    cp=str.charCodeAt(i);
+    if(cp<0x80) out.push(cp);
+    else if(cp<0x800){ out.push(0xC0|cp>>6, 0x80|cp&63); }
+    else if(cp>=0xD800&&cp<0xDC00){
+      cp=0x10000+((cp-0xD800)<<10)+(str.charCodeAt(++i)-0xDC00);
+      out.push(0xF0|cp>>18, 0x80|(cp>>12)&63, 0x80|(cp>>6)&63, 0x80|cp&63);
+    }
+    else out.push(0xE0|cp>>12, 0x80|(cp>>6)&63, 0x80|cp&63);
+  }
+  return new Uint8Array(out);
+}
+function n16(v){ return [v&255,(v>>8)&255]; }
+function n32(v){ return [v&255,(v>>8)&255,(v>>16)&255,(v>>24)&255]; }
+
+function zipar(arquivos){
+  var partes=[], central=[], offset=0;
+  arquivos.forEach(function(f){
+    var nome=utf8(f.nome), dados=utf8(f.texto), crc=crc32(dados);
+    var local=[].concat([0x50,0x4B,0x03,0x04], n16(20), n16(0), n16(0),
+      n16(0), n16(0), n32(crc), n32(dados.length), n32(dados.length),
+      n16(nome.length), n16(0));
+    partes.push(new Uint8Array(local), nome, dados);
+    central.push([].concat([0x50,0x4B,0x01,0x02], n16(20), n16(20), n16(0), n16(0),
+      n16(0), n16(0), n32(crc), n32(dados.length), n32(dados.length),
+      n16(nome.length), n16(0), n16(0), n16(0), n16(0), n32(0), n32(offset)));
+    central.push(nome);
+    offset += local.length + nome.length + dados.length;
+  });
+  var cd=[], cdLen=0;
+  central.forEach(function(x){
+    var u = (x instanceof Uint8Array) ? x : new Uint8Array(x);
+    cd.push(u); cdLen += u.length;
+  });
+  var fim=new Uint8Array([].concat([0x50,0x4B,0x05,0x06], n16(0), n16(0),
+    n16(arquivos.length), n16(arquivos.length), n32(cdLen), n32(offset), n16(0)));
+  var total=offset+cdLen+fim.length, buf=new Uint8Array(total), p=0;
+  partes.concat(cd,[fim]).forEach(function(u){ buf.set(u,p); p+=u.length; });
+  return buf;
+}
+
+function xmlEsc(t){
+  return String(t==null?'':t)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');
+}
+function colLetra(i){
+  var s='';
+  i++;
+  while(i>0){ var m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=(i-m-1)/26; }
+  return s;
+}
+/* linhas: array de arrays. Cada celula: numero, ou string, ou
+   {v:valor, t:'n'|'s'} — a primeira linha vira cabecalho em negrito. */
+function montarXlsx(linhas, larguras, nomeAba){
+  var sheet='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
+  if(larguras&&larguras.length){
+    sheet+='<cols>'+larguras.map(function(w,i){
+      return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>';
+    }).join('')+'</cols>';
+  }
+  sheet+='<sheetData>';
+  linhas.forEach(function(linha,li){
+    sheet+='<row r="'+(li+1)+'">';
+    linha.forEach(function(cel,ci){
+      var ref=colLetra(ci)+(li+1);
+      var estilo=(li===0)?' s="1"':'';
+      var num = (typeof cel==='number' && isFinite(cel));
+      if(num){
+        sheet+='<c r="'+ref+'"'+estilo+'><v>'+cel+'</v></c>';
+      } else {
+        var t=xmlEsc(cel);
+        if(t==='') sheet+='<c r="'+ref+'"'+estilo+'/>';
+        else sheet+='<c r="'+ref+'"'+estilo+' t="inlineStr"><is><t xml:space="preserve">'+t+'</t></is></c>';
+      }
+    });
+    sheet+='</row>';
+  });
+  sheet+='</sheetData></worksheet>';
+
+  var estilos='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+    '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font>'+
+    '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts>'+
+    '<fills count="3"><fill><patternFill patternType="none"/></fill>'+
+    '<fill><patternFill patternType="gray125"/></fill>'+
+    '<fill><patternFill patternType="solid"><fgColor rgb="FF1B2A4A"/><bgColor indexed="64"/></patternFill></fill></fills>'+
+    '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'+
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
+    '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+
+    '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs>'+
+    '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'+
+    '</styleSheet>';
+
+  return zipar([
+    {nome:'[Content_Types].xml', texto:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
+      '<Default Extension="xml" ContentType="application/xml"/>'+
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
+      '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'+
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+
+      '</Types>'},
+    {nome:'_rels/.rels', texto:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'+
+      '</Relationships>'},
+    {nome:'xl/workbook.xml', texto:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '+
+      'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+      '<sheets><sheet name="'+xmlEsc(nomeAba||'Dados')+'" sheetId="1" r:id="rId1"/></sheets></workbook>'},
+    {nome:'xl/_rels/workbook.xml.rels', texto:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'+
+      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'+
+      '</Relationships>'},
+    {nome:'xl/styles.xml', texto:estilos},
+    {nome:'xl/worksheets/sheet1.xml', texto:sheet}
+  ]);
+}
+
+/* ===================== EXPORTAR O HISTORICO =====================
+   Uma linha por alocacao, com os dados da operacao repetidos ao lado.
+   E o formato que o Excel precisa para tabela dinamica.
+   Valores saem como NUMERO, nao texto, para somar direto na planilha. */
 function dataISOparaBR(iso){
   if(!iso) return '';
   var d=new Date(iso);
@@ -808,35 +950,36 @@ function exportarExcel(){
   var lista=filtradas();
   if(!lista.length){ alert('Não há operações no filtro atual para exportar.'); return; }
 
-  var col=['Aberta em','Tipo','Ativo','Empresa','Status','Desfecho','Resultado %',
-           'Fechada em','Cliente','Valor alocado','Resultado R$','Detalhes'];
-  var linhas=[col.join(';')];
+  var linhas=[['Aberta em','Tipo','Ativo','Empresa','Status','Desfecho','Resultado %',
+               'Fechada em','Cliente','Valor alocado','Resultado R$','Detalhes']];
 
   lista.forEach(function(o){
     var T=tipoPorId(o.tipo);
-    var res=(typeof o.resultadoPct==='number')?o.resultadoPct:null;
+    var res=(typeof o.resultadoPct==='number')?o.resultadoPct:'';
     var base=[dataISOparaBR(o.criadoEm), T.rotulo, o.ativo, o.empresa||'',
               (o.status==='encerrada'?'Encerrada':'Em aberto'),
               (o.desfecho==='alvo'?'Alvo':(o.desfecho==='stop'?'Stop':(o.desfecho?'Manual':''))),
-              (res===null?'':num(res).replace('.','')),
-              dataISOparaBR(o.encerradoEm)];
+              res, dataISOparaBR(o.encerradoEm)];
     if(!o.alocacoes.length){
-      linhas.push(base.concat(['','','',o.resumo||'']).map(csvCampo).join(';'));
+      linhas.push(base.concat(['','','',o.resumo||'']));
     } else {
       o.alocacoes.forEach(function(a){
-        var rs=(res===null)?'':(a.valor*res/100);
-        linhas.push(base.concat([a.cliente,
-          num(a.valor), (rs===''?'':num(rs)), o.resumo||'']).map(csvCampo).join(';'));
+        var rs=(res==='')?'':Math.round(a.valor*res)/100;
+        linhas.push(base.concat([a.cliente, a.valor, rs, o.resumo||'']));
       });
     }
   });
 
-  var txt='\ufeff'+linhas.join('\r\n');
-  var b=new Blob([txt],{type:'text/csv;charset=utf-8;'});
-  var a=document.createElement('a');
-  a.href=URL.createObjectURL(b);
-  a.download='ADAMI_MesaRV_'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click(); URL.revokeObjectURL(a.href);
+  try{
+    var buf=montarXlsx(linhas,[12,17,10,20,12,10,12,12,30,15,14,46],'Mesa RV');
+    var b=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(b);
+    a.download='ADAMI_MesaRV_'+new Date().toISOString().slice(0,10)+'.xlsx';
+    a.click(); URL.revokeObjectURL(a.href);
+  }catch(e){
+    alert('Não foi possível gerar a planilha: '+(e.message||e));
+  }
 }
 
 function renderHist(){
