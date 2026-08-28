@@ -161,3 +161,64 @@ select u.email,
 from public.perfis p
 join auth.users u on u.id = p.user_id
 order by p.super desc, p.admin desc, p.mesa_rv desc, u.email;
+
+-- ============================================================
+--  8. GESTÃO DE EQUIPE PELA TELA
+--     A escrita direta em admin/mesa_rv está bloqueada de propósito
+--     (item 3). Para o portal conseguir gerir permissões sem abrir
+--     esse buraco de novo, a mudança passa por estas duas funções,
+--     que checam quem está chamando antes de fazer qualquer coisa.
+-- ============================================================
+
+-- Lista a equipe com e-mail. auth.users não é exposta pela API,
+-- por isso a leitura precisa vir por função.
+create or replace function public.listar_equipe()
+returns table (
+  user_id uuid, email text, nome text,
+  admin boolean, mesa_rv boolean, super boolean, criado_em timestamptz
+)
+language sql stable security definer set search_path = public as $$
+  select p.user_id, u.email::text, p.nome, p.admin, p.mesa_rv, p.super, u.created_at
+  from public.perfis p
+  join auth.users u on u.id = p.user_id
+  where public.eh_admin()          -- quem não é admin recebe lista vazia
+  order by p.super desc, p.admin desc, p.mesa_rv desc, u.email;
+$$;
+
+-- Concede ou revoga. Só o supremo executa, e ninguém mexe no supremo.
+create or replace function public.definir_privilegio(
+  p_user_id uuid, p_campo text, p_valor boolean)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare v_super boolean;
+begin
+  if not public.eh_super() then
+    raise exception 'Apenas o administrador supremo pode alterar privilegios.';
+  end if;
+  if p_campo not in ('admin','mesa_rv') then
+    raise exception 'Campo invalido: %. Use admin ou mesa_rv.', p_campo;
+  end if;
+
+  select super into v_super from public.perfis where user_id = p_user_id;
+  if v_super is null then
+    raise exception 'Perfil nao encontrado.';
+  end if;
+  if v_super then
+    raise exception 'O perfil supremo nao pode ser alterado pela tela.';
+  end if;
+
+  if p_campo = 'admin' then
+    update public.perfis set admin = p_valor where user_id = p_user_id;
+  else
+    update public.perfis set mesa_rv = p_valor where user_id = p_user_id;
+  end if;
+
+  insert into public.auditoria(usuario, acao, alvo, detalhe)
+  values (coalesce(auth.jwt() ->> 'email','?'), 'privilegio',
+          (select email from auth.users where id = p_user_id),
+          p_campo || ' = ' || p_valor);
+end $$;
+
+revoke all on function public.listar_equipe(), public.definir_privilegio(uuid,text,boolean) from public;
+grant execute on function public.listar_equipe() to authenticated;
+grant execute on function public.definir_privilegio(uuid,text,boolean) to authenticated;
