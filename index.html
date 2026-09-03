@@ -602,7 +602,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.16.1";
+var VERSAO="versão 2.19";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -650,6 +650,13 @@ function moedaParse(str){
 function moedaFmt(v){
   if(!v) return "";
   return Number(v).toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+/* Aplicacoes e resgates sao MOVIMENTOS, sempre positivos: o sinal ja
+   esta na formula da abertura (saldo - rend - apl + res). Um resgate
+   negativo inverte a soma e erra a abertura em DUAS vezes o valor.   */
+function onMoedaPos(el,cb){
+  el.value=String(el.value).replace(/-/g,"");
+  return onMoeda(el,function(v){ cb(Math.abs(v)); });
 }
 function onMoeda(el,cb){
   var bruto=el.value, fim=(el.selectionStart===bruto.length);
@@ -1306,8 +1313,8 @@ function cardContas(r,cur){
     '<td><input class="inp" value="'+esc(x.nome)+'" oninput="setConta('+i+',\'nome\',this.value)" placeholder="'+(off?"Ex.: Pershing":"Ex.: XP")+'"></td>'+
     '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setConta('+i+',\'inst\',this.value)" placeholder="'+(off?"Ex.: Avenue":"Ex.: XP")+'"></td>'+
     '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.saldo)+'" oninput="onMoeda(this,function(v){setConta('+i+',\'saldo\',v);})"></td>'+
-    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.apl)+'" oninput="onMoeda(this,function(v){setConta('+i+',\'apl\',v);})"></td>'+
-    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.res)+'" oninput="onMoeda(this,function(v){setConta('+i+',\'res\',v);})"></td>'+
+    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.apl)+'" oninput="onMoedaPos(this,function(v){setConta('+i+',\'apl\',v);})"></td>'+
+    '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.res)+'" oninput="onMoedaPos(this,function(v){setConta('+i+',\'res\',v);})"></td>'+
     '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.rendRs)+'" oninput="onMoeda(this,function(v){setConta('+i+',\'rendRs\',v);})"></td>'+
     '<td><input class="inp num" type="number" step="0.01" value="'+(x.rendPct||"")+'" oninput="setConta('+i+',\'rendPct\',this.value)"></td>'+
     '<td><button class="xbtn" onclick="delConta('+i+')" title="Remover">&times;</button></td></tr>';
@@ -1586,6 +1593,15 @@ function conferir(id,mes,ano){
       var base=saldo-rs-apl+res;
 
       if(saldo===0&&rs===0&&pc===0&&apl===0&&res===0) return;
+
+      if(res<0||apl<0){
+        var qual=(res<0&&apl<0)?"Aplica\u00e7\u00e3o e resgate negativos":(res<0?"Resgate negativo":"Aplica\u00e7\u00e3o negativa");
+        var errado=(res<0?Math.abs(res)*2:0)+(apl<0?Math.abs(apl)*2:0);
+        add("alta",nome,qual,
+          "Aplica\u00e7\u00f5es e resgates s\u00e3o movimentos e devem ser sempre positivos \u2014 o sinal j\u00e1 est\u00e1 na f\u00f3rmula. "+
+          "Com o valor negativo, a abertura do m\u00eas sai <i>"+fm(errado)+"</i> menor que a real, "+
+          "o que distorce o peso desta conta na rentabilidade da carteira. Troque para positivo e salve.");
+      }
 
       if(base<0){
         add("alta",nome,"Saldo de abertura negativo",
