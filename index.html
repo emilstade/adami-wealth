@@ -602,7 +602,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.21";
+var VERSAO="versão 2.22";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -1505,7 +1505,7 @@ function moCurto(v){
 }
 function chartEvolucao(serie,cur){
   if(!serie.length) return "";
-  var W=Math.max(420,serie.length*88+70),H=244,pt=30,pb=56;
+  var W=Math.max(420,serie.length*84+70),H=222,pt=30,pb=34;
   var vals=serie.map(function(s){return s.pl;});
   var vmax=Math.max.apply(null,vals), vmin=Math.min.apply(null,vals);
 
@@ -1524,7 +1524,7 @@ function chartEvolucao(serie,cur){
   }
   var zoom = base>0;
   var faixa=(topo-base)||1;
-  var slot=(W-62)/serie.length, bw=Math.min(58,slot-30);
+  var slot=(W-62)/serie.length, bw=Math.min(62,slot-26);
   var alturaUtil=H-pt-pb;
 
   var out=eixoY2(base,topo,H,pt,pb,W,function(v){return moC(v,cur);});
@@ -1535,28 +1535,9 @@ function chartEvolucao(serie,cur){
     var rotuloTopo = curto ? moCurto(s.pl) : mo(s.pl,cur);
     var hh=Math.max(2,((s.pl-base)/faixa)*alturaUtil);
     var x=52+i*slot+(slot-bw)/2, y=H-pb-hh;
-    var apl=n(s.apl), res=n(s.res);
-    /* cor indica de onde veio o mes: aporte, resgate, ou so performance */
-    var cor="#1B3A5F";
-    if(apl>0&&res>0) cor="#5B6E86";
-    else if(apl>0)   cor="#2E6B4F";
-    else if(res>0)   cor="#8A5A3C";
-
-    out+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" fill="'+cor+'"/>'+
+    out+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+hh+'" fill="#1B3A5F"/>'+
          '<text x="'+(x+bw/2)+'" y="'+(y-7)+'" text-anchor="middle" font-size="9" fill="#3C4C60" font-family="Consolas, Menlo, monospace">'+rotuloTopo+'</text>'+
-         '<text x="'+(x+bw/2)+'" y="'+(H-33)+'" text-anchor="middle" font-size="9" fill="#7A8698">'+ref(s.mes,s.ano)+'</text>';
-
-    /* movimentacao do mes, abaixo do rotulo */
-    /* aporte e resgate em linhas separadas e sem "R$": na largura de uma
-       coluna os dois lado a lado se sobrepoem com os vizinhos.          */
-    if(apl>0){
-      out+='<text x="'+(x+bw/2)+'" y="'+(H-13)+'" text-anchor="middle" font-size="8" fill="#2E6B4F"'+
-           ' font-family="Consolas, Menlo, monospace">+'+moCurto(apl)+'</text>';
-    }
-    if(res>0){
-      out+='<text x="'+(x+bw/2)+'" y="'+(H-(apl>0?4:13))+'" text-anchor="middle" font-size="8" fill="#8A5A3C"'+
-           ' font-family="Consolas, Menlo, monospace">\u2212'+moCurto(res)+'</text>';
-    }
+         '<text x="'+(x+bw/2)+'" y="'+(H-13)+'" text-anchor="middle" font-size="9" fill="#7A8698">'+ref(s.mes,s.ano)+'</text>';
   });
 
   out+='<line x1="52" y1="'+(H-pb)+'" x2="'+(W-8)+'" y2="'+(H-pb)+'" stroke="#DCE2EA"/>';
@@ -1566,12 +1547,8 @@ function chartEvolucao(serie,cur){
          '<line x1="49" y1="'+(H-pb-5)+'" x2="55" y2="'+(H-pb+1)+'" stroke="#C6CED8" stroke-width="1"/>'+
          '<line x1="49" y1="'+(H-pb-1)+'" x2="55" y2="'+(H-pb+5)+'" stroke="#C6CED8" stroke-width="1"/>';
   }
-  var legenda='<p class="foot-note" style="margin:8px 0 0;font-size:9.5px">'+
-    (zoom?'A escala come\u00e7a em '+moC(base,cur)+', n\u00e3o em zero, para que a varia\u00e7\u00e3o entre os meses fique vis\u00edvel. ':'')+
-    'Barra <b style="color:#2E6B4F">verde</b> indica m\u00eas com aporte, '+
-    '<b style="color:#8A5A3C">marrom</b> com resgate, '+
-    '<b style="color:#5B6E86">cinza</b> com os dois e '+
-    '<b style="color:#1B3A5F">azul</b> apenas performance.</p>';
+  var legenda=zoom?('<p class="foot-note" style="margin:8px 0 0;font-size:9.5px">'+
+    'A escala come\u00e7a em '+moC(base,cur)+', n\u00e3o em zero, para que a varia\u00e7\u00e3o entre os meses fique vis\u00edvel.</p>'):'';
 
   return '<div style="overflow-x:auto"><svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:'+W+'px;display:block;margin:0 auto">'+out+'</svg></div>'+legenda;
 }
