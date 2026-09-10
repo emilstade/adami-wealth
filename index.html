@@ -316,6 +316,10 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .rt.bm tbody tr.destaque td:first-child{font-family:var(--display);font-size:13.5px;color:var(--navy)}
 .rt.bm tbody tr.ratio td{border-top:1px solid var(--line);border-bottom:0;color:var(--muted);font-size:11.5px}
 .rt.bm tbody tr.ratio td:first-child{font-family:var(--body);font-style:italic}
+.venc-tit{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#8A6D2F;
+  margin:0 0 10px;font-weight:600;font-family:Segoe UI,Arial,sans-serif}
+.venc-mes{background:#FBF6EA;border-left:3px solid #C9A24B;padding:14px 16px;border-radius:2px}
+.venc-mes .rt th{color:#8A6D2F}
 .foot-note{font-size:10.5px;color:var(--muted);line-height:1.6;margin-top:14px}
 
 /* donut */
@@ -602,7 +606,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.24";
+var VERSAO="versão 2.26";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -675,6 +679,20 @@ function listaEstrat(ind){
   return ESTRAT.map(function(x){ return {nome:x[1],pc:n(e[x[0]])}; }).filter(function(x){ return x.pc>0; });
 }
 function vencVazio(){ return {ativo:"",inst:"",taxa:"",data:"",valor:0}; }
+/* separa o que vence DENTRO do mes de referencia do que ainda esta por vir.
+   O relatorio de agosto sai em setembro: um vencimento de 15/08 nao e
+   "proximo", ja aconteceu, e o cliente quer saber o que foi feito com ele. */
+function vencDoMes(lista,mes,ano){
+  var ini=ano+"-"+(mes<10?"0":"")+mes+"-01";
+  var pm=mes===12?1:mes+1, pa=mes===12?ano+1:ano;
+  var fim=pa+"-"+(pm<10?"0":"")+pm+"-01";
+  var dentro=[],futuros=[];
+  lista.forEach(function(v){
+    if(v.data && String(v.data)>=ini && String(v.data)<fim) dentro.push(v);
+    else futuros.push(v);
+  });
+  return {dentro:dentro,futuros:futuros};
+}
 function listaVenc(ind){
   var v=(ind&&ind.vencimentos)||[];
   return v.filter(function(x){ return (x.ativo||"").trim()||n(x.valor)||x.data; })
@@ -1314,9 +1332,13 @@ function viewPreencher(){
      '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Indicador sem valor lan\u00e7ado em nenhum m\u00eas continua oculto automaticamente. A linha Carteira / CDI n\u00e3o depende desta escolha.</div></div>';
 
   var vencs=S.rasc.ind.vencimentos||[];
+  var sepPrev=vencDoMes(listaVenc(S.rasc.ind),S.mes,S.ano);
   h+='<div class="card"><div class="sec-title">Próximos vencimentos</div>'+
      '<div class="sec-sub">Opcional. Se ficar em branco, a seção não aparece no relatório.'+
        (S.rasc._vencHerdados?' <b>'+S.rasc._vencHerdados+' vencimento(s) trazido(s) do mês anterior</b> — os já vencidos ficaram para trás. Confira antes de salvar.':'')+'</div>'+
+     (sepPrev.dentro.length?'<div class="note" style="margin-bottom:12px"><b>'+sepPrev.dentro.length+' vencimento(s) caem em '+MESES[S.mes-1]+', o mês deste relatório.</b> '+
+       'Vão aparecer destacados como “Venceu em '+MESES[S.mes-1]+'”, separados dos futuros. '+
+       'Confirme se a movimentação das contas reflete o que foi feito com esses recursos.</div>':'')+
      '<div style="overflow-x:auto"><table class="form"><thead><tr>'+
      '<th style="min-width:170px">Ativo</th><th style="min-width:120px">Instituição</th>'+
      '<th style="min-width:110px">Taxa</th><th style="min-width:140px">Vencimento</th>'+
@@ -1985,14 +2007,30 @@ function viewRelatorio(){
   /* --- vencimentos (página própria quando houver) --- */
   var venc=listaVenc(r.ind);
   if(venc.length && secOn(r.ind,"vencimentos")){
-    pag(shead(nx(),"Próximos vencimentos","valores aproximados")+
-      '<div class="panel"><table class="rt"><thead><tr><th>Ativo</th><th>Instituição</th><th>Taxa</th><th class="n">Vencimento</th><th class="n">Valor aproximado</th></tr></thead><tbody>'+
-      venc.map(function(v){
-        return '<tr><td>'+esc(v.ativo||"—")+'</td><td>'+esc(v.inst||"—")+'</td><td>'+esc(v.taxa||"—")+'</td>'+
-        '<td class="n">'+dataBR(v.data)+'</td><td class="n">'+(n(v.valor)?brl(n(v.valor)):"—")+'</td></tr>';
-      }).join("")+
-      '<tr class="tot"><td colspan="4">Total</td><td class="n">'+brl(venc.reduce(function(a,v){return a+n(v.valor);},0))+'</td></tr>'+
-      '</tbody></table><p class="foot-note">Valores estimados na data de referência, sujeitos a marcação a mercado e à incidência de tributos no resgate.</p></div>');
+    var sep=vencDoMes(venc,S.mes,S.ano);
+    var tabela=function(lista){
+      return '<table class="rt"><thead><tr><th>Ativo</th><th>Instituição</th><th>Taxa</th><th class="n">Vencimento</th><th class="n">Valor aproximado</th></tr></thead><tbody>'+
+        lista.map(function(v){
+          return '<tr><td>'+esc(v.ativo||"—")+'</td><td>'+esc(v.inst||"—")+'</td><td>'+esc(v.taxa||"—")+'</td>'+
+          '<td class="n">'+dataBR(v.data)+'</td><td class="n">'+(n(v.valor)?brl(n(v.valor)):"—")+'</td></tr>';
+        }).join("")+
+        '<tr class="tot"><td colspan="4">Total</td><td class="n">'+brl(lista.reduce(function(a,v){return a+n(v.valor);},0))+'</td></tr>'+
+        '</tbody></table>';
+    };
+    var titulo=sep.dentro.length?"Vencimentos":"Próximos vencimentos";
+    var corpo='<div class="panel">';
+    if(sep.dentro.length){
+      corpo+='<h3 class="venc-tit">Venceu em '+MESES[S.mes-1]+'</h3>'+
+             '<div class="venc-mes">'+tabela(sep.dentro)+
+             '<p class="foot-note" style="margin:10px 0 0">Posição encerrada dentro do mês de referência. '+
+             'O destino desses recursos — reinvestimento ou resgate — está refletido na movimentação das contas.</p></div>';
+    }
+    if(sep.futuros.length){
+      corpo+=(sep.dentro.length?'<h3 class="venc-tit" style="margin-top:26px">Próximos vencimentos</h3>':'')+
+             tabela(sep.futuros);
+    }
+    corpo+='<p class="foot-note">Valores estimados na data de referência, sujeitos a marcação a mercado e à incidência de tributos no resgate.</p></div>';
+    pag(shead(nx(),titulo,"valores aproximados")+corpo);
   }
 
   /* --- offshore --- */
