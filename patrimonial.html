@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gerador de Planos Patrimoniais</title>
+<style>
+  :root{--navy:#1B2A4A;--navy-pale:#EDF0F5;--gold:#C9A24B;--cream:#F7F4EE;
+        --ink:#26313F;--muted:#8A93A6;--red:#B5563A;--green:#5C7A5C;
+        --serif:Georgia,'Times New Roman',serif;
+        --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cream);font-family:var(--sans);color:var(--ink)}
+  header{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:14px;
+         position:sticky;top:0;z-index:50}
+  header .mark{font-family:var(--serif);font-size:17px;letter-spacing:2px}
+  header .sub{font-size:12px;color:#9FB0CC}
+  header .dir{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .selo{font-size:11px;padding:4px 10px;border-radius:20px;letter-spacing:.4px}
+  .selo.bom{background:#2E4A33;color:#CFE6D3}
+  .selo.meio{background:#5C4A22;color:#F0DFB4}
+  .selo.mau{background:#5C2A20;color:#F3CFC5}
+
+  .layout{display:grid;grid-template-columns:190px 1fr 380px;gap:20px;padding:20px;align-items:start}
+  @media(max-width:1200px){.layout{grid-template-columns:1fr}}
+  nav.lado{position:sticky;top:70px}
+  nav.lado a{display:block;padding:7px 10px;font-size:12.5px;color:var(--muted);
+    text-decoration:none;border-left:2px solid transparent;cursor:pointer}
+  nav.lado a:hover{color:var(--navy);border-left-color:var(--gold);background:#fff}
+
+  .pane{background:#fff;border:1px solid #E3E7EE;border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .pane h2{font-family:var(--serif);color:var(--navy);font-size:15px;margin:0 0 4px}
+  .pane .cap{font-size:11.5px;color:var(--muted);margin:0 0 14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .campo{display:flex;flex-direction:column;gap:4px}
+  .campo.larga{grid-column:1/-1}
+  label{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+  input,textarea,select{width:100%;padding:8px 9px;border:1px solid #D8DEE8;border-radius:7px;
+    font-size:13.5px;font-family:var(--sans);color:var(--ink);background:#fff}
+  input:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:-1px;border-color:var(--gold)}
+  textarea{resize:vertical}
+
+  table.edit,table.prev{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.edit th,table.prev th{text-align:left;font-size:10px;text-transform:uppercase;
+    letter-spacing:.5px;color:var(--muted);padding:0 6px 6px 0;border-bottom:1px solid #E3E7EE;font-weight:600}
+  table.edit td{padding:3px 6px 3px 0;border-bottom:1px solid #F2F4F8}
+  table.edit td input{padding:6px 7px;font-size:12.5px}
+  table.edit .n,table.prev .n{text-align:right}
+  table.edit .n input{text-align:right}
+  table.edit .x{width:26px;text-align:right}
+  .rm{border:0;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1}
+  .rm:hover{color:var(--red)}
+  table.prev td{padding:6px 6px 6px 0;border-bottom:1px solid #F2F4F8}
+  table.prev .dentro{color:var(--green)} table.prev .fora{color:var(--red)}
+
+  .btn{padding:9px 14px;border:0;border-radius:8px;background:var(--navy);color:#fff;
+       font-size:13px;cursor:pointer;font-family:var(--sans)}
+  .btn:hover{background:#24365C}
+  .btn.ghost{background:#fff;color:var(--navy);border:1px solid #D8DEE8}
+  .btn.gold{background:var(--gold);color:#26313F;font-weight:600}
+  .btn.mini{padding:6px 11px;font-size:12px;margin-top:8px}
+  .btn.larga{width:100%;margin-bottom:8px}
+  .dica{font-size:11.5px;color:var(--muted);line-height:1.55;margin:10px 0 0}
+  .dica.erroTxt{color:var(--red)}
+  #consistencia div{font-size:12px;padding:8px 10px;border-radius:7px;margin-bottom:7px;line-height:1.5}
+  #consistencia .erro{background:#F8E9E5;color:#7E3623}
+  #consistencia .aviso{background:#FBF6EA;color:#7A6122}
+  #consistencia .ok{background:#EAF2EA;color:#3F5C3F}
+  #awVoltar{position:fixed;bottom:18px;left:18px;z-index:99999;background:#1B3A5F;color:#fff;border:0;
+    border-radius:999px;padding:10px 18px;font:500 13px "Segoe UI",system-ui,Arial,sans-serif;cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.92}
+  #awVoltar:hover{background:#132B47;opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="mark">ADAMI</span>
+  <span class="sub">Gerador de Planos Patrimoniais</span>
+  <span class="sub" style="opacity:.6">versão 2.29</span>
+  <span class="dir">
+    <span class="selo bom" id="selo">—</span>
+    <button class="btn ghost" onclick="novoDoPadrao()">Novo</button>
+    <label class="btn ghost" style="margin:0">Abrir JSON
+      <input type="file" accept=".json" style="display:none"
+             onchange="if(this.files[0])abrirJSON(this.files[0]);this.value=''"></label>
+    <button class="btn ghost" onclick="salvarJSON()">Salvar JSON</button>
+  </span>
+</header>
+
+<div class="layout">
+  <nav class="lado">
+    <a onclick="irPara('s1')">Cliente e patrimônio</a>
+    <a onclick="irPara('s2')">Perfil</a>
+    <a onclick="irPara('s3')">Blocos</a>
+    <a onclick="irPara('s4')">Política — categoria</a>
+    <a onclick="irPara('s5')">Política — estratégia</a>
+    <a onclick="irPara('s6')">Instituições</a>
+    <a onclick="irPara('s7')">Posição atual</a>
+    <a onclick="irPara('s8')">Observações e passos</a>
+  </nav>
+
+  <div>
+    <div class="pane" id="s1"><h2>Cliente e patrimônio</h2>
+      <p class="cap">Identificação e valor de referência do Plano.</p>
+      <div class="grid" id="fCliente"></div></div>
+
+    <div class="pane" id="s2"><h2>Perfil do investidor</h2>
+      <p class="cap">Capacidade e disposição podem divergir; prevalece o critério mais conservador.</p>
+      <div class="grid" id="fPerfil"></div></div>
+
+    <div class="pane" id="s3"><h2>Blocos do patrimônio</h2>
+      <p class="cap">A soma dos blocos precisa fechar com o patrimônio informado.</p>
+      <div id="fBlocos"></div></div>
+
+    <div class="pane" id="s4"><h2>Política de alocação — por categoria</h2>
+      <p class="cap">Os alvos somam 100% e cada alvo tem de estar dentro da própria banda.</p>
+      <div id="fCategoria"></div></div>
+
+    <div class="pane" id="s5"><h2>Política de alocação — por estratégia</h2>
+      <p class="cap">Nível 1 é linha principal, nível 2 é sub-item que compõe a linha acima.</p>
+      <div id="fEstrategia"></div></div>
+
+    <div class="pane" id="s6"><h2>Instituições</h2>
+      <p class="cap">Os percentuais são calculados a partir dos valores, nunca digitados.</p>
+      <div id="fInstituicoes"></div></div>
+
+    <div class="pane" id="s7"><h2>Posição atual</h2>
+      <p class="cap">Pesos atuais da carteira, em %. Deixe em branco o que não se aplica.</p>
+      <div class="grid"><div><label>Por categoria</label><div id="fAtualCat"></div></div>
+      <div><label>Por estratégia</label><div id="fAtualEst"></div></div></div></div>
+
+    <div class="pane" id="s8"><h2>Observações e próximos passos</h2>
+      <p class="cap">Texto livre que entra nas seções finais do Enquadramento.</p>
+      <div id="fObs"></div><div style="height:16px"></div><div id="fPassos"></div></div>
+  </div>
+
+  <div>
+    <div class="pane"><h2>Gerar documentos</h2>
+      <p class="cap">Os cálculos são refeitos no momento da geração.</p>
+      <button class="btn gold larga" onclick="gerarPlano()">Plano Patrimonial (.docx)</button>
+      <button class="btn gold larga" onclick="gerarEnquadramento()">Análise de Enquadramento (.docx)</button>
+    </div>
+    <div class="pane"><h2>Consistência</h2>
+      <p class="cap">Erro bloqueia a geração; aviso apenas sinaliza.</p>
+      <div id="consistencia"></div></div>
+    <div class="pane"><h2>Prévia do enquadramento</h2>
+      <p class="cap">Calculado ao vivo a partir do que está preenchido.</p>
+      <div id="previa"></div></div>
+  </div>
+</div>
+
+<button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
+
+<script>
+/* acesso restrito: exige sessao iniciada no portal */
+(function(){
+  var ok=false;
+  try{ var s=JSON.parse(localStorage.getItem("aw_sessao")||"null"); ok=!!(s&&s.access_token); }catch(e){}
+  if(!ok){ location.replace("index.html"); }
+})();
+
+var PADRAO_CASA = {"cliente": {"nome": "", "assessoria": "Adami Captal"}, "plano": {"mes_referencia": "", "data_base": "", "versao_politica": "", "patrimonio_liquido": 0, "texto_plataforma": "Importante ressaltar que o BTG Pactual trabalha no modelo de plataforma aberta, na qual instituições financeiras e gestoras distribuem os produtos de investimentos, permitindo a diversificação de emissores (Banco do Brasil, Bradesco, Itaú, Safra, Goldman Sachs entre outros) dentro de uma única conta.", "perfil": {"declarado": "Moderado", "capacidade": "", "disposicao": "", "observacao": ""}, "blocos": [], "restricoes": [], "limites_concentracao": [{"tipo": "Bancos / instituições financeiras (exceto Segmento S1)", "limite": 15, "base": "Patrimônio total"}, {"tipo": "Bancos / instituições financeiras (Segmento S1)", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Títulos Públicos", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Fundos de investimento, por gestora", "limite": 20, "base": "Patrimônio total"}, {"tipo": "Ações individuais (por emissor)", "limite": 20, "base": "Bloco Renda Variável BR"}, {"tipo": "Fundo multimercado ou alternativo individual", "limite": 5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Yield)*", "limite": 0.5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Grade)*", "limite": 1, "base": "Patrimônio total"}], "notas_limites": ["*High Yield: emissores com taxas elevadas e maior risco de crédito. *High Grade: emissores com taxas menores comparadas a high yield e menor risco de crédito."], "texto_banda": "Cada categoria possui uma banda de rebalanceamento em torno do peso-alvo; desvios que ultrapassem essa banda disparam a recomendação de rebalanceamento.", "alocacao_categoria": [{"nome": "Renda Fixa", "alvo": 25, "min": 20, "max": 50}, {"nome": "Renda Variável", "alvo": 5, "min": 0, "max": 10}, {"nome": "Fundos", "alvo": 25, "min": 20, "max": 50}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20}, {"nome": "Previdência", "alvo": 30, "min": 25, "max": 50}], "alocacao_estrategia": [{"nome": "Renda Fixa", "alvo": 76.5, "min": 43, "max": 100, "nivel": 1}, {"nome": "Pós-fixado (CDI)", "alvo": 50, "min": 30, "max": 60, "nivel": 2}, {"nome": "Pré-fixado", "alvo": 6.5, "min": 3, "max": 10, "nivel": 2}, {"nome": "IPCA+", "alvo": 20, "min": 10, "max": 30, "nivel": 2}, {"nome": "Renda Variável (Brasil)", "alvo": 5, "min": 0, "max": 10, "nivel": 1}, {"nome": "Multimercado", "alvo": 2.5, "min": 0, "max": 5, "nivel": 1}, {"nome": "Alternativo", "alvo": 1, "min": 0, "max": 2, "nivel": 1}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20, "nivel": 1}, {"nome": "Renda Fixa Internacional", "alvo": 10, "min": 5, "max": 15, "nivel": 2}, {"nome": "Renda Variável Internacional", "alvo": 5, "min": 0, "max": 10, "nivel": 2}], "secoes": {"imobilizado": true}, "imobilizado": [{"titulo": "Imóveis", "texto": "O acompanhamento do patrimônio imobiliário foca no monitoramento analítico das propriedades físicas e na avaliação contínua do retorno de aluguéis frente ao mercado. Essa frente assegura a precificação correta e a atualização do valor venal dos ativos, embasando decisões táticas de manutenção ou desinvestimento."}, {"titulo": "Empresas", "texto": "A frente dedicada às empresas e participações societárias atua na estruturação de valuation e na modelagem financeira das operações do grupo. O objetivo é mensurar o valor corporativo real e monitorar a saúde dos negócios, servindo como base indispensável para estratégias de liquidez e para o planejamento sucessório familiar."}], "diretrizes_produtos": [{"titulo": "Renda Fixa", "texto": "títulos públicos (Tesouro Direto), CDBs, LFs, LCIs/LCAs e crédito privado de emissores com rating mínimo A-."}, {"titulo": "Renda Variável (Brasil)", "texto": "ações individuais, ETFs de índice amplo (Ibovespa, small caps), opções."}, {"titulo": "Multimercado", "texto": "fundos com histórico mínimo de 2 anos e patrimônio líquido superior a R$ 50 milhões."}, {"titulo": "Internacional", "texto": "Mutual Funds e ETFs internacionais, respeitando o limite regulatório e cambial vigente."}], "governanca": {"periodicidade": "semestral", "gatilhos": ["aporte ou resgate", "mudança relevante no regime tributário", "alteração significativa na necessidade de liquidez operacional"]}}, "enquadramento": {"data_posicao": "", "instituicoes": [], "atual_categoria": {}, "atual_estrategia": {}, "observacoes_produto": [], "movimentacoes_extras": [], "nota_assessor": "", "proximos_passos": []}};
+
+/* ============================================================
+   MOTOR DE CALCULO — Plano Patrimonial e Enquadramento
+   Porte fiel de motor/calculos.py para o navegador.
+   Regra de ouro: nada que possa ser calculado deve ser digitado.
+   ============================================================ */
+
+var TOLERANCIA = 0.001;   // p.p. — evita 50.000001 vs 50 virar "fora da banda"
+
+/* ---------- formatacao pt-BR ---------- */
+function moeda(v, simbolo){
+  var s = Math.abs(v).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d),)/g, ".");
+  s = (v < 0 ? "-" : "") + s;
+  return simbolo === false ? s : "R$ " + s;
+}
+function moedaCurta(v){
+  return "R$ " + Math.round(v).toLocaleString("pt-BR");
+}
+function pct(v, casas){
+  casas = casas === undefined ? 2 : casas;
+  if (Math.abs(v - Math.round(v)) < 1e-9) return Math.round(v) + "%";
+  return v.toFixed(casas).replace(".", ",") + "%";
+}
+function pp(v, casas){
+  casas = casas === undefined ? 2 : casas;
+  var sinal = v > 0 ? "+" : (v < 0 ? "\u2212" : "");
+  var a = Math.abs(v);
+  if (Math.abs(a - Math.round(a)) < 1e-9) return sinal + Math.round(a) + " p.p.";
+  return sinal + a.toFixed(casas).replace(".", ",") + " p.p.";
+}
+function extensoMilhoes(v){
+  var unid = ["","um","dois","três","quatro","cinco","seis","sete","oito","nove","dez",
+              "onze","doze","treze","quatorze","quinze","dezesseis","dezessete","dezoito","dezenove"];
+  var dez  = ["","","vinte","trinta","quarenta","cinquenta","sessenta","setenta","oitenta","noventa"];
+  var cem  = ["","cento","duzentos","trezentos","quatrocentos","quinhentos",
+              "seiscentos","setecentos","oitocentos","novecentos"];
+  function ate999(n){
+    if (n === 0) return "";
+    if (n === 100) return "cem";
+    var partes = [], c = Math.floor(n/100), r = n % 100;
+    if (c) partes.push(cem[c]);
+    if (r){
+      if (r < 20) partes.push(unid[r]);
+      else {
+        var d = Math.floor(r/10), u = r % 10;
+        partes.push(dez[d] + (u ? " e " + unid[u] : ""));
+      }
+    }
+    return partes.join(" e ");
+  }
+  var milhoes = Math.floor(v / 1e6);
+  if (milhoes === 0) return moedaCurta(v);
+  return ate999(milhoes) + " " + (milhoes === 1 ? "milhão" : "milhões") + " de reais";
+}
+
+/* ---------- linhas de alocacao ---------- */
+function montarLinhas(defs, atuais, patrimonio){
+  atuais = atuais || {};
+  return (defs || []).map(function(d){
+    var ln = {
+      nome: d.nome,
+      alvo: Number(d.alvo),
+      minimo: Number(d.min),
+      maximo: Number(d.max),
+      nivel: Number(d.nivel || 1),
+      atual: (d.nome in atuais) ? Number(atuais[d.nome]) : null,
+      patrimonio: patrimonio
+    };
+    ln.valorAlvo = patrimonio * ln.alvo / 100;
+    if (ln.atual !== null){
+      ln.valorAtual = patrimonio * ln.atual / 100;
+      ln.desvio = ln.atual - ln.alvo;
+      ln.dentro = (ln.minimo - TOLERANCIA <= ln.atual) && (ln.atual <= ln.maximo + TOLERANCIA);
+      ln.status = ln.dentro ? "Dentro da banda" : "Fora da banda";
+    } else {
+      ln.valorAtual = 0; ln.desvio = 0; ln.dentro = true; ln.status = "";
+    }
+    /* direcao: para onde a carteira precisa se mover */
+    ln.direcao = (ln.atual === null || ln.dentro) ? null
+               : (ln.atual > ln.maximo ? "Reduzir" : "Aumentar");
+    /* excesso ALEM DA BANDA — e este numero, nao a distancia ate o alvo,
+       que mede a urgencia. Ver decisao 5.1 do HANDOFF. */
+    ln.excessoPp = (ln.atual === null || ln.dentro) ? 0
+                 : (ln.atual > ln.maximo ? ln.atual - ln.maximo : ln.minimo - ln.atual);
+    ln.ajusteReais = ln.excessoPp / 100 * patrimonio;
+    return ln;
+  });
+}
+
+/* ---------- movimentacoes sugeridas ---------- */
+function sugerirMovimentacoes(linhas, extras, limiarAlta){
+  limiarAlta = limiarAlta === undefined ? 10.0 : limiarAlta;
+  var movs = [];
+  linhas.forEach(function(ln){
+    if (ln.direcao === null) return;
+    var exc = ln.excessoPp;
+    movs.push({
+      acao: ln.direcao, categoria: ln.nome,
+      prioridade: exc >= limiarAlta ? "Alta" : (exc >= 3 ? "Média" : "Baixa"),
+      desvio: ln.desvio, excesso: exc, valor: ln.ajusteReais, origem: "automatica"
+    });
+  });
+  movs.sort(function(a,b){ return b.excesso - a.excesso; });
+  (extras || []).forEach(function(e){
+    var m = {}; for (var k in e) m[k] = e[k];
+    m.origem = "manual";
+    m.desvio = e.desvio || 0;
+    m.excesso = 0;
+    m.valor = e.valor || 0;
+    movs.push(m);
+  });
+  return movs;
+}
+
+/* ---------- instituicoes ---------- */
+function consolidarInstituicoes(instituicoes){
+  var lista = instituicoes || [];
+  var total = lista.reduce(function(a,i){ return a + Number(i.valor); }, 0) || 1;
+  var saida = lista.map(function(i){
+    return { nome: i.nome, valor: Number(i.valor), pct: Number(i.valor)/total*100,
+             /* s1 explicito no dado vence; sem ele, deduz pela lista do BCB */
+             s1: (i.s1 !== undefined ? !!i.s1 : ehS1(i.nome)) };
+  });
+  saida.sort(function(a,b){ return b.valor - a.valor; });
+  return { lista: saida, total: total };
+}
+
+/* Bancos do Segmento S1 (Res. CMN 4.553). O limite do Plano para S1 e
+   outro — normalmente 100% — entao aplicar o limite de "exceto S1" a
+   eles gera alerta falso no documento do cliente. */
+var BANCOS_S1 = ["banco do brasil","bradesco","btg pactual","btg",
+                 "caixa economica","caixa economica federal","caixa","itau",
+                 "itau unibanco","santander"];
+function ehS1(nome){
+  var n = String(nome||"").toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+  return BANCOS_S1.indexOf(n) >= 0;
+}
+
+function checarLimitesEmissor(consolidadas, limites){
+  var violacoes = [], concentracoes = [], limitePadrao = null, limiteS1 = null;
+  (limites || []).forEach(function(l){
+    var t = String(l.tipo||"").toLowerCase();
+    if (t.indexOf("banco") >= 0 && t.indexOf("exceto") >= 0) limitePadrao = l.limite;
+    else if (t.indexOf("banco") >= 0 && t.indexOf("s1") >= 0)  limiteS1 = l.limite;
+  });
+  if (limitePadrao === null) return { violacoes: violacoes, concentracoes: concentracoes };
+
+  consolidadas.forEach(function(i){
+    var s1 = i.s1;
+    var limite = s1 ? (limiteS1 === null ? 100 : limiteS1) : limitePadrao;
+
+    /* 1. violacao de verdade: passou do limite QUE SE APLICA a este emissor */
+    if (i.pct > limite + TOLERANCIA){
+      violacoes.push({ emissor: i.nome, pct: i.pct, limite: limite,
+                       excessoPp: i.pct - limite, s1: s1 });
+      return;
+    }
+    /* 2. concentracao relevante: dentro do limite proprio, mas acima do nivel
+       que a propria casa considera prudente para uma instituicao financeira.
+       So faz sentido para S1, que e quem tem limite maior.                  */
+    if (s1 && limiteS1 !== null && limiteS1 > limitePadrao &&
+        i.pct > limitePadrao + TOLERANCIA){
+      concentracoes.push({ emissor: i.nome, pct: i.pct,
+                           limite: limite, referencia: limitePadrao, s1: true });
+    }
+  });
+  return { violacoes: violacoes, concentracoes: concentracoes };
+}
+
+/* ---------- validacoes ---------- */
+function validar(dados, linhasCat, linhasEst, instituicoes){
+  var probs = [], plano = dados.plano, patr = Number(plano.patrimonio_liquido);
+  function add(sev, onde, msg){ probs.push({severidade:sev, onde:onde, mensagem:msg}); }
+
+  [["Categoria", linhasCat], ["Estrategia", linhasEst]].forEach(function(par){
+    var soma = par[1].filter(function(l){return l.nivel===1;})
+                     .reduce(function(a,l){return a+l.alvo;},0);
+    if (Math.abs(soma - 100) > 0.05)
+      add("erro","Plano §05 "+par[0],"Os pesos-alvo somam "+pct(soma)+" em vez de 100%.");
+  });
+
+  var pai = null, acum = 0;
+  linhasEst.concat([{nome:"__fim__",alvo:0,nivel:1}]).forEach(function(l){
+    if (l.nivel === 1){
+      if (pai !== null && acum > 0 && Math.abs(acum - pai.alvo) > 0.05)
+        add("aviso","Plano §05 Estrategia","Os sub-itens de '"+pai.nome+"' somam "+
+            pct(acum)+", mas o total da linha é "+pct(pai.alvo)+".");
+      pai = l; acum = 0;
+    } else acum += l.alvo;
+  });
+
+  linhasCat.concat(linhasEst).forEach(function(l){
+    if (!(l.minimo - TOLERANCIA <= l.alvo && l.alvo <= l.maximo + TOLERANCIA))
+      add("erro","Plano §05","'"+l.nome+"': o peso-alvo "+pct(l.alvo)+
+          " está fora da banda definida ("+pct(l.minimo)+"–"+pct(l.maximo)+").");
+  });
+
+  var blocos = plano.blocos || [];
+  if (blocos.length){
+    var somaB = blocos.reduce(function(a,b){return a+Number(b.valor);},0);
+    if (Math.abs(somaB - patr) > 1)
+      add("erro","Plano §03","Os blocos somam "+moedaCurta(somaB)+
+          ", mas o patrimônio informado é "+moedaCurta(patr)+
+          " (diferença de "+moedaCurta(Math.abs(somaB-patr))+").");
+  }
+
+  [["Categoria", linhasCat, 3], ["Estrategia", linhasEst, 4]].forEach(function(par){
+    var comAtual = par[1].filter(function(l){return l.nivel===1 && l.atual!==null;});
+    if (comAtual.length){
+      var soma = comAtual.reduce(function(a,l){return a+l.atual;},0);
+      if (Math.abs(soma - 100) > 0.1)
+        add("aviso","Enquadramento §0"+par[2],
+            "Os pesos atuais somam "+pct(soma)+" em vez de 100%.");
+    }
+  });
+
+  if (instituicoes && instituicoes.length){
+    var c = consolidarInstituicoes(instituicoes);
+    if (patr && Math.abs(c.total - patr)/patr > 0.01)
+      add("aviso","Enquadramento §02","A soma por instituição ("+moedaCurta(c.total)+
+          ") difere do patrimônio do Plano ("+moedaCurta(patr)+") em mais de 1%.");
+  }
+  return probs;
+}
+
+/* ---------- orquestracao ---------- */
+function processar(dados, comEnquadramento){
+  comEnquadramento = comEnquadramento !== false;
+  var plano = dados.plano, patr = Number(plano.patrimonio_liquido);
+  var enq = comEnquadramento ? (dados.enquadramento || {}) : {};
+
+  var linhasCat = montarLinhas(plano.alocacao_categoria, enq.atual_categoria, patr);
+  var linhasEst = montarLinhas(plano.alocacao_estrategia, enq.atual_estrategia, patr);
+
+  var ctx = { dados: dados, patrimonio: patr,
+              linhasCategoria: linhasCat, linhasEstrategia: linhasEst };
+
+  if (comEnquadramento && dados.enquadramento){
+    var c = consolidarInstituicoes(enq.instituicoes || []);
+    ctx.instituicoes = c.lista;
+    ctx.totalInstituicoes = c.total;
+    var lim = checarLimitesEmissor(c.lista, plano.limites_concentracao || []);
+    ctx.alertasEmissor = lim.violacoes;        /* estouro do limite aplicavel */
+    ctx.concentracoes  = lim.concentracoes;    /* dentro do limite, mas alto */
+    ctx.movimentacoes = sugerirMovimentacoes(linhasCat, enq.movimentacoes_extras);
+  }
+  ctx.problemas = validar(dados, linhasCat, linhasEst,
+                          dados.enquadramento ? enq.instituicoes : null);
+  return ctx;
+}
+
+
+/* ============================================================
+   TEXTO DA SECAO 02 DO ENQUADRAMENTO
+   Separa violacao de limite de concentracao relevante. Chamar a
+   segunda de "acima do limite" era o erro do motor original.
+   ============================================================ */
+function textoConcentracao(ctx){
+  var partes = [];
+  (ctx.alertasEmissor || []).forEach(function(a){
+    partes.push({
+      tipo: "violacao",
+      texto: "Atenção: " + a.emissor + " representa " + pct(a.pct) +
+             " da carteira, acima do limite de " + pct(a.limite) +
+             " definido no Plano Patrimonial para esta categoria de emissor" +
+             " — excesso de " + pp(a.excessoPp).replace("+","") +
+             ". Recomenda-se o reenquadramento."
+    });
+  });
+  (ctx.concentracoes || []).forEach(function(c){
+    partes.push({
+      tipo: "concentracao",
+      texto: c.emissor + " concentra " + pct(c.pct) + " da carteira. A posição está " +
+             "dentro do limite de " + pct(c.limite) + " que o Plano atribui às instituições " +
+             "do Segmento S1, mas acima do patamar de " + pct(c.referencia) +
+             " aplicado às demais instituições financeiras. A exceção do S1 decorre " +
+             "do porte e da supervisão prudencial diferenciada, não da ausência de " +
+             "risco de concentração — o monitoramento permanece recomendado."
+    });
+  });
+  return partes;
+}
+
+/* ============================================================
+   GERADOR DE .DOCX NO NAVEGADOR
+   Um .docx e um ZIP de XMLs. Nada de biblioteca: o portal e HTML
+   puro, sem build. Mesma tecnica ja usada no .xlsx da Mesa RV.
+   Suporta: capa, titulos de secao, paragrafos, listas, tabelas e
+   imagens PNG (os graficos vem do canvas).
+   ============================================================ */
+
+var CRC_T=(function(){var t=new Int32Array(256),c,k,i;
+  for(i=0;i<256;i++){c=i;for(k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[i]=c;}
+  return t;})();
+function crc32b(b){var c=-1;for(var i=0;i<b.length;i++)c=(c>>>8)^CRC_T[(c^b[i])&255];return (c^-1)>>>0;}
+function utf8b(s){
+  var out=[],i,cp;
+  for(i=0;i<s.length;i++){
+    cp=s.charCodeAt(i);
+    if(cp<0x80) out.push(cp);
+    else if(cp<0x800) out.push(0xC0|cp>>6,0x80|cp&63);
+    else if(cp>=0xD800&&cp<0xDC00){
+      cp=0x10000+((cp-0xD800)<<10)+(s.charCodeAt(++i)-0xDC00);
+      out.push(0xF0|cp>>18,0x80|(cp>>12)&63,0x80|(cp>>6)&63,0x80|cp&63);
+    } else out.push(0xE0|cp>>12,0x80|(cp>>6)&63,0x80|cp&63);
+  }
+  return new Uint8Array(out);
+}
+function z16(v){return [v&255,(v>>8)&255];}
+function z32(v){return [v&255,(v>>8)&255,(v>>16)&255,(v>>24)&255];}
+
+/* arqs: [{nome, texto}] ou [{nome, bytes}] */
+function ziparDocx(arqs){
+  var partes=[],central=[],off=0;
+  arqs.forEach(function(f){
+    var nome=utf8b(f.nome);
+    var dados=f.bytes ? f.bytes : utf8b(f.texto);
+    var crc=crc32b(dados);
+    var loc=[].concat([80,75,3,4],z16(20),z16(0),z16(0),z16(0),z16(0),
+             z32(crc),z32(dados.length),z32(dados.length),z16(nome.length),z16(0));
+    partes.push(new Uint8Array(loc),nome,dados);
+    central.push(new Uint8Array([].concat([80,75,1,2],z16(20),z16(20),z16(0),z16(0),
+      z16(0),z16(0),z32(crc),z32(dados.length),z32(dados.length),
+      z16(nome.length),z16(0),z16(0),z16(0),z16(0),z32(0),z32(off))), nome);
+    off+=loc.length+nome.length+dados.length;
+  });
+  var cdLen=0; central.forEach(function(u){cdLen+=u.length;});
+  var fim=new Uint8Array([].concat([80,75,5,6],z16(0),z16(0),
+    z16(arqs.length),z16(arqs.length),z32(cdLen),z32(off),z16(0)));
+  var total=off+cdLen+fim.length,buf=new Uint8Array(total),p=0;
+  partes.concat(central,[fim]).forEach(function(u){buf.set(u,p);p+=u.length;});
+  return buf;
+}
+
+function xesc(t){
+  return String(t==null?"":t)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,"");
+}
+
+/* ---------- paleta (identidade extraida dos .docx originais) ---------- */
+var CORES={navy:"1B2A4A",creme:"F7F4EE",dourado:"C9A24B",
+           verde:"5C7A5C",terracota:"B5563A",cinza:"C7CEDC",branco:"FFFFFF"};
+
+/* ---------- blocos ---------- */
+function pPara(texto,op){
+  op=op||{};
+  var rpr="";
+  if(op.serif) rpr+='<w:rFonts w:ascii="Georgia" w:hAnsi="Georgia"/>';
+  if(op.negrito) rpr+="<w:b/>";
+  if(op.italico) rpr+="<w:i/>";
+  if(op.tamanho) rpr+='<w:sz w:val="'+(op.tamanho*2)+'"/>';
+  if(op.cor) rpr+='<w:color w:val="'+op.cor+'"/>';
+  var ppr="";
+  if(op.centro) ppr+='<w:jc w:val="center"/>';
+  else if(op.direita) ppr+='<w:jc w:val="right"/>';
+  else if(op.justificado!==false) ppr+='<w:jc w:val="both"/>';
+  if(op.antes||op.depois)
+    ppr+='<w:spacing'+(op.antes?' w:before="'+op.antes+'"':"")+
+         (op.depois?' w:after="'+op.depois+'"':"")+'/>';
+  if(op.bordaInferior)
+    ppr+='<w:pBdr><w:bottom w:val="single" w:sz="8" w:space="4" w:color="'+op.bordaInferior+'"/></w:pBdr>';
+  if(op.quebraAntes) ppr+='<w:pageBreakBefore/>';
+  return "<w:p>"+(ppr?"<w:pPr>"+ppr+"</w:pPr>":"")+
+         "<w:r>"+(rpr?"<w:rPr>"+rpr+"</w:rPr>":"")+
+         '<w:t xml:space="preserve">'+xesc(texto)+"</w:t></w:r></w:p>";
+}
+function pTitulo(num,titulo,op){
+  op=op||{};
+  return "<w:p><w:pPr>"+(op.quebraAntes?"<w:pageBreakBefore/>":"")+
+    '<w:spacing w:before="360" w:after="180"/>'+
+    '<w:pBdr><w:bottom w:val="single" w:sz="8" w:space="6" w:color="'+CORES.dourado+'"/></w:pBdr>'+
+    "</w:pPr>"+
+    '<w:r><w:rPr><w:rFonts w:ascii="Georgia" w:hAnsi="Georgia"/><w:b/><w:sz w:val="30"/>'+
+    '<w:color w:val="'+CORES.dourado+'"/></w:rPr><w:t xml:space="preserve">'+xesc(num)+" </w:t></w:r>"+
+    '<w:r><w:rPr><w:rFonts w:ascii="Georgia" w:hAnsi="Georgia"/><w:b/><w:sz w:val="30"/>'+
+    '<w:color w:val="'+CORES.navy+'"/></w:rPr><w:t>'+xesc(titulo)+"</w:t></w:r></w:p>";
+}
+function pVazio(){ return '<w:p><w:pPr><w:spacing w:after="0"/></w:pPr></w:p>'; }
+
+/* cels: [{t, alinha:'e'|'d', negrito, cor, fundo}] */
+function pTabela(colsLargura, linhas){
+  var largTotal=colsLargura.reduce(function(a,b){return a+b;},0);
+  var x='<w:tbl><w:tblPr><w:tblW w:w="'+largTotal+'" w:type="dxa"/>'+
+    '<w:tblBorders>'+
+    '<w:top w:val="single" w:sz="4" w:color="'+CORES.cinza+'"/>'+
+    '<w:bottom w:val="single" w:sz="4" w:color="'+CORES.cinza+'"/>'+
+    '<w:insideH w:val="single" w:sz="4" w:color="'+CORES.cinza+'"/>'+
+    '</w:tblBorders><w:tblCellMar>'+
+    '<w:top w:w="60" w:type="dxa"/><w:bottom w:w="60" w:type="dxa"/>'+
+    '<w:left w:w="100" w:type="dxa"/><w:right w:w="100" w:type="dxa"/>'+
+    '</w:tblCellMar></w:tblPr><w:tblGrid>'+
+    colsLargura.map(function(w){return '<w:gridCol w:w="'+w+'"/>';}).join("")+
+    "</w:tblGrid>";
+  linhas.forEach(function(linha,li){
+    x+="<w:tr>"+(li===0?"<w:trPr><w:tblHeader/></w:trPr>":"");
+    linha.forEach(function(cel,ci){
+      var fundo=cel.fundo||(li===0?CORES.navy:(li%2===0?CORES.creme:CORES.branco));
+      var cor=cel.cor||(li===0?CORES.branco:"000000");
+      var neg=(cel.negrito===undefined?li===0:cel.negrito);
+      x+='<w:tc><w:tcPr><w:tcW w:w="'+colsLargura[ci]+'" w:type="dxa"/>'+
+         '<w:shd w:val="clear" w:fill="'+fundo+'"/>'+
+         '<w:vAlign w:val="center"/></w:tcPr>'+
+         "<w:p><w:pPr>"+
+         (cel.alinha==="d"?'<w:jc w:val="right"/>':(cel.alinha==="c"?'<w:jc w:val="center"/>':""))+
+         '<w:spacing w:before="20" w:after="20"/></w:pPr>'+
+         "<w:r><w:rPr>"+(neg?"<w:b/>":"")+'<w:sz w:val="18"/><w:color w:val="'+cor+'"/></w:rPr>'+
+         '<w:t xml:space="preserve">'+xesc(cel.t)+"</w:t></w:r></w:p></w:tc>";
+    });
+    x+="</w:tr>";
+  });
+  return x+"</w:tbl>";
+}
+
+/* imagem: id sequencial, bytes PNG, largura em polegadas */
+function pImagem(idx, larguraPol, alturaPol){
+  var cx=Math.round(larguraPol*914400), cy=Math.round(alturaPol*914400);
+  return '<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="120" w:after="120"/></w:pPr>'+
+    '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0" '+
+    'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">'+
+    '<wp:extent cx="'+cx+'" cy="'+cy+'"/><wp:docPr id="'+idx+'" name="Imagem'+idx+'"/>'+
+    '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'+
+    '<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">'+
+    '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">'+
+    '<pic:nvPicPr><pic:cNvPr id="'+idx+'" name="Imagem'+idx+'"/><pic:cNvPicPr/></pic:nvPicPr>'+
+    '<pic:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '+
+    'r:embed="rIm'+idx+'"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>'+
+    '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm>'+
+    '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>'+
+    "</a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>";
+}
+
+/* ---------- montagem ---------- */
+function montarDocx(corpo, imagens){
+  imagens = imagens || [];
+  var rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+    '<Relationship Id="rStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'+
+    imagens.map(function(im,i){
+      return '<Relationship Id="rIm'+(i+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/imagem'+(i+1)+'.png"/>';
+    }).join("")+"</Relationships>";
+
+  var doc='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" '+
+    'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+    "<w:body>"+corpo+
+    '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/>'+
+    '<w:pgMar w:top="1400" w:right="1250" w:bottom="1400" w:left="1250" w:header="720" w:footer="720"/>'+
+    "</w:sectPr></w:body></w:document>";
+
+  var styles='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+    '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'+
+    "<w:docDefaults><w:rPrDefault><w:rPr>"+
+    '<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="21"/>'+
+    "</w:rPr></w:rPrDefault><w:pPrDefault><w:pPr>"+
+    '<w:spacing w:after="140" w:line="276" w:lineRule="auto"/>'+
+    "</w:pPr></w:pPrDefault></w:docDefaults>"+
+    '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style>'+
+    "</w:styles>";
+
+  var arqs=[
+    {nome:"[Content_Types].xml", texto:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
+      '<Default Extension="xml" ContentType="application/xml"/>'+
+      '<Default Extension="png" ContentType="image/png"/>'+
+      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'+
+      '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'+
+      "</Types>"},
+    {nome:"_rels/.rels", texto:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'+
+      "</Relationships>"},
+    {nome:"word/document.xml", texto:doc},
+    {nome:"word/styles.xml", texto:styles},
+    {nome:"word/_rels/document.xml.rels", texto:rels}
+  ];
+  imagens.forEach(function(im,i){
+    arqs.push({nome:"word/media/imagem"+(i+1)+".png", bytes:im});
+  });
+  return ziparDocx(arqs);
+}
+
+
+/* ============================================================
+   INTERFACE E MONTAGEM DOS DOIS DOCUMENTOS
+   ============================================================ */
+
+var DADOS = JSON.parse(JSON.stringify(PADRAO_CASA));
+var CTX = null;
+
+/* ---------- utilidades de tela ---------- */
+function $(id){ return document.getElementById(id); }
+function esc(t){ return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function num(v){
+  var t=String(v==null?"":v).trim().replace(/\s|R\$|%/g,"");
+  if(!t) return 0;
+  var tv=t.indexOf(",")>=0, tp=t.indexOf(".")>=0;
+  if(tv&&tp) t = t.lastIndexOf(",")>t.lastIndexOf(".") ? t.replace(/\./g,"").replace(",",".") : t.replace(/,/g,"");
+  else if(tv) t=t.replace(/,/g,".");
+  else if(tp){ var p=t.split("."); if(p.length>2||(p.length===2&&/^\d{3}$/.test(p[1]))) t=t.replace(/\./g,""); }
+  var x=parseFloat(t); return isNaN(x)?0:x;
+}
+
+/* ---------- gráficos no canvas ---------- */
+function canvasPNG(cv){
+  var b64=cv.toDataURL("image/png").split(",")[1];
+  var bin=atob(b64), arr=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+  return arr;
+}
+/* barras horizontais alvo x atual, com a faixa de banda ao fundo.
+   Horizontal por decisao 5.5 do HANDOFF: na vertical os nomes longos
+   viravam tres linhas e a banda era lida como uma terceira barra.   */
+function graficoAlvoAtual(linhas){
+  var itens=linhas.filter(function(l){ return l.nivel===1; });
+  var L=170, R=70, T=54, alturaItem=64;
+  var W=1180, H=T+itens.length*alturaItem+52;
+  var cv=document.createElement("canvas"); cv.width=W; cv.height=H;
+  var g=cv.getContext("2d");
+  g.fillStyle="#FFFFFF"; g.fillRect(0,0,W,H);
+
+  var maxV=0;
+  itens.forEach(function(l){ maxV=Math.max(maxV,l.alvo,l.atual||0,l.maximo); });
+  maxV=Math.ceil((maxV*1.12)/10)*10 || 10;
+  var esc=function(v){ return L+(v/maxV)*(W-L-R); };
+
+  g.strokeStyle="#EDF1F5"; g.lineWidth=1;
+  g.font="15px Segoe UI, Arial, sans-serif"; g.fillStyle="#6B7787"; g.textAlign="center";
+  for(var v=0; v<=maxV; v+=10){
+    g.beginPath(); g.moveTo(esc(v),T-10); g.lineTo(esc(v),H-46); g.stroke();
+    g.fillText(v+"%", esc(v), H-24);
+  }
+  g.fillText("% da carteira", (L+W-R)/2, H-4);
+
+  itens.forEach(function(l,i){
+    var y=T+i*alturaItem;
+    /* faixa de banda */
+    g.fillStyle="#E9EDF3";
+    g.fillRect(esc(l.minimo), y-4, esc(l.maximo)-esc(l.minimo), 48);
+    /* alvo */
+    g.fillStyle="#1B2A4A";
+    g.fillRect(L, y, esc(l.alvo)-L, 20);
+    /* atual */
+    var temAtual = l.atual!==null && l.atual!==undefined;
+    var cor = !temAtual ? "#C7CEDC" : (l.dentro ? "#C9A24B" : "#B5563A");
+    g.fillStyle=cor;
+    g.fillRect(L, y+24, Math.max(esc(l.atual||0)-L,1), 20);
+    /* rotulos */
+    g.textAlign="right"; g.font="bold 16px Segoe UI, Arial, sans-serif"; g.fillStyle="#1B2A4A";
+    g.fillText(l.nome, L-14, y+28);
+    g.textAlign="left"; g.font="bold 15px Segoe UI, Arial, sans-serif";
+    g.fillStyle="#1B2A4A"; g.fillText(pct(l.alvo), esc(l.alvo)+8, y+15);
+    if(temAtual){ g.fillStyle=cor==="#C9A24B"?"#1B2A4A":cor;
+      g.fillText(pct(l.atual), esc(l.atual)+8, y+39); }
+  });
+  /* legenda */
+  g.font="15px Segoe UI, Arial, sans-serif"; g.textAlign="left";
+  var lg=[["#1B2A4A","Alvo (Política)"],["#C9A24B","Atual — dentro da banda"],
+          ["#B5563A","Atual — fora da banda"],["#E9EDF3","Banda permitida"]];
+  var x=L;
+  lg.forEach(function(p){
+    g.fillStyle=p[0]; g.fillRect(x,12,26,16);
+    g.fillStyle="#3C4C60"; g.fillText(p[1], x+34, 25);
+    x+=g.measureText(p[1]).width+76;
+  });
+  return {png:canvasPNG(cv), w:W, h:H};
+}
+/* rosca por instituicao */
+function graficoRosca(insts){
+  var W=1120,H=560,cx=300,cy=280,R=205,r=112;
+  var cv=document.createElement("canvas"); cv.width=W; cv.height=H;
+  var g=cv.getContext("2d");
+  g.fillStyle="#FFFFFF"; g.fillRect(0,0,W,H);
+  var paleta=["#1B2A4A","#C9A24B","#5C7A5C","#B5563A","#3D5178","#8A6D2F","#7A8698","#A88C4A"];
+  var total=insts.reduce(function(a,i){return a+i.valor;},0)||1;
+  var ang=-Math.PI/2;
+  insts.forEach(function(it,i){
+    var fatia=it.valor/total*Math.PI*2, cor=paleta[i%paleta.length];
+    g.beginPath(); g.moveTo(cx,cy);
+    g.arc(cx,cy,R,ang,ang+fatia); g.closePath();
+    g.fillStyle=cor; g.fill();
+    g.strokeStyle="#FFFFFF"; g.lineWidth=3; g.stroke();
+    if(it.valor/total>0.05){
+      var m=ang+fatia/2, rr=(R+r)/2;
+      g.fillStyle="#FFFFFF"; g.font="bold 19px Segoe UI, Arial, sans-serif";
+      g.textAlign="center"; g.textBaseline="middle";
+      g.fillText(pct(it.valor/total*100,1), cx+Math.cos(m)*rr, cy+Math.sin(m)*rr);
+    }
+    ang+=fatia;
+  });
+  g.beginPath(); g.arc(cx,cy,r,0,Math.PI*2); g.fillStyle="#FFFFFF"; g.fill();
+  /* legenda */
+  g.textAlign="left"; g.textBaseline="alphabetic";
+  var y=cy-insts.length*17;
+  insts.forEach(function(it,i){
+    g.fillStyle=paleta[i%paleta.length]; g.fillRect(640,y-13,20,16);
+    g.fillStyle="#26313F"; g.font="18px Segoe UI, Arial, sans-serif";
+    g.fillText(it.nome+"  ·  "+pct(it.valor/total*100), 672, y);
+    y+=34;
+  });
+  return {png:canvasPNG(cv), w:W, h:H};
+}
+
+/* ---------- documento: ENQUADRAMENTO ---------- */
+function docEnquadramento(){
+  var d=DADOS, ctx=CTX, enq=d.enquadramento, imgs=[], c="";
+  var nx=(function(){var n=0;return function(){n++;return (n<10?"0":"")+n;};})();
+
+  c+=pPara("",{depois:2200});
+  c+=pPara("Análise de Enquadramento",{serif:true,negrito:true,tamanho:30,cor:CORES.navy,centro:true});
+  c+=pPara((d.cliente.nome||"").toUpperCase(),{tamanho:13,cor:CORES.dourado,centro:true,depois:500});
+  c+=pPara("Posição de "+(enq.data_posicao||"—"),{tamanho:11,centro:true});
+  c+=pPara(d.cliente.assessoria||"",{tamanho:10,cor:"7A8698",centro:true,antes:2600});
+
+  c+=pTitulo(nx(),"Objetivo",{quebraAntes:true});
+  c+=pPara("Este documento compara a posição atual da carteira com a política de "+
+    "investimentos definida no Plano Patrimonial, identifica os desvios que ultrapassam "+
+    "as bandas de rebalanceamento e propõe as movimentações necessárias para o reenquadramento.");
+  if(d.plano.texto_plataforma) c+=pPara(d.plano.texto_plataforma);
+
+  c+=pTitulo(nx(),"Distribuição por Instituição");
+  c+=pTabela([4300,2500,1700],
+    [[{t:"Instituição"},{t:"Valor",alinha:"d"},{t:"% da carteira",alinha:"d"}]]
+    .concat(ctx.instituicoes.map(function(i){
+      return [{t:i.nome+(i.s1?"  (S1)":"")},{t:moedaCurta(i.valor),alinha:"d"},{t:pct(i.pct),alinha:"d"}];
+    }))
+    .concat([[{t:"Total",negrito:true,fundo:CORES.creme},
+              {t:moedaCurta(ctx.totalInstituicoes),alinha:"d",negrito:true,fundo:CORES.creme},
+              {t:"100%",alinha:"d",negrito:true,fundo:CORES.creme}]]));
+  if(ctx.instituicoes.length){
+    var gr=graficoRosca(ctx.instituicoes); imgs.push(gr.png);
+    c+=pImagem(imgs.length,6.2,6.2*gr.h/gr.w);
+  }
+  textoConcentracao(ctx).forEach(function(p){
+    c+=pPara(p.texto,{tamanho:9.5,antes:140,
+      cor:p.tipo==="violacao"?CORES.terracota:"5A6472"});
+  });
+
+  c+=pTitulo(nx(),"Enquadramento por Categoria");
+  if(d.plano.texto_banda) c+=pPara(d.plano.texto_banda);
+  c+=pTabela([2500,1150,1150,1500,1900],
+    [[{t:"Categoria"},{t:"Alvo",alinha:"d"},{t:"Atual",alinha:"d"},{t:"Desvio",alinha:"d"},{t:"Status",alinha:"c"}]]
+    .concat(ctx.linhasCategoria.map(function(l){
+      return [{t:l.nome},{t:pct(l.alvo),alinha:"d"},{t:pct(l.atual),alinha:"d"},
+              {t:pp(l.desvio),alinha:"d"},
+              {t:l.status,alinha:"c",negrito:true,cor:l.dentro?CORES.verde:CORES.terracota}];
+    })));
+  var g1=graficoAlvoAtual(ctx.linhasCategoria); imgs.push(g1.png);
+  c+=pImagem(imgs.length,6.4,6.4*g1.h/g1.w);
+
+  c+=pTitulo(nx(),"Enquadramento por Estratégia",{quebraAntes:true});
+  c+=pTabela([2900,1100,1100,1400,1700],
+    [[{t:"Estratégia"},{t:"Alvo",alinha:"d"},{t:"Atual",alinha:"d"},{t:"Desvio",alinha:"d"},{t:"Status",alinha:"c"}]]
+    .concat(ctx.linhasEstrategia.map(function(l){
+      return [{t:(l.nivel===2?"     ":"")+l.nome,negrito:l.nivel===1},
+              {t:pct(l.alvo),alinha:"d"},{t:pct(l.atual),alinha:"d"},
+              {t:pp(l.desvio),alinha:"d"},
+              {t:l.status,alinha:"c",negrito:true,cor:l.dentro?CORES.verde:CORES.terracota}];
+    })));
+
+  if((enq.observacoes_produto||[]).length){
+    c+=pTitulo(nx(),"Observações sobre os Produtos");
+    enq.observacoes_produto.forEach(function(o){
+      c+=pPara(o.titulo,{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:160,depois:40});
+      c+=pPara(o.texto);
+    });
+  }
+
+  c+=pTitulo(nx(),"Movimentações Sugeridas");
+  c+=pPara("A prioridade é definida pelo excesso além da banda de rebalanceamento, "+
+    "não pela distância até o peso-alvo: é o excesso que determina o tamanho real do ajuste.");
+  c+=pTabela([1300,2900,1300,1600,1500],
+    [[{t:"Ação"},{t:"Categoria"},{t:"Prioridade",alinha:"c"},{t:"Desvio",alinha:"d"},{t:"Valor",alinha:"d"}]]
+    .concat((ctx.movimentacoes||[]).map(function(m){
+      return [{t:m.acao},{t:m.categoria},
+              {t:m.prioridade,alinha:"c",negrito:true,
+               cor:m.prioridade==="Alta"?CORES.terracota:(m.prioridade==="Média"?"8A6D2F":"5A6472")},
+              {t:m.origem==="manual"?"—":pp(m.desvio),alinha:"d"},
+              {t:m.valor?moedaCurta(m.valor):"—",alinha:"d"}];
+    })));
+
+  if((enq.proximos_passos||[]).length){
+    c+=pTitulo(nx(),"Próximos Passos",{quebraAntes:true});
+    enq.proximos_passos.forEach(function(p){
+      c+=pPara(p.titulo,{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:160,depois:40});
+      String(p.texto||"").split("\n").forEach(function(par){
+        if(par.trim()) c+=pPara(par.trim());
+      });
+    });
+  }
+  if(enq.nota_assessor) c+=pPara(enq.nota_assessor,{italico:true,antes:200});
+
+  c+=pPara("Documento gerado a partir da política vigente do Plano Patrimonial "+
+    (d.plano.versao_politica?"("+d.plano.versao_politica+")":"")+
+    ". Valores sujeitos a marcação a mercado.",{tamanho:8.5,cor:"8A93A6",antes:400});
+  return {corpo:c, imagens:imgs};
+}
+
+/* ---------- documento: PLANO PATRIMONIAL ---------- */
+function docPlano(){
+  var d=DADOS, ctx=CTX, p=d.plano, imgs=[], c="";
+  var nx=(function(){var n=0;return function(){n++;return (n<10?"0":"")+n;};})();
+
+  c+=pPara("",{depois:2200});
+  c+=pPara("Plano Patrimonial",{serif:true,negrito:true,tamanho:32,cor:CORES.navy,centro:true});
+  c+=pPara((d.cliente.nome||"").toUpperCase(),{tamanho:13,cor:CORES.dourado,centro:true,depois:500});
+  c+=pPara(p.mes_referencia||"",{tamanho:11,centro:true});
+  c+=pPara(d.cliente.assessoria||"",{tamanho:10,cor:"7A8698",centro:true,antes:2600});
+
+  c+=pTitulo(nx(),"Objetivo",{quebraAntes:true});
+  c+=pPara("Este Plano estabelece a política de investimentos que orienta a alocação "+
+    "do patrimônio, os limites de concentração por emissor e as regras de rebalanceamento. "+
+    "Serve como referência para todas as decisões de investimento e para a Análise de "+
+    "Enquadramento periódica.");
+
+  c+=pTitulo(nx(),"Perfil do Investidor");
+  var pf=p.perfil||{};
+  c+=pTabela([2400,7100],
+    [[{t:"Dimensão"},{t:"Avaliação"}],
+     [{t:"Perfil declarado",negrito:true},{t:pf.declarado||"—",negrito:false}],
+     [{t:"Capacidade de risco",negrito:true},{t:pf.capacidade||"—",negrito:false}],
+     [{t:"Disposição ao risco",negrito:true},{t:pf.disposicao||"—",negrito:false}]]);
+  if(pf.observacao) c+=pPara(pf.observacao,{antes:160});
+
+  c+=pTitulo(nx(),"Composição do Patrimônio");
+  c+=pPara("Patrimônio líquido de "+moedaCurta(ctx.patrimonio)+
+    (ctx.patrimonio>=1e6?" ("+extensoMilhoes(ctx.patrimonio)+")":"")+
+    ", dividido nos blocos abaixo conforme horizonte e finalidade.");
+  if((p.blocos||[]).length){
+    c+=pTabela([2400,1900,1900,3300],
+      [[{t:"Bloco"},{t:"Valor",alinha:"d"},{t:"Perfil"},{t:"Horizonte"}]]
+      .concat(p.blocos.map(function(b){
+        return [{t:b.nome},{t:moedaCurta(b.valor),alinha:"d"},{t:b.perfil||"—"},{t:b.horizonte||"—"}];
+      })));
+    p.blocos.forEach(function(b){
+      if(b.descricao) c+=pPara(b.nome+": "+b.descricao,{tamanho:9.5,antes:60,cor:"5A6472"});
+    });
+  }
+
+  if((p.restricoes||[]).length){
+    c+=pTitulo(nx(),"Restrições e Condicionantes");
+    p.restricoes.forEach(function(r){
+      c+=pPara(r.titulo,{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:140,depois:40});
+      c+=pPara(r.texto);
+    });
+  }
+
+  c+=pTitulo(nx(),"Política de Alocação",{quebraAntes:true});
+  if(p.texto_banda) c+=pPara(p.texto_banda);
+  c+=pPara("Por categoria",{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:180,depois:60});
+  c+=pTabela([2600,1500,1500,2000,1900],
+    [[{t:"Categoria"},{t:"Alvo",alinha:"d"},{t:"Banda",alinha:"c"},{t:"Valor-alvo",alinha:"d"},{t:"",alinha:"d"}]]
+    .concat(ctx.linhasCategoria.map(function(l){
+      return [{t:l.nome},{t:pct(l.alvo),alinha:"d"},
+              {t:pct(l.minimo)+" – "+pct(l.maximo),alinha:"c"},
+              {t:moedaCurta(l.valorAlvo),alinha:"d"},{t:""}];
+    })));
+  c+=pPara("Por estratégia",{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:200,depois:60});
+  c+=pTabela([3200,1500,1800,2000],
+    [[{t:"Estratégia"},{t:"Alvo",alinha:"d"},{t:"Banda",alinha:"c"},{t:"Valor-alvo",alinha:"d"}]]
+    .concat(ctx.linhasEstrategia.map(function(l){
+      return [{t:(l.nivel===2?"     ":"")+l.nome,negrito:l.nivel===1},
+              {t:pct(l.alvo),alinha:"d"},{t:pct(l.minimo)+" – "+pct(l.maximo),alinha:"c"},
+              {t:moedaCurta(l.valorAlvo),alinha:"d"}];
+    })));
+
+  c+=pTitulo(nx(),"Limites de Concentração",{quebraAntes:true});
+  c+=pTabela([5400,1600,2500],
+    [[{t:"Tipo de exposição"},{t:"Limite",alinha:"d"},{t:"Base de cálculo"}]]
+    .concat((p.limites_concentracao||[]).map(function(l){
+      return [{t:l.tipo},{t:pct(l.limite),alinha:"d"},{t:l.base||"—"}];
+    })));
+  (p.notas_limites||[]).forEach(function(n){
+    c+=pPara(n,{tamanho:8.5,cor:"8A93A6",antes:100});
+  });
+
+  if((p.diretrizes_produtos||[]).length){
+    c+=pTitulo(nx(),"Diretrizes por Classe de Produto");
+    p.diretrizes_produtos.forEach(function(g){
+      c+=pPara(g.titulo,{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:140,depois:40});
+      c+=pPara(g.texto);
+    });
+  }
+  if(p.secoes && p.secoes.imobilizado && (p.imobilizado||[]).length){
+    c+=pTitulo(nx(),"Patrimônio Imobilizado");
+    p.imobilizado.forEach(function(g){
+      c+=pPara(g.titulo,{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:140,depois:40});
+      c+=pPara(g.texto);
+    });
+  }
+
+  var gov=p.governanca||{};
+  c+=pTitulo(nx(),"Governança e Revisão");
+  c+=pPara("A política é revista com periodicidade "+(gov.periodicidade||"—")+
+    ", e extraordinariamente diante dos gatilhos abaixo.");
+  (gov.gatilhos||[]).forEach(function(g){
+    c+=pPara("•  "+g,{justificado:false,depois:40});
+  });
+  return {corpo:c, imagens:imgs};
+}
+
+/* ---------- geração ---------- */
+function baixarDocx(nomeArquivo, montador){
+  try{
+    recalcular();
+    var m=montador();
+    var buf=montarDocx(m.corpo,m.imagens);
+    var b=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(b); a.download=nomeArquivo; a.click();
+    URL.revokeObjectURL(a.href);
+  }catch(e){
+    alert("Não foi possível gerar o documento: "+(e.message||e));
+  }
+}
+function nomeBase(){
+  return (DADOS.cliente.nome||"Cliente").replace(/[^\wÀ-ÿ .-]/g,"").replace(/\s+/g,"_");
+}
+function gerarEnquadramento(){
+  if(!travadoPorErro()) baixarDocx("Enquadramento_"+nomeBase()+".docx", docEnquadramento);
+}
+function gerarPlano(){
+  if(!travadoPorErro()) baixarDocx("Plano_Patrimonial_"+nomeBase()+".docx", docPlano);
+}
+function travadoPorErro(){
+  var erros=(CTX.problemas||[]).filter(function(p){return p.severidade==="erro";});
+  if(!erros.length) return false;
+  return !confirm("Há "+erros.length+" erro(s) de consistência.\n\n"+
+    erros.map(function(e){return "• "+e.onde+": "+e.mensagem;}).join("\n\n")+
+    "\n\nGerar mesmo assim?");
+}
+
+/* ============================================================
+   FORMULARIO — edicao dos campos e painel de consistencia
+   ============================================================ */
+
+function recalcular(){
+  try{ CTX = processar(DADOS); }
+  catch(e){ CTX = {problemas:[{severidade:"erro",onde:"Motor",mensagem:String(e.message||e)}]}; }
+  return CTX;
+}
+
+function moedaFmt(v){ return Number(v||0).toLocaleString("pt-BR"); }
+
+/* ---------- tabelas editaveis genericas ---------- */
+function linhasEditaveis(destino, campos, itens, aoMudar, rotuloAdd){
+  var h='<table class="edit"><tr>'+
+    campos.map(function(c){return "<th"+(c.num?' class="n"':"")+">"+esc(c.rotulo)+"</th>";}).join("")+
+    "<th></th></tr>";
+  itens.forEach(function(it,i){
+    h+="<tr>"+campos.map(function(c){
+      if(c.tipo==="check")
+        return '<td class="n"><input type="checkbox" '+(it[c.chave]?"checked":"")+
+          ' onchange="'+destino+'('+i+',\''+c.chave+'\',this.checked)"></td>';
+      return "<td"+(c.num?' class="n"':"")+'><input value="'+esc(it[c.chave]==null?"":it[c.chave])+
+        '" oninput="'+destino+'('+i+',\''+c.chave+'\',this.value)"'+
+        (c.num?' inputmode="decimal"':"")+"></td>";
+    }).join("")+
+    '<td class="x"><button class="rm" onclick="'+destino+'RM('+i+')" title="remover">×</button></td></tr>';
+  });
+  h+="</table>";
+  if(rotuloAdd) h+='<button class="btn ghost mini" onclick="'+destino+'ADD()">'+esc(rotuloAdd)+"</button>";
+  return h;
+}
+
+/* ---------- handlers por seção ---------- */
+function setCliente(campo,v){ DADOS.cliente[campo]=v; pintar(); }
+function setPlano(campo,v){
+  DADOS.plano[campo] = (campo==="patrimonio_liquido") ? num(v) : v;
+  pintar();
+}
+function setPerfil(campo,v){ DADOS.plano.perfil[campo]=v; pintar(); }
+function setEnq(campo,v){ DADOS.enquadramento[campo]=v; pintar(); }
+
+function bloco(i,c,v){ DADOS.plano.blocos[i][c] = (c==="valor")?num(v):v; pintar(); }
+function blocoRM(i){ DADOS.plano.blocos.splice(i,1); pintar(); }
+function blocoADD(){ DADOS.plano.blocos.push({nome:"",valor:0,perfil:"",horizonte:"",descricao:""}); pintar(); }
+
+function cat(i,c,v){ DADOS.plano.alocacao_categoria[i][c] = (c==="nome")?v:num(v); pintar(); }
+function catRM(i){
+  var n=DADOS.plano.alocacao_categoria[i].nome;
+  DADOS.plano.alocacao_categoria.splice(i,1);
+  delete DADOS.enquadramento.atual_categoria[n];
+  pintar();
+}
+function catADD(){ DADOS.plano.alocacao_categoria.push({nome:"",alvo:0,min:0,max:0}); pintar(); }
+
+function est(i,c,v){ DADOS.plano.alocacao_estrategia[i][c] = (c==="nome")?v:num(v); pintar(); }
+function estRM(i){
+  var n=DADOS.plano.alocacao_estrategia[i].nome;
+  DADOS.plano.alocacao_estrategia.splice(i,1);
+  delete DADOS.enquadramento.atual_estrategia[n];
+  pintar();
+}
+function estADD(){ DADOS.plano.alocacao_estrategia.push({nome:"",alvo:0,min:0,max:0,nivel:1}); pintar(); }
+
+function inst(i,c,v){
+  var it=DADOS.enquadramento.instituicoes[i];
+  it[c] = (c==="valor")?num(v):(c==="s1"?!!v:v);
+  pintar();
+}
+function instRM(i){ DADOS.enquadramento.instituicoes.splice(i,1); pintar(); }
+function instADD(){ DADOS.enquadramento.instituicoes.push({nome:"",valor:0}); pintar(); }
+
+function atualCat(nome,v){ DADOS.enquadramento.atual_categoria[nome]=num(v); pintar(); }
+function atualEst(nome,v){ DADOS.enquadramento.atual_estrategia[nome]=num(v); pintar(); }
+
+function obs(i,c,v){ DADOS.enquadramento.observacoes_produto[i][c]=v; pintar(); }
+function obsRM(i){ DADOS.enquadramento.observacoes_produto.splice(i,1); pintar(); }
+function obsADD(){ DADOS.enquadramento.observacoes_produto.push({titulo:"",texto:""}); pintar(); }
+
+function passo(i,c,v){ DADOS.enquadramento.proximos_passos[i][c]=v; pintar(); }
+function passoRM(i){ DADOS.enquadramento.proximos_passos.splice(i,1); pintar(); }
+function passoADD(){ DADOS.enquadramento.proximos_passos.push({titulo:"",texto:""}); pintar(); }
+
+/* ---------- render ---------- */
+function pintar(){
+  recalcular();
+  var d=DADOS, p=d.plano, e=d.enquadramento;
+
+  $("fCliente").innerHTML=
+    campo("Cliente", d.cliente.nome, "setCliente('nome',this.value)")+
+    campo("Assessoria", d.cliente.assessoria, "setCliente('assessoria',this.value)")+
+    campo("Mês de referência", p.mes_referencia, "setPlano('mes_referencia',this.value)")+
+    campo("Versão da política", p.versao_politica, "setPlano('versao_politica',this.value)")+
+    campo("Patrimônio líquido (R$)", moedaFmt(p.patrimonio_liquido), "setPlano('patrimonio_liquido',this.value)")+
+    campo("Data da posição", e.data_posicao, "setEnq('data_posicao',this.value)");
+
+  $("fPerfil").innerHTML=
+    campo("Perfil declarado", p.perfil.declarado, "setPerfil('declarado',this.value)")+
+    campo("Capacidade de risco", p.perfil.capacidade, "setPerfil('capacidade',this.value)")+
+    campo("Disposição ao risco", p.perfil.disposicao, "setPerfil('disposicao',this.value)")+
+    area("Observação", p.perfil.observacao, "setPerfil('observacao',this.value)");
+
+  $("fBlocos").innerHTML=linhasEditaveis("bloco",
+    [{rotulo:"Bloco",chave:"nome"},{rotulo:"Valor",chave:"valor",num:true},
+     {rotulo:"Perfil",chave:"perfil"},{rotulo:"Horizonte",chave:"horizonte"},
+     {rotulo:"Descrição",chave:"descricao"}], p.blocos, null, "Acrescentar bloco");
+
+  $("fCategoria").innerHTML=linhasEditaveis("cat",
+    [{rotulo:"Categoria",chave:"nome"},{rotulo:"Alvo %",chave:"alvo",num:true},
+     {rotulo:"Mín %",chave:"min",num:true},{rotulo:"Máx %",chave:"max",num:true}],
+    p.alocacao_categoria, null, "Acrescentar categoria");
+
+  $("fEstrategia").innerHTML=linhasEditaveis("est",
+    [{rotulo:"Estratégia",chave:"nome"},{rotulo:"Nível",chave:"nivel",num:true},
+     {rotulo:"Alvo %",chave:"alvo",num:true},{rotulo:"Mín %",chave:"min",num:true},
+     {rotulo:"Máx %",chave:"max",num:true}],
+    p.alocacao_estrategia, null, "Acrescentar estratégia");
+
+  $("fInstituicoes").innerHTML=linhasEditaveis("inst",
+    [{rotulo:"Instituição",chave:"nome"},{rotulo:"Valor",chave:"valor",num:true},
+     {rotulo:"S1",chave:"s1",tipo:"check"}],
+    e.instituicoes, null, "Acrescentar instituição")+
+    '<p class="dica">S1 = Banco do Brasil, Bradesco, BTG Pactual, Caixa, Itaú e Santander. '+
+    'O Plano dá a eles limite de concentração próprio. Deixado em branco, o sistema deduz pelo nome.</p>';
+
+  $("fAtualCat").innerHTML=pesosAtuais(p.alocacao_categoria, e.atual_categoria, "atualCat");
+  $("fAtualEst").innerHTML=pesosAtuais(p.alocacao_estrategia, e.atual_estrategia, "atualEst");
+
+  $("fObs").innerHTML=linhasEditaveis("obs",
+    [{rotulo:"Título",chave:"titulo"},{rotulo:"Texto",chave:"texto"}],
+    e.observacoes_produto, null, "Acrescentar observação");
+  $("fPassos").innerHTML=linhasEditaveis("passo",
+    [{rotulo:"Título",chave:"titulo"},{rotulo:"Texto",chave:"texto"}],
+    e.proximos_passos, null, "Acrescentar passo");
+
+  painelConsistencia();
+  previa();
+}
+function campo(rotulo,valor,acao){
+  return '<div class="campo"><label>'+esc(rotulo)+'</label>'+
+    '<input value="'+esc(valor==null?"":valor)+'" oninput="'+acao+'"></div>';
+}
+function area(rotulo,valor,acao){
+  return '<div class="campo larga"><label>'+esc(rotulo)+'</label>'+
+    '<textarea rows="3" oninput="'+acao+'">'+esc(valor==null?"":valor)+"</textarea></div>";
+}
+function pesosAtuais(defs, atuais, fn){
+  if(!defs.length) return '<p class="dica">Defina a política primeiro.</p>';
+  var h='<table class="edit"><tr><th>Linha</th><th class="n">Peso atual %</th></tr>';
+  defs.forEach(function(d){
+    h+="<tr><td>"+(Number(d.nivel||1)===2?"&nbsp;&nbsp;&nbsp;":"")+esc(d.nome)+"</td>"+
+       '<td class="n"><input inputmode="decimal" value="'+
+       esc(atuais[d.nome]==null?"":atuais[d.nome])+'" oninput="'+fn+
+       "('"+String(d.nome).replace(/'/g,"\\'")+"',this.value)\"></td></tr>";
+  });
+  return h+"</table>";
+}
+function painelConsistencia(){
+  var probs=CTX.problemas||[];
+  var erros=probs.filter(function(p){return p.severidade==="erro";});
+  var avisos=probs.filter(function(p){return p.severidade==="aviso";});
+  var h="";
+  if(!probs.length) h='<div class="ok">Nenhuma inconsistência encontrada.</div>';
+  erros.forEach(function(p){ h+='<div class="erro"><b>'+esc(p.onde)+"</b> "+esc(p.mensagem)+"</div>"; });
+  avisos.forEach(function(p){ h+='<div class="aviso"><b>'+esc(p.onde)+"</b> "+esc(p.mensagem)+"</div>"; });
+  $("consistencia").innerHTML=h;
+  $("selo").textContent = erros.length ? erros.length+" erro(s)" :
+    (avisos.length ? avisos.length+" aviso(s)" : "consistente");
+  $("selo").className = "selo "+(erros.length?"mau":(avisos.length?"meio":"bom"));
+}
+function previa(){
+  if(!CTX.linhasCategoria) return;
+  var h='<table class="prev"><tr><th>Categoria</th><th class="n">Alvo</th><th class="n">Atual</th>'+
+        '<th class="n">Desvio</th><th class="n">Ajuste</th><th>Status</th></tr>';
+  CTX.linhasCategoria.forEach(function(l){
+    h+="<tr><td>"+esc(l.nome)+'</td><td class="n">'+pct(l.alvo)+'</td><td class="n">'+
+       (l.atual==null?"—":pct(l.atual))+'</td><td class="n">'+
+       (l.atual==null?"—":pp(l.desvio))+'</td><td class="n">'+
+       (l.ajusteReais?moedaCurta(l.ajusteReais):"—")+'</td><td class="'+
+       (l.atual==null?"":(l.dentro?"dentro":"fora"))+'">'+esc(l.status||"—")+"</td></tr>";
+  });
+  h+="</table>";
+  if((CTX.concentracoes||[]).length){
+    h+='<p class="dica" style="margin-top:12px"><b>Concentração relevante:</b> '+
+      CTX.concentracoes.map(function(c){return esc(c.emissor)+" "+pct(c.pct);}).join(" · ")+
+      " — dentro do limite do S1, acima do patamar geral de "+pct(CTX.concentracoes[0].referencia)+".</p>";
+  }
+  if((CTX.alertasEmissor||[]).length){
+    h+='<p class="dica erroTxt" style="margin-top:8px"><b>Acima do limite:</b> '+
+      CTX.alertasEmissor.map(function(a){return esc(a.emissor)+" "+pct(a.pct)+" (limite "+pct(a.limite)+")";}).join(" · ")+"</p>";
+  }
+  $("previa").innerHTML=h;
+}
+
+/* ---------- salvar / abrir ---------- */
+function salvarJSON(){
+  var b=new Blob([JSON.stringify(DADOS,null,2)],{type:"application/json"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(b);
+  a.download=(DADOS.cliente.nome||"cliente").replace(/\s+/g,"_")+".json";
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function abrirJSON(arq){
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var j=JSON.parse(r.result);
+      if(!j.plano) throw new Error("Arquivo sem o bloco 'plano'.");
+      j.enquadramento = j.enquadramento || JSON.parse(JSON.stringify(PADRAO_CASA.enquadramento));
+      DADOS=j; pintar();
+    }catch(e){ alert("Não foi possível ler o arquivo: "+(e.message||e)); }
+  };
+  r.readAsText(arq);
+}
+function novoDoPadrao(){
+  if(!confirm("Recomeçar do padrão da casa? O que estiver preenchido será perdido.")) return;
+  DADOS=JSON.parse(JSON.stringify(PADRAO_CASA)); pintar();
+}
+function irPara(id){
+  var el=document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+
+pintar();
+</script>
+</body>
+</html>
