@@ -257,7 +257,7 @@ LOGO_IMG.onload=function(){ LOGO_OK=true; try{ desenhar(); }catch(e){} };
 LOGO_IMG.onerror=function(){ LOGO_OK=false; };
 LOGO_IMG.src=LOGO_BRANCO;
 
-var VERSAO_RV="versão 2.35";
+var VERSAO_RV="versão 2.36";
 try{ document.getElementById("selVersao").textContent=VERSAO_RV; }catch(e){}
 var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
 var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
@@ -520,7 +520,7 @@ function desenhar(){
   } else {
     txt(M,92,'ADAMI CAPTAL','600 21px Georgia,serif',C.gold,'left',4.5);
   }
-  txt(W-M,92,new Date().toLocaleDateString('pt-BR'),
+  txt(W-M-200,92,new Date().toLocaleDateString('pt-BR'),
       '19px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight,'right');
   linha(M,124,W-M,'rgba(201,162,75,.45)',1);
 
@@ -597,10 +597,27 @@ function desenhar(){
     linha(M,630,W-M,'rgba(255,255,255,.13)',1);
     quebra(s('gPayoff'),M,694,W-2*M,36,'23px -apple-system,Helvetica,Arial,sans-serif',C.white);
   }
-  linha(M,896,W-M,'rgba(201,162,75,.45)',1);
-  quebra('Material de caráter informativo, sem garantia de rentabilidade. Rentabilidade '+
-    'passada não representa garantia de resultado futuro. Avalie a adequação ao seu perfil '+
-    'antes de investir.',M,948,W-2*M,28,'18px -apple-system,Helvetica,Arial,sans-serif',C.muted);
+  /* ===== marcacao de uso interno =====
+     O card circula por WhatsApp e vira print. A marca precisa sobreviver
+     a recorte, entao aparece em DOIS lugares: etiqueta no topo e faixa
+     no rodape. Letra miuda no pe nao resolve.                          */
+  var FX=86;                                   /* altura da faixa */
+  g.fillStyle='#7A2E1C';
+  g.fillRect(0,1080-FX,W,FX);
+  txt(W/2,1080-FX+36,'USO INTERNO \u00b7 N\u00c3O COMPARTILHAR COM CLIENTE',
+      'bold 25px -apple-system,Helvetica,Arial,sans-serif','#FFFFFF','center',2.5);
+  txt(W/2,1080-FX+64,'Material de apoio \u00e0 mesa. N\u00e3o constitui recomenda\u00e7\u00e3o de investimento.',
+      '17px -apple-system,Helvetica,Arial,sans-serif','#E8C3B8','center');
+
+  linha(M,1080-FX-42,W-M,'rgba(201,162,75,.45)',1);
+
+  /* etiqueta no topo, ao lado do logo, para o caso de recorte do rodape */
+  g.fillStyle='#7A2E1C';
+  var tagW=186, tagH=34, tagX=W-M-tagW;
+  g.fillRect(tagX,62,tagW,tagH);
+  txt(tagX+tagW/2,84,'USO INTERNO','bold 17px -apple-system,Helvetica,Arial,sans-serif',
+      '#FFFFFF','center',1.6);
+
   painel();
 }
 function painel(){
@@ -1030,7 +1047,7 @@ function exportarExcel(){
     var b=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     var a=document.createElement('a');
     a.href=URL.createObjectURL(b);
-    a.download='ADAMI_MesaRV_'+new Date().toISOString().slice(0,10)+'.xlsx';
+    a.download='INTERNO_ADAMI_MesaRV_'+new Date().toISOString().slice(0,10)+'.xlsx';
     a.click(); URL.revokeObjectURL(a.href);
   }catch(e){
     alert('Não foi possível gerar a planilha: '+(e.message||e));
@@ -1178,7 +1195,7 @@ function baixar(){
   cv.toBlob(function(b){
     var a=document.createElement('a');
     a.href=URL.createObjectURL(b);
-    a.download='ADAMI_'+(s('ticker')||'RV')+'_'+new Date().toISOString().slice(0,10)+'.png';
+    a.download='INTERNO_ADAMI_'+(s('ticker')||'RV')+'_'+new Date().toISOString().slice(0,10)+'.png';
     a.click(); URL.revokeObjectURL(a.href);
   },'image/png');
 }
