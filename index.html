@@ -135,20 +135,46 @@ input,select,textarea{font-family:inherit;font-size:13px}
 .hub-hi{font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#8AA8C6}
 .hub-body h1{font-family:var(--display);font-size:38px;font-weight:500;margin:14px 0 8px;line-height:1.2}
 .hub-body .sub{color:#A9C0D8;font-size:14.5px;max-width:44em}
-.hub-cols{display:grid;grid-template-columns:196px 1fr;gap:34px;margin-top:38px;align-items:start}
-@media(max-width:820px){.hub-cols{grid-template-columns:1fr;gap:20px}}
-.hub-nav{display:flex;flex-direction:column;gap:6px;position:sticky;top:24px}
-@media(max-width:820px){.hub-nav{flex-direction:row;position:static}}
-.hub-nav .gnav{display:flex;align-items:center;justify-content:space-between;gap:10px;
-  width:100%;text-align:left;background:transparent;border:0;border-left:2px solid transparent;
-  color:#8AA8C6;padding:10px 12px;font-size:13.5px;cursor:pointer;border-radius:0 6px 6px 0;
-  font-family:inherit;transition:background .12s,color .12s}
-.hub-nav .gnav:hover{background:rgba(255,255,255,.04);color:#D6E2EF}
-.hub-nav .gnav.on{background:rgba(201,162,75,.12);border-left-color:#C9A24B;color:#fff;font-weight:600}
-.hub-nav .gnav span{font-size:11px;color:#7F98B4;background:rgba(255,255,255,.07);
-  border-radius:20px;padding:1px 7px;min-width:20px;text-align:center}
-.hub-nav .gnav.on span{background:rgba(201,162,75,.25);color:#EBD9AC}
-.hub-cols .hub-grid{margin-top:0;grid-template-columns:repeat(auto-fill,minmax(252px,1fr))}
+.hamb{background:transparent;border:0;cursor:pointer;padding:8px 10px;margin-right:4px;
+  display:flex;flex-direction:column;gap:4px;border-radius:6px}
+.hamb:hover{background:rgba(255,255,255,.07)}
+.hamb span{display:block;width:20px;height:2px;background:#C3D2E2;border-radius:2px;transition:background .12s}
+.hamb:hover span{background:#fff}
+.grupo-atual{margin-top:34px;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;
+  color:#C9A24B;font-weight:600}
+.grupo-atual+.hub-grid{margin-top:14px}
+
+.gav-fundo{position:fixed;inset:0;background:rgba(8,14,24,.55);opacity:0;pointer-events:none;
+  transition:opacity .18s;z-index:8000}
+.gav-fundo.on{opacity:1;pointer-events:auto}
+.gav{position:fixed;top:0;left:0;bottom:0;width:290px;background:#14223A;z-index:8001;
+  transform:translateX(-100%);transition:transform .2s ease;overflow-y:auto;
+  box-shadow:4px 0 24px rgba(0,0,0,.3);display:flex;flex-direction:column}
+.gav.on{transform:translateX(0)}
+.gav-top{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;
+  border-bottom:1px solid rgba(255,255,255,.08)}
+.gav-top span{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#7F98B4}
+.gav-x{background:none;border:0;color:#8AA8C6;font-size:24px;line-height:1;cursor:pointer;padding:0 4px}
+.gav-x:hover{color:#fff}
+.gav-grupo{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+  text-align:left;background:transparent;border:0;border-left:2px solid transparent;color:#A9C0D8;
+  padding:14px 20px 8px;font-size:12px;letter-spacing:1.1px;text-transform:uppercase;
+  cursor:pointer;font-family:inherit;font-weight:600}
+.gav-grupo:hover{color:#fff}
+.gav-grupo.on{color:#C9A24B;border-left-color:#C9A24B}
+.gav-grupo span{font-size:11px;letter-spacing:0;color:#7F98B4;background:rgba(255,255,255,.07);
+  border-radius:20px;padding:1px 7px}
+.gav-itens{display:flex;flex-direction:column;padding-bottom:8px}
+.gav-item{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;
+  background:transparent;border:0;color:#C3D2E2;padding:9px 20px 9px 24px;font-size:13.5px;
+  cursor:pointer;font-family:inherit;border-left:2px solid transparent}
+.gav-item:hover{background:rgba(255,255,255,.05);color:#fff;border-left-color:rgba(201,162,75,.5)}
+.gav-item.off{color:#6B819B;cursor:not-allowed}
+.gav-item.off:hover{background:transparent;border-left-color:transparent}
+.gav-item i{font-style:normal;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:#7F6A3A}
+.gav-pe{margin-top:auto;padding:16px 20px;font-size:11px;color:#5F7691;
+  border-top:1px solid rgba(255,255,255,.08)}
+.hub-grid{margin-top:0;grid-template-columns:repeat(auto-fill,minmax(252px,1fr))}
 .hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:18px;margin-top:44px}
 .app{background:#17324F;border:1px solid #27455F;border-radius:5px;padding:26px 24px 22px;
   text-align:left;color:#fff;display:flex;flex-direction:column;gap:9px;min-height:172px;
@@ -620,7 +646,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.37";
+var VERSAO="versão 2.38";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2197,37 +2223,55 @@ function viewHub(){
   var hora=new Date().getHours();
   var saud=hora<12?"Bom dia":(hora<18?"Boa tarde":"Boa noite");
   return '<div class="hub">'+
-    '<div class="hub-top"><img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'">'+
+    '<div class="hub-top">'+
+    '<button class="hamb" onclick="abrirMenu()" aria-label="Abrir menu"><span></span><span></span><span></span></button>'+
+    '<img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'">'+
     (EU.super?'<button class="sai" onclick="abrirEquipe()" style="margin-right:8px">Equipe</button>':'')+'<button class="sai" onclick="sair()">Sair</button></div>'+
     '<div class="hub-body">'+
     '<div class="hub-hi">'+saud+(nome?", "+esc(nome):"")+'</div>'+
     '<h1>Hub Adami Captal</h1>'+
     '<p class="sub">'+esc(grupoAtual().desc)+'</p>'+
-    '<div class="hub-cols">'+
-      '<nav class="hub-nav">'+
-      GRUPOS.map(function(gr){
-        var n=APPS.filter(function(a){ return (a.grupo||"ferramentas")===gr.id; }).length;
-        return '<button class="gnav'+(gr.id===GRUPO_ATIVO?" on":"")+'" onclick="verGrupo(\''+gr.id+'\')">'+
-          esc(gr.nome)+'<span>'+n+'</span></button>';
-      }).join("")+
-      '</nav>'+
-      '<div class="hub-grid">'+
-      APPS.filter(function(a){ return (a.grupo||"ferramentas")===GRUPO_ATIVO; }).map(function(a){
-        return '<div class="app '+(a.ativo?"on":"off")+'"'+(a.ativo?' onclick="irParaApp(\''+a.id+'\')"':'')+'>'+
-          '<div class="ic">'+a.ic+'</div>'+
-          '<b>'+esc(a.nome)+'</b><span>'+esc(a.desc)+'</span>'+
-          '<div class="tag">'+esc(a.tag)+'</div></div>';
-      }).join("")+
-      '</div>'+
+    '<div class="grupo-atual">'+esc(grupoAtual().nome)+'</div>'+
+    '<div class="hub-grid">'+
+    APPS.filter(function(a){ return (a.grupo||"ferramentas")===GRUPO_ATIVO; }).map(function(a){
+      return '<div class="app '+(a.ativo?"on":"off")+'"'+(a.ativo?' onclick="irParaApp(\''+a.id+'\')"':'')+'>'+
+        '<div class="ic">'+a.ic+'</div>'+
+        '<b>'+esc(a.nome)+'</b><span>'+esc(a.desc)+'</span>'+
+        '<div class="tag">'+esc(a.tag)+'</div></div>';
+    }).join("")+
     '</div></div>'+
+    gaveta()+
     '<div class="hub-foot">Acesso restrito aos colaboradores. Todas as ações ficam registradas. &nbsp;·&nbsp; '+VERSAO+'<br>&copy; '+new Date().getFullYear()+' '+EMPRESA.nome+'. Todos os direitos reservados.</div>'+
     '</div>';
+}
+/* Gaveta lateral. Fica no DOM sempre e abre por classe, para a animacao
+   funcionar; o estado vive numa variavel porque render() refaz o hub.  */
+var MENU_ABERTO=false;
+function abrirMenu(){ MENU_ABERTO=true; render(); }
+function fecharMenu(){ MENU_ABERTO=false; render(); }
+function gaveta(){
+  var h='<div class="gav-fundo'+(MENU_ABERTO?" on":"")+'" onclick="fecharMenu()"></div>'+
+    '<aside class="gav'+(MENU_ABERTO?" on":"")+'">'+
+    '<div class="gav-top"><span>Navegação</span>'+
+    '<button class="gav-x" onclick="fecharMenu()" aria-label="Fechar">&times;</button></div>';
+  GRUPOS.forEach(function(gr){
+    var itens=APPS.filter(function(a){ return (a.grupo||"ferramentas")===gr.id; });
+    h+='<button class="gav-grupo'+(gr.id===GRUPO_ATIVO?" on":"")+'" onclick="verGrupo(\''+gr.id+'\')">'+
+       esc(gr.nome)+'<span>'+itens.length+'</span></button>';
+    h+='<div class="gav-itens">'+itens.map(function(a){
+      return '<button class="gav-item'+(a.ativo?"":" off")+'"'+
+        (a.ativo?' onclick="irParaApp(\''+a.id+'\')"':' disabled')+'>'+
+        esc(a.nome)+(a.ativo?"":'<i>em breve</i>')+'</button>';
+    }).join("")+'</div>';
+  });
+  h+='<div class="gav-pe">'+esc(VERSAO)+'</div></aside>';
+  return h;
 }
 function grupoAtual(){
   for(var i=0;i<GRUPOS.length;i++) if(GRUPOS[i].id===GRUPO_ATIVO) return GRUPOS[i];
   return GRUPOS[0];
 }
-function verGrupo(id){ GRUPO_ATIVO=id; render(); }
+function verGrupo(id){ GRUPO_ATIVO=id; MENU_ABERTO=false; render(); }
 function iconeOlho(aberto){
   var base='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">';
   if(aberto){
