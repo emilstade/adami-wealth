@@ -66,6 +66,18 @@
   #consistencia .erro{background:#F8E9E5;color:#7E3623}
   #consistencia .aviso{background:#FBF6EA;color:#7A6122}
   #consistencia .ok{background:#EAF2EA;color:#3F5C3F}
+  .soma{display:flex;justify-content:space-between;align-items:center;margin-top:10px;
+        padding:8px 11px;border-radius:7px;font-size:12px}
+  .soma.bom{background:#EAF2EA;color:#3F5C3F}
+  .soma.mau{background:#FBF6EA;color:#7A6122}
+  .soma b{font-family:var(--serif)}
+  .soma b span{font-weight:normal;opacity:.7}
+  table.edit tr.tot td{border-top:1px solid #D8DEE8;border-bottom:0;padding-top:7px;font-weight:600}
+  table.edit tr.tot .bom{color:var(--green)} table.edit tr.tot .mau{color:var(--red)}
+  input.ro{background:#F2F4F8;color:var(--muted);cursor:not-allowed}
+  .calc{font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--gold);
+        border:1px solid var(--gold);border-radius:3px;padding:1px 4px;margin-left:5px}
+  .pane .cap b{color:var(--ink)}
   #awVoltar{position:fixed;bottom:18px;left:18px;z-index:99999;background:#1B3A5F;color:#fff;border:0;
     border-radius:999px;padding:10px 18px;font:500 13px "Segoe UI",system-ui,Arial,sans-serif;cursor:pointer;
     box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.92}
@@ -77,7 +89,7 @@
 <header>
   <span class="mark">ADAMI</span>
   <span class="sub">Gerador de Planos Patrimoniais</span>
-  <span class="sub" style="opacity:.6">versão 2.32</span>
+  <span class="sub" style="opacity:.6">versão 2.33</span>
   <span class="dir">
     <span class="selo bom" id="selo">—</span>
     <button class="btn ghost" onclick="novoDoPadrao()">Novo</button>
@@ -102,36 +114,36 @@
 
   <div>
     <div class="pane" id="s1"><h2>Cliente e patrimônio</h2>
-      <p class="cap">Identificação e valor de referência do Plano.</p>
+      <p class="cap">Identificação do documento e o valor que serve de base para todos os cálculos. O <b>patrimônio líquido</b> é o total investido que a política vai reger — não inclui imóveis nem participações, que entram na seção de imobilizado. A <b>data da posição</b> é o dia do extrato usado no enquadramento, normalmente o último dia do mês.</p>
       <div class="grid" id="fCliente"></div></div>
 
     <div class="pane" id="s2"><h2>Perfil do investidor</h2>
-      <p class="cap">Capacidade e disposição podem divergir; prevalece o critério mais conservador.</p>
+      <p class="cap"><b>Capacidade</b> é o quanto o cliente <i>pode</i> arriscar, olhando fluxo de caixa e patrimônio fora do negócio. <b>Disposição</b> é o quanto ele <i>quer</i> arriscar. Quando as duas divergem, prevalece a mais conservadora, e é isso que a observação deve registrar.</p>
       <div class="grid" id="fPerfil"></div></div>
 
     <div class="pane" id="s3"><h2>Blocos do patrimônio</h2>
-      <p class="cap">A soma dos blocos precisa fechar com o patrimônio informado.</p>
+      <p class="cap">Divida o patrimônio por finalidade e horizonte, não por produto. Cada bloco admite um risco diferente: reserva de curto prazo pede conservador, crescimento de longo prazo tolera volatilidade. A soma dos blocos precisa fechar com o patrimônio informado — o contador abaixo mostra quanto falta.</p>
       <div id="fBlocos"></div></div>
 
     <div class="pane" id="s4"><h2>Política de alocação — por categoria</h2>
-      <p class="cap">Os alvos somam 100% e cada alvo tem de estar dentro da própria banda.</p>
+      <p class="cap">O <b>alvo</b> é a referência de longo prazo. A <b>banda</b> é a folga tolerada em torno dele: enquanto a carteira estiver dentro, não se rebalanceia; ao ultrapassar, entra na lista de movimentações. Os alvos precisam somar 100% e cada alvo tem de caber dentro da própria banda.</p>
       <div id="fCategoria"></div></div>
 
     <div class="pane" id="s5"><h2>Política de alocação — por estratégia</h2>
-      <p class="cap">Nível 1 é linha principal, nível 2 é sub-item que compõe a linha acima.</p>
+      <p class="cap"><b>Nível 1</b> é linha principal e entra na soma de 100%. <b>Nível 2</b> é sub-item que compõe a linha de nível 1 logo acima — por exemplo, Pós-fixado, Pré-fixado e IPCA+ dentro de Renda Fixa. Os sub-itens devem somar o valor do pai.</p>
       <div id="fEstrategia"></div></div>
 
     <div class="pane" id="s6"><h2>Instituições</h2>
-      <p class="cap">Os percentuais são calculados a partir dos valores, nunca digitados.</p>
+      <p class="cap">Onde o dinheiro está hoje, por emissor. Digite o <b>valor</b>; o percentual é calculado, nunca digitado. Marque <b>S1</b> nos bancos do Segmento S1 do Banco Central — Banco do Brasil, Bradesco, BTG Pactual, Caixa, Itaú e Santander —, que têm limite de concentração próprio no Plano. Em branco, o sistema deduz pelo nome.</p>
       <div id="fInstituicoes"></div></div>
 
     <div class="pane" id="s7"><h2>Posição atual</h2>
-      <p class="cap">Pesos atuais da carteira, em %. Deixe em branco o que não se aplica.</p>
+      <p class="cap">Como a carteira está distribuída hoje, em percentual. É o que o sistema compara com os alvos para achar os desvios. Onde houver sub-itens, preencha só os filhos: o pai é somado automaticamente. Deixe em branco o que não se aplica — em branco conta como zero.</p>
       <div class="grid"><div><label>Por categoria</label><div id="fAtualCat"></div></div>
       <div><label>Por estratégia</label><div id="fAtualEst"></div></div></div></div>
 
     <div class="pane" id="s8"><h2>Observações e próximos passos</h2>
-      <p class="cap">Texto livre que entra nas seções finais do Enquadramento.</p>
+      <p class="cap">Texto livre que fecha o Enquadramento. Em <b>observações</b>, aponte riscos concretos da carteira atual: concentração, crédito, liquidez, prazo. Em <b>próximos passos</b>, o que será feito e por quê, com número quando houver — é a parte que o cliente mais lê.</p>
       <div id="fObs"></div><div style="height:16px"></div><div id="fPassos"></div></div>
   </div>
 
@@ -577,9 +589,10 @@ function pTabela(colsLargura, linhas){
 }
 
 /* imagem: id sequencial, bytes PNG, largura em polegadas */
-function pImagem(idx, larguraPol, alturaPol){
+function pImagem(idx, larguraPol, alturaPol, op){
+  op=op||{};
   var cx=Math.round(larguraPol*914400), cy=Math.round(alturaPol*914400);
-  return '<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="120" w:after="120"/></w:pPr>'+
+  return '<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="'+(op.antes||120)+'" w:after="120"/></w:pPr>'+
     '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0" '+
     'xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">'+
     '<wp:extent cx="'+cx+'" cy="'+cy+'"/><wp:docPr id="'+idx+'" name="Imagem'+idx+'"/>'+
@@ -592,6 +605,45 @@ function pImagem(idx, larguraPol, alturaPol){
     '<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm>'+
     '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic>'+
     "</a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>";
+}
+
+
+/* ---------- capa no padrao do relatorio consolidado ----------
+   Alinhada a esquerda, com sobrancelha espacada, titulo grande em
+   Georgia, filete dourado curto, data em monoespacada e o logo
+   centralizado embaixo. O centralizado anterior ficava sem eixo.   */
+function espacado(t){ return String(t).split("").join("\u2009"); }
+function pCapa(op){
+  var x="";
+  x+='<w:p><w:pPr><w:spacing w:before="1800" w:after="240"/></w:pPr>'+
+     '<w:r><w:rPr><w:sz w:val="17"/><w:color w:val="8A93A6"/><w:spacing w:val="60"/></w:rPr>'+
+     '<w:t>'+xesc(espacado(op.eyebrow||"RELATORIO"))+'</w:t></w:r></w:p>';
+  String(op.titulo||"").split("\n").forEach(function(linha){
+    x+='<w:p><w:pPr><w:spacing w:after="0" w:line="520" w:lineRule="exact"/></w:pPr>'+
+       '<w:r><w:rPr><w:rFonts w:ascii="Georgia" w:hAnsi="Georgia"/><w:b/><w:sz w:val="52"/>'+
+       '<w:color w:val="'+CORES.navy+'"/></w:rPr><w:t xml:space="preserve">'+xesc(linha)+'</w:t></w:r></w:p>';
+  });
+  x+='<w:p><w:pPr><w:spacing w:before="420" w:after="120"/></w:pPr>'+
+     '<w:r><w:rPr><w:sz w:val="26"/><w:color w:val="26313F"/></w:rPr>'+
+     '<w:t>'+xesc(op.cliente||"")+'</w:t></w:r></w:p>';
+  /* filete dourado curto: paragrafo vazio com borda inferior de 1/4 da largura */
+  x+='<w:p><w:pPr><w:spacing w:before="60" w:after="300"/>'+
+     '<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="0" w:color="'+CORES.dourado+'"/></w:pBdr>'+
+     '<w:ind w:right="7600"/></w:pPr><w:r><w:rPr><w:sz w:val="2"/></w:rPr><w:t> </w:t></w:r></w:p>';
+  if(op.periodo)
+    x+='<w:p><w:pPr><w:spacing w:after="40"/></w:pPr><w:r><w:rPr><w:sz w:val="21"/>'+
+       '<w:color w:val="5A6472"/></w:rPr><w:t>'+xesc(op.periodo)+'</w:t></w:r></w:p>';
+  if(op.dataBase)
+    x+='<w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:rPr>'+
+       '<w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/><w:sz w:val="19"/>'+
+       '<w:color w:val="5A6472"/></w:rPr><w:t>'+xesc(op.dataBase)+'</w:t></w:r></w:p>';
+  if(op.idxLogo)
+    x+=pImagem(op.idxLogo, op.larguraLogo||2.4, op.alturaLogo||0.55, {centro:true, antes:5200});
+  if(op.rodape)
+    x+='<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="200"/></w:pPr>'+
+       '<w:r><w:rPr><w:sz w:val="16"/><w:color w:val="9AA6B5"/><w:spacing w:val="60"/></w:rPr>'+
+       '<w:t>'+xesc(espacado(op.rodape))+'</w:t></w:r></w:p>';
+  return x;
 }
 
 /* ---------- montagem ---------- */
@@ -645,6 +697,13 @@ function montarDocx(corpo, imagens){
   return ziparDocx(arqs);
 }
 
+
+var LOGO_AZUL_B64="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";
+function logoBytes(){
+  var bin=atob(LOGO_AZUL_B64), a=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i);
+  return a;
+}
 
 /* ============================================================
    INTERFACE E MONTAGEM DOS DOIS DOCUMENTOS
@@ -790,11 +849,11 @@ function docEnquadramento(){
       })));
   }
 
-  c+=pPara("",{depois:2200});
-  c+=pPara("Análise de Enquadramento",{serif:true,negrito:true,tamanho:30,cor:CORES.navy,centro:true});
-  c+=pPara((d.cliente.nome||"").toUpperCase(),{tamanho:13,cor:CORES.dourado,centro:true,depois:500});
-  c+=pPara("Posição de "+(enq.data_posicao||"—"),{tamanho:11,centro:true});
-  c+=pPara(d.cliente.assessoria||"",{tamanho:10,cor:"7A8698",centro:true,antes:2600});
+  imgs.push(logoBytes());
+  c+=pCapa({eyebrow:"ENQUADRAMENTO", titulo:"Análise de\nEnquadramento",
+    cliente:d.cliente.nome||"", periodo:d.plano.mes_referencia||"",
+    dataBase:enq.data_posicao?("Posição de "+enq.data_posicao):"",
+    idxLogo:imgs.length, rodape:d.cliente.assessoria||"Adami Captal"});
 
   c+=pTitulo(nx(),"Introdução",{quebraAntes:true});
   c+=pPara("Este documento compara a posição atual da carteira com a política de "+
@@ -899,11 +958,11 @@ function docPlano(){
                 {t:moedaCurta(total),alinha:"d",negrito:true,fundo:CORES.creme}]]));
   }
 
-  c+=pPara("",{depois:2200});
-  c+=pPara("Plano Patrimonial",{serif:true,negrito:true,tamanho:32,cor:CORES.navy,centro:true});
-  c+=pPara((d.cliente.nome||"").toUpperCase(),{tamanho:13,cor:CORES.dourado,centro:true,depois:500});
-  c+=pPara(p.mes_referencia||"",{tamanho:11,centro:true});
-  c+=pPara(d.cliente.assessoria||"",{tamanho:10,cor:"7A8698",centro:true,antes:2600});
+  imgs.push(logoBytes());
+  c+=pCapa({eyebrow:"PLANO", titulo:"Plano\nPatrimonial",
+    cliente:d.cliente.nome||"", periodo:p.mes_referencia||"",
+    dataBase:p.versao_politica?("Política "+p.versao_politica):"",
+    idxLogo:imgs.length, rodape:d.cliente.assessoria||"Adami Captal"});
 
   c+=pTitulo(nx(),"Introdução e Escopo",{quebraAntes:true});
   c+=pPara("Este Plano estabelece a política de investimentos que orienta a alocação do "+
@@ -1049,6 +1108,27 @@ function recalcular(){
   return CTX;
 }
 
+/* formata milhar enquanto digita, sem deixar o cursor pular para o fim */
+function fmtMilhar(txt){
+  var neg=/^\s*-/.test(txt);
+  var t=String(txt).replace(/[^\d,]/g,"");
+  if(!t) return neg?"-":"";
+  var p=t.split(",");
+  var inteiro=p[0].replace(/^0+(?=\d)/,"");
+  var dec=(p.length>1)?","+p.slice(1).join("").slice(0,2):"";
+  inteiro=inteiro.replace(/\B(?=(\d{3})+(?!\d))/g,".");
+  return (neg?"-":"")+inteiro+dec;
+}
+function onValor(el){
+  var pos=el.selectionStart==null?el.value.length:el.selectionStart;
+  var antes=el.value.slice(0,pos).replace(/[^\d]/g,"").length;
+  var novo=fmtMilhar(el.value);
+  if(novo===el.value) return;
+  el.value=novo;
+  var i=0,d=0;
+  while(i<novo.length&&d<antes){ if(/\d/.test(novo.charAt(i))) d++; i++; }
+  try{ el.setSelectionRange(i,i); }catch(e){}
+}
 function moedaFmt(v){ return Number(v||0).toLocaleString("pt-BR"); }
 
 /* ---------- tabelas editaveis genericas ---------- */
@@ -1064,10 +1144,13 @@ function linhasEditaveis(destino, campos, itens, aoMudar, rotuloAdd){
       /* onchange dispara ao sair do campo, nao a cada tecla: e o momento
          seguro de redesenhar a tela toda quando o campo vira rotulo. */
       var rotulo=(c.chave==="nome"||c.chave==="nivel");
-      return "<td"+(c.num?' class="n"':"")+'><input value="'+esc(it[c.chave]==null?"":it[c.chave])+
-        '" oninput="'+destino+'('+i+',\''+c.chave+'\',this.value)"'+
+      var val = c.dinheiro ? moedaFmt(it[c.chave]) : (it[c.chave]==null?"":it[c.chave]);
+      return "<td"+(c.num?' class="n"':"")+'><input value="'+esc(val)+'"'+
+        (c.dinheiro?' oninput="onValor(this);'+destino+'('+i+',\''+c.chave+'\',this.value)"'
+                   :' oninput="'+destino+'('+i+',\''+c.chave+'\',this.value)"')+
         (rotulo?' onchange="pintar()"':"")+
-        (c.num?' inputmode="decimal"':"")+"></td>";
+        (c.num?' inputmode="decimal"':"")+
+        (c.exemplo?' placeholder="'+esc(c.exemplo)+'"':"")+"></td>";
     }).join("")+
     '<td class="x"><button class="rm" onclick="'+destino+'RM('+i+')" title="remover">×</button></td></tr>';
   });
@@ -1148,25 +1231,37 @@ function pintar(){
     area("Observação", p.perfil.observacao, "setPerfil('observacao',this.value)");
 
   $("fBlocos").innerHTML=linhasEditaveis("bloco",
-    [{rotulo:"Bloco",chave:"nome"},{rotulo:"Valor",chave:"valor",num:true},
-     {rotulo:"Perfil",chave:"perfil"},{rotulo:"Horizonte",chave:"horizonte"},
-     {rotulo:"Descrição",chave:"descricao"}], p.blocos, null, "Acrescentar bloco");
+    [{rotulo:"Bloco",chave:"nome",exemplo:"Reserva Estratégica"},
+     {rotulo:"Valor",chave:"valor",num:true,dinheiro:true,exemplo:"24.000.000"},
+     {rotulo:"Perfil",chave:"perfil",exemplo:"Conservador"},
+     {rotulo:"Horizonte",chave:"horizonte",exemplo:"1 ano"},
+     {rotulo:"Descrição",chave:"descricao",exemplo:"colchão de segurança"}],
+    p.blocos, null, "Acrescentar bloco")+
+    somaBlocos(p.blocos, p.patrimonio_liquido);
 
   $("fCategoria").innerHTML=linhasEditaveis("cat",
-    [{rotulo:"Categoria",chave:"nome"},{rotulo:"Alvo %",chave:"alvo",num:true},
-     {rotulo:"Mín %",chave:"min",num:true},{rotulo:"Máx %",chave:"max",num:true}],
-    p.alocacao_categoria, null, "Acrescentar categoria");
+    [{rotulo:"Categoria",chave:"nome",exemplo:"Renda Fixa"},
+     {rotulo:"Alvo %",chave:"alvo",num:true,exemplo:"25"},
+     {rotulo:"Mín %",chave:"min",num:true,exemplo:"20"},
+     {rotulo:"Máx %",chave:"max",num:true,exemplo:"50"}],
+    p.alocacao_categoria, null, "Acrescentar categoria")+
+    somaAlvo(p.alocacao_categoria);
 
   $("fEstrategia").innerHTML=linhasEditaveis("est",
-    [{rotulo:"Estratégia",chave:"nome"},{rotulo:"Nível",chave:"nivel",num:true},
-     {rotulo:"Alvo %",chave:"alvo",num:true},{rotulo:"Mín %",chave:"min",num:true},
-     {rotulo:"Máx %",chave:"max",num:true}],
-    p.alocacao_estrategia, null, "Acrescentar estratégia");
+    [{rotulo:"Estratégia",chave:"nome",exemplo:"Pós-fixado (CDI)"},
+     {rotulo:"Nível",chave:"nivel",num:true,exemplo:"1 ou 2"},
+     {rotulo:"Alvo %",chave:"alvo",num:true,exemplo:"50"},
+     {rotulo:"Mín %",chave:"min",num:true,exemplo:"30"},
+     {rotulo:"Máx %",chave:"max",num:true,exemplo:"60"}],
+    p.alocacao_estrategia, null, "Acrescentar estratégia")+
+    somaAlvo(p.alocacao_estrategia);
 
   $("fInstituicoes").innerHTML=linhasEditaveis("inst",
-    [{rotulo:"Instituição",chave:"nome"},{rotulo:"Valor",chave:"valor",num:true},
+    [{rotulo:"Instituição",chave:"nome",exemplo:"Banco do Brasil"},
+     {rotulo:"Valor",chave:"valor",num:true,dinheiro:true,exemplo:"56.564.761"},
      {rotulo:"S1",chave:"s1",tipo:"check"}],
     e.instituicoes, null, "Acrescentar instituição")+
+    somaInst(e.instituicoes, p.patrimonio_liquido)+
     '<p class="dica">S1 = Banco do Brasil, Bradesco, BTG Pactual, Caixa, Itaú e Santander. '+
     'O Plano dá a eles limite de concentração próprio. Deixado em branco, o sistema deduz pelo nome.</p>';
 
@@ -1193,14 +1288,59 @@ function area(rotulo,valor,acao){
 }
 function pesosAtuais(defs, atuais, fn){
   if(!defs.length) return '<p class="dica">Defina a política primeiro.</p>';
-  var h='<table class="edit"><tr><th>Linha</th><th class="n">Peso atual %</th></tr>';
+  /* um nivel 1 seguido de niveis 2 vira soma: o assessor preenche os
+     filhos e o pai e calculado, nunca digitado duas vezes.           */
+  var filhos={}, paiAtual=null;
   defs.forEach(function(d){
-    h+="<tr><td>"+(Number(d.nivel||1)===2?"&nbsp;&nbsp;&nbsp;":"")+esc(d.nome)+"</td>"+
-       '<td class="n"><input inputmode="decimal" value="'+
-       esc(atuais[d.nome]==null?"":atuais[d.nome])+'" oninput="'+fn+
-       "('"+String(d.nome).replace(/'/g,"\\'")+"',this.value)\"></td></tr>";
+    if(Number(d.nivel||1)===1){ paiAtual=d.nome; filhos[paiAtual]=[]; }
+    else if(paiAtual) filhos[paiAtual].push(d.nome);
   });
-  return h+"</table>";
+  function somaFilhos(nome){
+    return (filhos[nome]||[]).reduce(function(a,f){ return a+Number(atuais[f]||0); },0);
+  }
+  var h='<table class="edit"><tr><th>Linha</th><th class="n">Peso atual %</th></tr>';
+  var total=0;
+  defs.forEach(function(d){
+    var n1=Number(d.nivel||1)===1;
+    var temFilhos = n1 && (filhos[d.nome]||[]).length>0;
+    var valor = temFilhos ? somaFilhos(d.nome) : (atuais[d.nome]==null?"":atuais[d.nome]);
+    if(n1) total += Number(temFilhos?somaFilhos(d.nome):(atuais[d.nome]||0));
+    h+="<tr><td"+(n1?' style="font-weight:600"':"")+">"+(n1?"":"&nbsp;&nbsp;&nbsp;")+esc(d.nome)+
+       (temFilhos?' <span class="calc">soma</span>':"")+"</td>"+
+       '<td class="n">'+
+       (temFilhos
+         ? '<input value="'+esc(pct(somaFilhos(d.nome)))+'" readonly class="ro">'
+         : '<input inputmode="decimal" placeholder="0" value="'+esc(valor)+'" oninput="'+fn+
+           "('"+String(d.nome).replace(/'/g,"\\'")+"',this.value)\">")+
+       "</td></tr>";
+  });
+  var dif=Math.abs(total-100);
+  h+='<tr class="tot"><td>TOTAL</td><td class="n '+(dif<0.1?"bom":"mau")+'">'+pct(total)+"</td></tr>";
+  h+="</table>";
+  if(dif>=0.1)
+    h+='<p class="dica" style="color:var(--red)">Faltam '+pct(100-total)+" para fechar 100%.</p>";
+  return h;
+}
+function barraSoma(rotulo, valor, alvo, fmt){
+  var dif=Math.abs(valor-alvo), ok=dif<(alvo>1000?1:0.05);
+  return '<div class="soma'+(ok?" bom":" mau")+'"><span>'+esc(rotulo)+"</span><b>"+fmt(valor)+
+    (ok?"":" <span>de "+fmt(alvo)+"</span>")+"</b></div>";
+}
+function somaBlocos(blocos,patr){
+  if(!blocos.length) return "";
+  var t=blocos.reduce(function(a,b){return a+Number(b.valor||0);},0);
+  return barraSoma("Soma dos blocos", t, Number(patr||0), moedaCurta);
+}
+function somaInst(insts,patr){
+  if(!insts.length) return "";
+  var t=insts.reduce(function(a,i){return a+Number(i.valor||0);},0);
+  return barraSoma("Soma das instituições", t, Number(patr||0), moedaCurta);
+}
+function somaAlvo(defs){
+  if(!defs.length) return "";
+  var t=defs.filter(function(d){return Number(d.nivel||1)===1;})
+            .reduce(function(a,d){return a+Number(d.alvo||0);},0);
+  return barraSoma("Soma dos pesos-alvo", t, 100, function(v){return pct(v);});
 }
 function painelConsistencia(){
   var probs=CTX.problemas||[];
