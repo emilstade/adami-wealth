@@ -77,7 +77,7 @@
 <header>
   <span class="mark">ADAMI</span>
   <span class="sub">Gerador de Planos Patrimoniais</span>
-  <span class="sub" style="opacity:.6">versão 2.31</span>
+  <span class="sub" style="opacity:.6">versão 2.32</span>
   <span class="dir">
     <span class="selo bom" id="selo">—</span>
     <button class="btn ghost" onclick="novoDoPadrao()">Novo</button>
@@ -1033,6 +1033,16 @@ function travadoPorErro(){
    FORMULARIO — edicao dos campos e painel de consistencia
    ============================================================ */
 
+/* Redesenhar o formulario a cada tecla recria o <input> e o cursor se
+   perde: da para digitar so uma letra. Entao digitar chama atualizar(),
+   que recalcula e repinta APENAS os paineis derivados. Redesenho
+   completo so quando a estrutura muda: incluir/remover linha, ou ao
+   sair de um campo que serve de rotulo (nome, nivel).                */
+function atualizar(){
+  recalcular();
+  painelConsistencia();
+  previa();
+}
 function recalcular(){
   try{ CTX = processar(DADOS); }
   catch(e){ CTX = {problemas:[{severidade:"erro",onde:"Motor",mensagem:String(e.message||e)}]}; }
@@ -1051,8 +1061,12 @@ function linhasEditaveis(destino, campos, itens, aoMudar, rotuloAdd){
       if(c.tipo==="check")
         return '<td class="n"><input type="checkbox" '+(it[c.chave]?"checked":"")+
           ' onchange="'+destino+'('+i+',\''+c.chave+'\',this.checked)"></td>';
+      /* onchange dispara ao sair do campo, nao a cada tecla: e o momento
+         seguro de redesenhar a tela toda quando o campo vira rotulo. */
+      var rotulo=(c.chave==="nome"||c.chave==="nivel");
       return "<td"+(c.num?' class="n"':"")+'><input value="'+esc(it[c.chave]==null?"":it[c.chave])+
         '" oninput="'+destino+'('+i+',\''+c.chave+'\',this.value)"'+
+        (rotulo?' onchange="pintar()"':"")+
         (c.num?' inputmode="decimal"':"")+"></td>";
     }).join("")+
     '<td class="x"><button class="rm" onclick="'+destino+'RM('+i+')" title="remover">×</button></td></tr>';
@@ -1063,19 +1077,19 @@ function linhasEditaveis(destino, campos, itens, aoMudar, rotuloAdd){
 }
 
 /* ---------- handlers por seção ---------- */
-function setCliente(campo,v){ DADOS.cliente[campo]=v; pintar(); }
+function setCliente(campo,v){ DADOS.cliente[campo]=v; atualizar(); }
 function setPlano(campo,v){
   DADOS.plano[campo] = (campo==="patrimonio_liquido") ? num(v) : v;
-  pintar();
+  atualizar();
 }
-function setPerfil(campo,v){ DADOS.plano.perfil[campo]=v; pintar(); }
-function setEnq(campo,v){ DADOS.enquadramento[campo]=v; pintar(); }
+function setPerfil(campo,v){ DADOS.plano.perfil[campo]=v; atualizar(); }
+function setEnq(campo,v){ DADOS.enquadramento[campo]=v; atualizar(); }
 
-function bloco(i,c,v){ DADOS.plano.blocos[i][c] = (c==="valor")?num(v):v; pintar(); }
+function bloco(i,c,v){ DADOS.plano.blocos[i][c] = (c==="valor")?num(v):v; atualizar(); }
 function blocoRM(i){ DADOS.plano.blocos.splice(i,1); pintar(); }
 function blocoADD(){ DADOS.plano.blocos.push({nome:"",valor:0,perfil:"",horizonte:"",descricao:""}); pintar(); }
 
-function cat(i,c,v){ DADOS.plano.alocacao_categoria[i][c] = (c==="nome")?v:num(v); pintar(); }
+function cat(i,c,v){ DADOS.plano.alocacao_categoria[i][c] = (c==="nome")?v:num(v); atualizar(); }
 function catRM(i){
   var n=DADOS.plano.alocacao_categoria[i].nome;
   DADOS.plano.alocacao_categoria.splice(i,1);
@@ -1084,7 +1098,7 @@ function catRM(i){
 }
 function catADD(){ DADOS.plano.alocacao_categoria.push({nome:"",alvo:0,min:0,max:0}); pintar(); }
 
-function est(i,c,v){ DADOS.plano.alocacao_estrategia[i][c] = (c==="nome")?v:num(v); pintar(); }
+function est(i,c,v){ DADOS.plano.alocacao_estrategia[i][c] = (c==="nome")?v:num(v); atualizar(); }
 function estRM(i){
   var n=DADOS.plano.alocacao_estrategia[i].nome;
   DADOS.plano.alocacao_estrategia.splice(i,1);
@@ -1096,19 +1110,21 @@ function estADD(){ DADOS.plano.alocacao_estrategia.push({nome:"",alvo:0,min:0,ma
 function inst(i,c,v){
   var it=DADOS.enquadramento.instituicoes[i];
   it[c] = (c==="valor")?num(v):(c==="s1"?!!v:v);
-  pintar();
+  /* a marcacao S1 muda o alerta de concentracao, mas nao e digitacao:
+     pode redesenhar sem atrapalhar o cursor.                        */
+  if(c==="s1") pintar(); else atualizar();
 }
 function instRM(i){ DADOS.enquadramento.instituicoes.splice(i,1); pintar(); }
 function instADD(){ DADOS.enquadramento.instituicoes.push({nome:"",valor:0}); pintar(); }
 
-function atualCat(nome,v){ DADOS.enquadramento.atual_categoria[nome]=num(v); pintar(); }
-function atualEst(nome,v){ DADOS.enquadramento.atual_estrategia[nome]=num(v); pintar(); }
+function atualCat(nome,v){ DADOS.enquadramento.atual_categoria[nome]=num(v); atualizar(); }
+function atualEst(nome,v){ DADOS.enquadramento.atual_estrategia[nome]=num(v); atualizar(); }
 
-function obs(i,c,v){ DADOS.enquadramento.observacoes_produto[i][c]=v; pintar(); }
+function obs(i,c,v){ DADOS.enquadramento.observacoes_produto[i][c]=v; atualizar(); }
 function obsRM(i){ DADOS.enquadramento.observacoes_produto.splice(i,1); pintar(); }
 function obsADD(){ DADOS.enquadramento.observacoes_produto.push({titulo:"",texto:""}); pintar(); }
 
-function passo(i,c,v){ DADOS.enquadramento.proximos_passos[i][c]=v; pintar(); }
+function passo(i,c,v){ DADOS.enquadramento.proximos_passos[i][c]=v; atualizar(); }
 function passoRM(i){ DADOS.enquadramento.proximos_passos.splice(i,1); pintar(); }
 function passoADD(){ DADOS.enquadramento.proximos_passos.push({titulo:"",texto:""}); pintar(); }
 
