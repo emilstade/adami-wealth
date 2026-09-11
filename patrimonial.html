@@ -89,7 +89,7 @@
 <header>
   <span class="mark">ADAMI</span>
   <span class="sub">Gerador de Planos Patrimoniais</span>
-  <span class="sub" style="opacity:.6">versão 2.34</span>
+  <span class="sub" style="opacity:.6">versão 2.35</span>
   <span class="dir">
     <span class="selo bom" id="selo">—</span>
     <button class="btn ghost" onclick="novoDoPadrao()">Novo</button>
@@ -105,7 +105,8 @@
     <a onclick="irPara('s1')">Cliente e patrimônio</a>
     <a onclick="irPara('s2')">Perfil</a>
     <a onclick="irPara('s3')">Blocos</a>
-    <a onclick="irPara('s3b')">Restrições</a>
+    <a onclick="irPara('s3b')">Limites de concentração</a>
+    <a onclick="irPara('s3c')">Restrições</a>
     <a onclick="irPara('s4')">Política — categoria</a>
     <a onclick="irPara('s5')">Política — estratégia</a>
     <a onclick="irPara('s6')">Instituições</a>
@@ -126,8 +127,12 @@
       <p class="cap">Divida o patrimônio por finalidade e horizonte, não por produto. Cada bloco admite um risco diferente: reserva de curto prazo pede conservador, crescimento de longo prazo tolera volatilidade. A soma dos blocos precisa fechar com o patrimônio informado — o contador abaixo mostra quanto falta.</p>
       <div id="fBlocos"></div></div>
 
-    <div class="pane" id="s3b"><h2>Restrições e particularidades</h2>
-      <p class="cap">O que fica vedado ou condicionado nesta carteira. Já vêm preenchidas com o padrão da casa: apague o que não se aplica e ajuste o texto. Entram no documento exatamente como estiverem aqui.</p>
+    <div class="pane" id="s3b"><h2>Limites de concentração</h2>
+      <p class="cap">Os tetos numéricos: quanto no máximo pode ficar em um emissor ou em um tipo de ativo. É aqui que entra "no máximo 15% em um banco" ou "no máximo 20% em uma ação". São esses limites que o Enquadramento cruza com a posição real para acusar excesso de concentração.</p>
+      <div id="fLimites"></div></div>
+
+    <div class="pane" id="s3c"><h2>Restrições e particularidades</h2>
+      <p class="cap">As regras que não são percentual: o que fica vedado, condicionado ou combinado com o cliente. Coisas como concentrar o custo de vida na holding, investir lá fora só via UCITs por causa de estate tax, ou não comprar crédito sem rating. Já vêm preenchidas com o padrão da casa — apague o que não se aplica e ajuste o texto.</p>
       <div id="fRestricoes"></div></div>
 
     <div class="pane" id="s4"><h2>Política de alocação — por categoria</h2>
@@ -1137,17 +1142,17 @@ function travadoPorErro(){
 /* Opcoes padrao da casa. Sao sugestoes: o campo aceita o texto que ja
    estiver salvo, mesmo fora da lista, entao nada se perde ao editar.  */
 var OPC_CAPACIDADE=[
- "Alta — fluxo de caixa operacional estável e patrimônio diversificado fora do negócio",
- "Alta — renda recorrente previsível e reserva de liquidez constituída",
+ "Baixa — patrimônio concentrado e necessidade de liquidez no curto prazo",
  "Média — patrimônio concentrado na atividade principal",
  "Média — dependência parcial da renda do negócio",
- "Baixa — patrimônio concentrado e necessidade de liquidez no curto prazo"
+ "Alta — renda recorrente previsível e reserva de liquidez constituída",
+ "Alta — fluxo de caixa operacional estável e patrimônio diversificado fora do negócio"
 ];
 var OPC_DISPOSICAO=[
- "Moderada — prioridade em preservação de capital",
  "Conservadora — baixa tolerância a oscilação de curto prazo",
- "Moderada — aceita volatilidade na parcela de longo prazo",
- "Arrojada — busca retorno acima do CDI e aceita drawdown relevante"
+ "Moderada, com viés conservador — prioridade em preservação de capital",
+ "Moderada — aceita volatilidade apenas na parcela de horizonte longo",
+ "Arrojada — busca retorno acima do CDI e aceita queda relevante no caminho"
 ];
 /* ============================================================
    FORMULARIO — edicao dos campos e painel de consistencia
@@ -1264,6 +1269,12 @@ function instADD(){ DADOS.enquadramento.instituicoes.push({nome:"",valor:0}); pi
 function atualCat(nome,v){ DADOS.enquadramento.atual_categoria[nome]=num(v); atualizar(); }
 function atualEst(nome,v){ DADOS.enquadramento.atual_estrategia[nome]=num(v); atualizar(); }
 
+function lim(i,c,v){
+  DADOS.plano.limites_concentracao[i][c] = (c==="limite")?num(v):v;
+  atualizar();
+}
+function limRM(i){ DADOS.plano.limites_concentracao.splice(i,1); pintar(); }
+function limADD(){ DADOS.plano.limites_concentracao.push({tipo:"",limite:0,base:"Patrimônio total"}); pintar(); }
 function restr(i,c,v){ DADOS.plano.restricoes[i][c]=v; atualizar(); }
 function restrRM(i){ DADOS.plano.restricoes.splice(i,1); pintar(); }
 function restrADD(){ DADOS.plano.restricoes.push({titulo:"",texto:""}); pintar(); }
@@ -1335,6 +1346,17 @@ function pintar(){
 
   $("fAtualCat").innerHTML=pesosAtuais(p.alocacao_categoria, e.atual_categoria, "atualCat");
   $("fAtualEst").innerHTML=pesosAtuais(p.alocacao_estrategia, e.atual_estrategia, "atualEst");
+
+  $("fLimites").innerHTML=linhasEditaveis("lim",
+    [{rotulo:"Tipo de emissor / contraparte",chave:"tipo",exemplo:"Ações individuais (por emissor)"},
+     {rotulo:"Limite %",chave:"limite",num:true,exemplo:"15"},
+     {rotulo:"Base de cálculo",chave:"base",exemplo:"Patrimônio total"}],
+    p.limites_concentracao, null, "Acrescentar limite")+
+    '<p class="dica">É o teto por emissor ou por tipo de ativo. A <b>base de cálculo</b> diz sobre '+
+    'o que o percentual incide: normalmente o patrimônio total, mas pode ser um bloco específico '+
+    '— "20% das ações individuais" costuma ser sobre o bloco de Renda Variável, não sobre tudo.<br><br>'+
+    'O sistema usa o limite de <i>Bancos (exceto S1)</i> para checar a concentração real por '+
+    'instituição no Enquadramento, e o de <i>Bancos (S1)</i> para os seis bancos do Segmento S1.</p>';
 
   $("fRestricoes").innerHTML=linhasEditaveis("restr",
     [{rotulo:"Título",chave:"titulo",exemplo:"Holding"},
