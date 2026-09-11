@@ -77,7 +77,7 @@
 <header>
   <span class="mark">ADAMI</span>
   <span class="sub">Gerador de Planos Patrimoniais</span>
-  <span class="sub" style="opacity:.6">versão 2.30</span>
+  <span class="sub" style="opacity:.6">versão 2.31</span>
   <span class="dir">
     <span class="selo bom" id="selo">—</span>
     <button class="btn ghost" onclick="novoDoPadrao()">Novo</button>
@@ -160,7 +160,7 @@
   if(!ok){ location.replace("index.html"); }
 })();
 
-var PADRAO_CASA = {"cliente": {"nome": "", "assessoria": "Adami Captal"}, "plano": {"mes_referencia": "", "data_base": "", "versao_politica": "", "patrimonio_liquido": 0, "texto_plataforma": "Importante ressaltar que o BTG Pactual trabalha no modelo de plataforma aberta, na qual instituições financeiras e gestoras distribuem os produtos de investimentos, permitindo a diversificação de emissores (Banco do Brasil, Bradesco, Itaú, Safra, Goldman Sachs entre outros) dentro de uma única conta.", "perfil": {"declarado": "Moderado", "capacidade": "", "disposicao": "", "observacao": ""}, "blocos": [], "restricoes": [], "limites_concentracao": [{"tipo": "Bancos / instituições financeiras (exceto Segmento S1)", "limite": 15, "base": "Patrimônio total"}, {"tipo": "Bancos / instituições financeiras (Segmento S1)", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Títulos Públicos", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Fundos de investimento, por gestora", "limite": 20, "base": "Patrimônio total"}, {"tipo": "Ações individuais (por emissor)", "limite": 20, "base": "Bloco Renda Variável BR"}, {"tipo": "Fundo multimercado ou alternativo individual", "limite": 5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Yield)*", "limite": 0.5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Grade)*", "limite": 1, "base": "Patrimônio total"}], "notas_limites": ["*High Yield: emissores com taxas elevadas e maior risco de crédito. *High Grade: emissores com taxas menores comparadas a high yield e menor risco de crédito."], "texto_banda": "Cada categoria possui uma banda de rebalanceamento em torno do peso-alvo; desvios que ultrapassem essa banda disparam a recomendação de rebalanceamento.", "alocacao_categoria": [{"nome": "Renda Fixa", "alvo": 25, "min": 20, "max": 50}, {"nome": "Renda Variável", "alvo": 5, "min": 0, "max": 10}, {"nome": "Fundos", "alvo": 25, "min": 20, "max": 50}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20}, {"nome": "Previdência", "alvo": 30, "min": 25, "max": 50}], "alocacao_estrategia": [{"nome": "Renda Fixa", "alvo": 76.5, "min": 43, "max": 100, "nivel": 1}, {"nome": "Pós-fixado (CDI)", "alvo": 50, "min": 30, "max": 60, "nivel": 2}, {"nome": "Pré-fixado", "alvo": 6.5, "min": 3, "max": 10, "nivel": 2}, {"nome": "IPCA+", "alvo": 20, "min": 10, "max": 30, "nivel": 2}, {"nome": "Renda Variável (Brasil)", "alvo": 5, "min": 0, "max": 10, "nivel": 1}, {"nome": "Multimercado", "alvo": 2.5, "min": 0, "max": 5, "nivel": 1}, {"nome": "Alternativo", "alvo": 1, "min": 0, "max": 2, "nivel": 1}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20, "nivel": 1}, {"nome": "Renda Fixa Internacional", "alvo": 10, "min": 5, "max": 15, "nivel": 2}, {"nome": "Renda Variável Internacional", "alvo": 5, "min": 0, "max": 10, "nivel": 2}], "secoes": {"imobilizado": true}, "imobilizado": [{"titulo": "Imóveis", "texto": "O acompanhamento do patrimônio imobiliário foca no monitoramento analítico das propriedades físicas e na avaliação contínua do retorno de aluguéis frente ao mercado. Essa frente assegura a precificação correta e a atualização do valor venal dos ativos, embasando decisões táticas de manutenção ou desinvestimento."}, {"titulo": "Empresas", "texto": "A frente dedicada às empresas e participações societárias atua na estruturação de valuation e na modelagem financeira das operações do grupo. O objetivo é mensurar o valor corporativo real e monitorar a saúde dos negócios, servindo como base indispensável para estratégias de liquidez e para o planejamento sucessório familiar."}], "diretrizes_produtos": [{"titulo": "Renda Fixa", "texto": "títulos públicos (Tesouro Direto), CDBs, LFs, LCIs/LCAs e crédito privado de emissores com rating mínimo A-."}, {"titulo": "Renda Variável (Brasil)", "texto": "ações individuais, ETFs de índice amplo (Ibovespa, small caps), opções."}, {"titulo": "Multimercado", "texto": "fundos com histórico mínimo de 2 anos e patrimônio líquido superior a R$ 50 milhões."}, {"titulo": "Internacional", "texto": "Mutual Funds e ETFs internacionais, respeitando o limite regulatório e cambial vigente."}], "governanca": {"periodicidade": "semestral", "gatilhos": ["aporte ou resgate", "mudança relevante no regime tributário", "alteração significativa na necessidade de liquidez operacional"]}}, "enquadramento": {"data_posicao": "", "instituicoes": [], "atual_categoria": {}, "atual_estrategia": {}, "observacoes_produto": [], "movimentacoes_extras": [], "nota_assessor": "", "proximos_passos": []}};
+var PADRAO_CASA = {"cliente": {"nome": "", "assessoria": "Adami Captal"}, "plano": {"mes_referencia": "", "data_base": "", "versao_politica": "", "patrimonio_liquido": 0, "texto_plataforma": "Importante ressaltar que o BTG Pactual trabalha no modelo de plataforma aberta, na qual instituições financeiras e gestoras distribuem os produtos de investimentos, permitindo a diversificação de emissores (Banco do Brasil, Bradesco, Itaú, Safra, Goldman Sachs entre outros) dentro de uma única conta.", "perfil": {"declarado": "Moderado", "capacidade": "", "disposicao": "", "observacao": ""}, "blocos": [], "restricoes": [], "limites_concentracao": [{"tipo": "Bancos / instituições financeiras (exceto Segmento S1)", "limite": 15, "base": "Patrimônio total"}, {"tipo": "Bancos / instituições financeiras (Segmento S1)", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Títulos Públicos", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Fundos de investimento, por gestora", "limite": 20, "base": "Patrimônio total"}, {"tipo": "Ações individuais (por emissor)", "limite": 20, "base": "Bloco Renda Variável BR"}, {"tipo": "Fundo multimercado ou alternativo individual", "limite": 5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Yield)*", "limite": 0.5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Grade)*", "limite": 1, "base": "Patrimônio total"}], "notas_limites": ["*High Yield: emissores com taxas elevadas e maior risco de crédito. *High Grade: emissores com taxas menores comparadas a high yield e menor risco de crédito."], "texto_banda": "Cada categoria possui uma banda de rebalanceamento em torno do peso-alvo; desvios que ultrapassem essa banda disparam a recomendação de rebalanceamento.", "alocacao_categoria": [{"nome": "Renda Fixa", "alvo": 25, "min": 20, "max": 50}, {"nome": "Renda Variável", "alvo": 5, "min": 0, "max": 10}, {"nome": "Fundos", "alvo": 25, "min": 20, "max": 50}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20}, {"nome": "Previdência", "alvo": 30, "min": 25, "max": 50}], "alocacao_estrategia": [{"nome": "Renda Fixa", "alvo": 76.5, "min": 43, "max": 100, "nivel": 1}, {"nome": "Pós-fixado (CDI)", "alvo": 50, "min": 30, "max": 60, "nivel": 2}, {"nome": "Pré-fixado", "alvo": 6.5, "min": 3, "max": 10, "nivel": 2}, {"nome": "IPCA+", "alvo": 20, "min": 10, "max": 30, "nivel": 2}, {"nome": "Renda Variável (Brasil)", "alvo": 5, "min": 0, "max": 10, "nivel": 1}, {"nome": "Multimercado", "alvo": 2.5, "min": 0, "max": 5, "nivel": 1}, {"nome": "Alternativo", "alvo": 1, "min": 0, "max": 2, "nivel": 1}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20, "nivel": 1}, {"nome": "Renda Fixa Internacional", "alvo": 10, "min": 5, "max": 15, "nivel": 2}, {"nome": "Renda Variável Internacional", "alvo": 5, "min": 0, "max": 10, "nivel": 2}], "secoes": {"imobilizado": true}, "imobilizado": [{"titulo": "Imóveis", "texto": "O acompanhamento do patrimônio imobiliário foca no monitoramento analítico das propriedades físicas e na avaliação contínua do retorno de aluguéis frente ao mercado. Essa frente assegura a precificação correta e a atualização do valor venal dos ativos, embasando decisões táticas de manutenção ou desinvestimento."}, {"titulo": "Empresas", "texto": "A frente dedicada às empresas e participações societárias atua na estruturação de valuation e na modelagem financeira das operações do grupo. O objetivo é mensurar o valor corporativo real e monitorar a saúde dos negócios, servindo como base indispensável para estratégias de liquidez e para o planejamento sucessório familiar."}], "diretrizes_produtos": [{"titulo": "Renda Fixa", "texto": "títulos públicos (Tesouro Direto), CDBs, LFs, LCIs/LCAs e crédito privado de emissores com rating mínimo A-."}, {"titulo": "Renda Variável (Brasil)", "texto": "ações individuais, ETFs de índice amplo (Ibovespa, small caps), opções."}, {"titulo": "Multimercado", "texto": "fundos com histórico mínimo de 2 anos e patrimônio líquido superior a R$ 50 milhões."}, {"titulo": "Internacional", "texto": "Mutual Funds e ETFs internacionais, respeitando o limite regulatório e cambial vigente."}], "governanca": {"periodicidade": "semestral", "gatilhos": ["aporte ou resgate", "mudança relevante no regime tributário", "alteração significativa na necessidade de liquidez operacional"]}}, "enquadramento": {"data_posicao": "", "instituicoes": [], "atual_categoria": {}, "atual_estrategia": {}, "observacoes_produto": [], "movimentacoes_extras": [], "nota_assessor": "", "proximos_passos": []}}
 
 /* ============================================================
    MOTOR DE CALCULO — Plano Patrimonial e Enquadramento
@@ -677,9 +677,9 @@ function canvasPNG(cv){
 /* barras horizontais alvo x atual, com a faixa de banda ao fundo.
    Horizontal por decisao 5.5 do HANDOFF: na vertical os nomes longos
    viravam tres linhas e a banda era lida como uma terceira barra.   */
-function graficoAlvoAtual(linhas){
-  var itens=linhas.filter(function(l){ return l.nivel===1; });
-  var L=170, R=70, T=54, alturaItem=64;
+function graficoAlvoAtual(linhas, incluirSub){
+  var itens = incluirSub ? linhas.slice() : linhas.filter(function(l){ return l.nivel===1; });
+  var L=incluirSub?250:170, R=70, T=54, alturaItem=64;
   var W=1180, H=T+itens.length*alturaItem+52;
   var cv=document.createElement("canvas"); cv.width=W; cv.height=H;
   var g=cv.getContext("2d");
@@ -712,8 +712,11 @@ function graficoAlvoAtual(linhas){
     g.fillStyle=cor;
     g.fillRect(L, y+24, Math.max(esc(l.atual||0)-L,1), 20);
     /* rotulos */
-    g.textAlign="right"; g.font="bold 16px Segoe UI, Arial, sans-serif"; g.fillStyle="#1B2A4A";
-    g.fillText(l.nome, L-14, y+28);
+    g.textAlign="right";
+    var sub = l.nivel===2;
+    g.font=(sub?"":"bold ")+(sub?15:16)+"px Segoe UI, Arial, sans-serif";
+    g.fillStyle=sub?"#6B7787":"#1B2A4A";
+    g.fillText((sub?"\u203A ":"")+l.nome, L-14, y+28);
     g.textAlign="left"; g.font="bold 15px Segoe UI, Arial, sans-serif";
     g.fillStyle="#1B2A4A"; g.fillText(pct(l.alvo), esc(l.alvo)+8, y+15);
     if(temAtual){ g.fillStyle=cor==="#C9A24B"?"#1B2A4A":cor;
@@ -732,7 +735,7 @@ function graficoAlvoAtual(linhas){
   return {png:canvasPNG(cv), w:W, h:H};
 }
 /* rosca por instituicao */
-function graficoRosca(insts){
+function graficoRosca(insts, largLegenda){
   var W=1120,H=560,cx=300,cy=280,R=205,r=112;
   var cv=document.createElement("canvas"); cv.width=W; cv.height=H;
   var g=cv.getContext("2d");
@@ -767,10 +770,25 @@ function graficoRosca(insts){
   return {png:canvasPNG(cv), w:W, h:H};
 }
 
-/* ---------- documento: ENQUADRAMENTO ---------- */
+/* ---------- documento: ENQUADRAMENTO ----------
+   Estrutura espelhada do modelo da casa: 8 secoes, na mesma ordem e
+   com os mesmos titulos do documento original.                      */
 function docEnquadramento(){
   var d=DADOS, ctx=CTX, enq=d.enquadramento, imgs=[], c="";
   var nx=(function(){var n=0;return function(){n++;return (n<10?"0":"")+n;};})();
+  function tabelaAloc(linhas, comSub){
+    return pTabela([3000,1100,1100,1400,1800],
+      [[{t:comSub?"Estratégia":"Categoria"},{t:"Peso-alvo",alinha:"d"},
+        {t:"Atual",alinha:"d"},{t:"Desvio",alinha:"d"},{t:"Status",alinha:"c"}]]
+      .concat(linhas.map(function(l){
+        return [{t:(l.nivel===2?"     ":"")+l.nome,negrito:l.nivel===1},
+                {t:pct(l.alvo),alinha:"d"},
+                {t:l.atual==null?"—":pct(l.atual),alinha:"d"},
+                {t:l.atual==null?"—":pp(l.desvio),alinha:"d"},
+                {t:l.status||"—",alinha:"c",negrito:true,
+                 cor:l.atual==null?"8A93A6":(l.dentro?CORES.verde:CORES.terracota)}];
+      })));
+  }
 
   c+=pPara("",{depois:2200});
   c+=pPara("Análise de Enquadramento",{serif:true,negrito:true,tamanho:30,cor:CORES.navy,centro:true});
@@ -778,19 +796,19 @@ function docEnquadramento(){
   c+=pPara("Posição de "+(enq.data_posicao||"—"),{tamanho:11,centro:true});
   c+=pPara(d.cliente.assessoria||"",{tamanho:10,cor:"7A8698",centro:true,antes:2600});
 
-  c+=pTitulo(nx(),"Objetivo",{quebraAntes:true});
+  c+=pTitulo(nx(),"Introdução",{quebraAntes:true});
   c+=pPara("Este documento compara a posição atual da carteira com a política de "+
     "investimentos definida no Plano Patrimonial, identifica os desvios que ultrapassam "+
-    "as bandas de rebalanceamento e propõe as movimentações necessárias para o reenquadramento.");
+    "as bandas de rebalanceamento e propõe as movimentações necessárias ao reenquadramento.");
   if(d.plano.texto_plataforma) c+=pPara(d.plano.texto_plataforma);
 
-  c+=pTitulo(nx(),"Distribuição por Instituição");
+  c+=pTitulo(nx(),"Distribuição por Instituições Financeiras");
   c+=pTabela([4300,2500,1700],
     [[{t:"Instituição"},{t:"Valor",alinha:"d"},{t:"% da carteira",alinha:"d"}]]
     .concat(ctx.instituicoes.map(function(i){
       return [{t:i.nome+(i.s1?"  (S1)":"")},{t:moedaCurta(i.valor),alinha:"d"},{t:pct(i.pct),alinha:"d"}];
     }))
-    .concat([[{t:"Total",negrito:true,fundo:CORES.creme},
+    .concat([[{t:"TOTAL",negrito:true,fundo:CORES.creme},
               {t:moedaCurta(ctx.totalInstituicoes),alinha:"d",negrito:true,fundo:CORES.creme},
               {t:"100%",alinha:"d",negrito:true,fundo:CORES.creme}]]));
   if(ctx.instituicoes.length){
@@ -802,70 +820,84 @@ function docEnquadramento(){
       cor:p.tipo==="violacao"?CORES.terracota:"5A6472"});
   });
 
-  c+=pTitulo(nx(),"Enquadramento por Categoria");
+  c+=pTitulo(nx(),"Comparativo: Alvo vs. Atual — Categoria",{quebraAntes:true});
   if(d.plano.texto_banda) c+=pPara(d.plano.texto_banda);
-  c+=pTabela([2500,1150,1150,1500,1900],
-    [[{t:"Categoria"},{t:"Alvo",alinha:"d"},{t:"Atual",alinha:"d"},{t:"Desvio",alinha:"d"},{t:"Status",alinha:"c"}]]
-    .concat(ctx.linhasCategoria.map(function(l){
-      return [{t:l.nome},{t:pct(l.alvo),alinha:"d"},{t:pct(l.atual),alinha:"d"},
-              {t:pp(l.desvio),alinha:"d"},
-              {t:l.status,alinha:"c",negrito:true,cor:l.dentro?CORES.verde:CORES.terracota}];
-    })));
-  var g1=graficoAlvoAtual(ctx.linhasCategoria); imgs.push(g1.png);
+  c+=tabelaAloc(ctx.linhasCategoria,false);
+  var g1=graficoAlvoAtual(ctx.linhasCategoria,false); imgs.push(g1.png);
   c+=pImagem(imgs.length,6.4,6.4*g1.h/g1.w);
 
-  c+=pTitulo(nx(),"Enquadramento por Estratégia",{quebraAntes:true});
-  c+=pTabela([2900,1100,1100,1400,1700],
-    [[{t:"Estratégia"},{t:"Alvo",alinha:"d"},{t:"Atual",alinha:"d"},{t:"Desvio",alinha:"d"},{t:"Status",alinha:"c"}]]
-    .concat(ctx.linhasEstrategia.map(function(l){
-      return [{t:(l.nivel===2?"     ":"")+l.nome,negrito:l.nivel===1},
-              {t:pct(l.alvo),alinha:"d"},{t:pct(l.atual),alinha:"d"},
-              {t:pp(l.desvio),alinha:"d"},
-              {t:l.status,alinha:"c",negrito:true,cor:l.dentro?CORES.verde:CORES.terracota}];
-    })));
+  c+=pTitulo(nx(),"Comparativo: Alvo vs. Atual — Estratégia",{quebraAntes:true});
+  c+=tabelaAloc(ctx.linhasEstrategia,true);
+  var g2=graficoAlvoAtual(ctx.linhasEstrategia,true); imgs.push(g2.png);
+  c+=pImagem(imgs.length,6.4,6.4*g2.h/g2.w);
 
+  c+=pTitulo(nx(),"Observações Específicas por Produto",{quebraAntes:true});
   if((enq.observacoes_produto||[]).length){
-    c+=pTitulo(nx(),"Observações sobre os Produtos");
     enq.observacoes_produto.forEach(function(o){
       c+=pPara(o.titulo,{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:160,depois:40});
       c+=pPara(o.texto);
     });
-  }
+  } else c+=pPara("Sem observações específicas para o período.",{italico:true,cor:"8A93A6"});
 
   c+=pTitulo(nx(),"Movimentações Sugeridas");
   c+=pPara("A prioridade é definida pelo excesso além da banda de rebalanceamento, "+
     "não pela distância até o peso-alvo: é o excesso que determina o tamanho real do ajuste.");
   c+=pTabela([1300,2900,1300,1600,1500],
     [[{t:"Ação"},{t:"Categoria"},{t:"Prioridade",alinha:"c"},{t:"Desvio",alinha:"d"},{t:"Valor",alinha:"d"}]]
-    .concat((ctx.movimentacoes||[]).map(function(m){
+    .concat((ctx.movimentacoes||[]).length ? ctx.movimentacoes.map(function(m){
       return [{t:m.acao},{t:m.categoria},
               {t:m.prioridade,alinha:"c",negrito:true,
                cor:m.prioridade==="Alta"?CORES.terracota:(m.prioridade==="Média"?"8A6D2F":"5A6472")},
               {t:m.origem==="manual"?"—":pp(m.desvio),alinha:"d"},
               {t:m.valor?moedaCurta(m.valor):"—",alinha:"d"}];
-    })));
+    }) : [[{t:"Carteira enquadrada — nenhuma movimentação necessária.",negrito:false},
+           {t:""},{t:""},{t:""},{t:""}]]));
 
+  c+=pTitulo(nx(),"Observações Personalizadas do Cliente");
+  c+=pTabela([9500],
+    [[{t:"NOTA DO ASSESSOR"}],
+     [{t:enq.nota_assessor||"—",negrito:false,fundo:CORES.creme}]]);
+
+  c+=pTitulo(nx(),"Próximos Passos",{quebraAntes:true});
   if((enq.proximos_passos||[]).length){
-    c+=pTitulo(nx(),"Próximos Passos",{quebraAntes:true});
     enq.proximos_passos.forEach(function(p){
       c+=pPara(p.titulo,{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:160,depois:40});
       String(p.texto||"").split("\n").forEach(function(par){
         if(par.trim()) c+=pPara(par.trim());
       });
     });
-  }
-  if(enq.nota_assessor) c+=pPara(enq.nota_assessor,{italico:true,antes:200});
+  } else c+=pPara("A definir na próxima revisão.",{italico:true,cor:"8A93A6"});
 
-  c+=pPara("Documento gerado a partir da política vigente do Plano Patrimonial "+
-    (d.plano.versao_politica?"("+d.plano.versao_politica+")":"")+
+  c+=pPara("Documento gerado a partir da política vigente do Plano Patrimonial"+
+    (d.plano.versao_politica?" ("+d.plano.versao_politica+")":"")+
     ". Valores sujeitos a marcação a mercado.",{tamanho:8.5,cor:"8A93A6",antes:400});
   return {corpo:c, imagens:imgs};
 }
 
-/* ---------- documento: PLANO PATRIMONIAL ---------- */
+/* ---------- documento: PLANO PATRIMONIAL ----------
+   8 secoes, mesma ordem e titulos do modelo da casa. Os limites de
+   concentracao ficam DENTRO de Restricoes, e a politica de alocacao
+   dentro de Patrimonio Liquido — como no original.                  */
 function docPlano(){
   var d=DADOS, ctx=CTX, p=d.plano, imgs=[], c="";
   var nx=(function(){var n=0;return function(){n++;return (n<10?"0":"")+n;};})();
+  function sub(t){ return pPara(t,{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:200,depois:60}); }
+  function tabelaAlvo(linhas, rotulo){
+    var total=linhas.filter(function(l){return l.nivel===1;})
+                    .reduce(function(a,l){return a+l.valorAlvo;},0);
+    return pTabela([3000,1400,1300,1300,2100],
+      [[{t:rotulo},{t:"Peso-alvo",alinha:"d"},{t:"Banda mín.",alinha:"d"},
+        {t:"Banda máx.",alinha:"d"},{t:"Valor-alvo (R$)",alinha:"d"}]]
+      .concat(linhas.map(function(l){
+        return [{t:(l.nivel===2?"     ":"")+l.nome,negrito:l.nivel===1},
+                {t:pct(l.alvo),alinha:"d"},{t:pct(l.minimo),alinha:"d"},
+                {t:pct(l.maximo),alinha:"d"},{t:moedaCurta(l.valorAlvo),alinha:"d"}];
+      }))
+      .concat([[{t:"TOTAL",negrito:true,fundo:CORES.creme},
+                {t:"100%",alinha:"d",negrito:true,fundo:CORES.creme},
+                {t:"",fundo:CORES.creme},{t:"",fundo:CORES.creme},
+                {t:moedaCurta(total),alinha:"d",negrito:true,fundo:CORES.creme}]]));
+  }
 
   c+=pPara("",{depois:2200});
   c+=pPara("Plano Patrimonial",{serif:true,negrito:true,tamanho:32,cor:CORES.navy,centro:true});
@@ -873,11 +905,12 @@ function docPlano(){
   c+=pPara(p.mes_referencia||"",{tamanho:11,centro:true});
   c+=pPara(d.cliente.assessoria||"",{tamanho:10,cor:"7A8698",centro:true,antes:2600});
 
-  c+=pTitulo(nx(),"Objetivo",{quebraAntes:true});
-  c+=pPara("Este Plano estabelece a política de investimentos que orienta a alocação "+
-    "do patrimônio, os limites de concentração por emissor e as regras de rebalanceamento. "+
-    "Serve como referência para todas as decisões de investimento e para a Análise de "+
-    "Enquadramento periódica.");
+  c+=pTitulo(nx(),"Introdução e Escopo",{quebraAntes:true});
+  c+=pPara("Este Plano estabelece a política de investimentos que orienta a alocação do "+
+    "patrimônio, os limites de concentração por emissor e as regras de rebalanceamento. "+
+    "Serve como referência para todas as decisões de investimento e como base da Análise "+
+    "de Enquadramento periódica.");
+  if(p.texto_plataforma) c+=pPara(p.texto_plataforma);
 
   c+=pTitulo(nx(),"Perfil do Investidor");
   var pf=p.perfil||{};
@@ -888,51 +921,32 @@ function docPlano(){
      [{t:"Disposição ao risco",negrito:true},{t:pf.disposicao||"—",negrito:false}]]);
   if(pf.observacao) c+=pPara(pf.observacao,{antes:160});
 
-  c+=pTitulo(nx(),"Composição do Patrimônio");
-  c+=pPara("Patrimônio líquido de "+moedaCurta(ctx.patrimonio)+
-    (ctx.patrimonio>=1e6?" ("+extensoMilhoes(ctx.patrimonio)+")":"")+
-    ", dividido nos blocos abaixo conforme horizonte e finalidade.");
+  c+=pTitulo(nx(),"Objetivos e Estrutura por Blocos");
+  c+=pPara("O patrimônio é dividido em blocos com horizonte e finalidade próprios. "+
+    "Cada bloco admite um nível de risco distinto, o que permite conciliar liquidez "+
+    "de curto prazo com crescimento de longo prazo.");
   if((p.blocos||[]).length){
+    var somaB=p.blocos.reduce(function(a,b){return a+Number(b.valor);},0);
     c+=pTabela([2400,1900,1900,3300],
       [[{t:"Bloco"},{t:"Valor",alinha:"d"},{t:"Perfil"},{t:"Horizonte"}]]
       .concat(p.blocos.map(function(b){
         return [{t:b.nome},{t:moedaCurta(b.valor),alinha:"d"},{t:b.perfil||"—"},{t:b.horizonte||"—"}];
-      })));
+      }))
+      .concat([[{t:"TOTAL",negrito:true,fundo:CORES.creme},
+                {t:moedaCurta(somaB),alinha:"d",negrito:true,fundo:CORES.creme},
+                {t:"",fundo:CORES.creme},{t:"",fundo:CORES.creme}]]));
     p.blocos.forEach(function(b){
       if(b.descricao) c+=pPara(b.nome+": "+b.descricao,{tamanho:9.5,antes:60,cor:"5A6472"});
     });
   }
 
-  if((p.restricoes||[]).length){
-    c+=pTitulo(nx(),"Restrições e Condicionantes");
-    p.restricoes.forEach(function(r){
-      c+=pPara(r.titulo,{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:140,depois:40});
-      c+=pPara(r.texto);
-    });
-  }
-
-  c+=pTitulo(nx(),"Política de Alocação",{quebraAntes:true});
-  if(p.texto_banda) c+=pPara(p.texto_banda);
-  c+=pPara("Por categoria",{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:180,depois:60});
-  c+=pTabela([2600,1500,1500,2000,1900],
-    [[{t:"Categoria"},{t:"Alvo",alinha:"d"},{t:"Banda",alinha:"c"},{t:"Valor-alvo",alinha:"d"},{t:"",alinha:"d"}]]
-    .concat(ctx.linhasCategoria.map(function(l){
-      return [{t:l.nome},{t:pct(l.alvo),alinha:"d"},
-              {t:pct(l.minimo)+" – "+pct(l.maximo),alinha:"c"},
-              {t:moedaCurta(l.valorAlvo),alinha:"d"},{t:""}];
-    })));
-  c+=pPara("Por estratégia",{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:200,depois:60});
-  c+=pTabela([3200,1500,1800,2000],
-    [[{t:"Estratégia"},{t:"Alvo",alinha:"d"},{t:"Banda",alinha:"c"},{t:"Valor-alvo",alinha:"d"}]]
-    .concat(ctx.linhasEstrategia.map(function(l){
-      return [{t:(l.nivel===2?"     ":"")+l.nome,negrito:l.nivel===1},
-              {t:pct(l.alvo),alinha:"d"},{t:pct(l.minimo)+" – "+pct(l.maximo),alinha:"c"},
-              {t:moedaCurta(l.valorAlvo),alinha:"d"}];
-    })));
-
-  c+=pTitulo(nx(),"Limites de Concentração",{quebraAntes:true});
+  c+=pTitulo(nx(),"Restrições e Particularidades",{quebraAntes:true});
+  (p.restricoes||[]).forEach(function(r){
+    c+=sub(r.titulo); c+=pPara(r.texto);
+  });
+  c+=sub("Limites de concentração por emissor");
   c+=pTabela([5400,1600,2500],
-    [[{t:"Tipo de exposição"},{t:"Limite",alinha:"d"},{t:"Base de cálculo"}]]
+    [[{t:"Tipo de emissor / contraparte"},{t:"Limite por emissor",alinha:"d"},{t:"Base de cálculo"}]]
     .concat((p.limites_concentracao||[]).map(function(l){
       return [{t:l.tipo},{t:pct(l.limite),alinha:"d"},{t:l.base||"—"}];
     })));
@@ -940,23 +954,40 @@ function docPlano(){
     c+=pPara(n,{tamanho:8.5,cor:"8A93A6",antes:100});
   });
 
-  if((p.diretrizes_produtos||[]).length){
-    c+=pTitulo(nx(),"Diretrizes por Classe de Produto");
-    p.diretrizes_produtos.forEach(function(g){
-      c+=pPara(g.titulo,{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:140,depois:40});
-      c+=pPara(g.texto);
-    });
+  c+=pTitulo(nx(),"Patrimônio Líquido",{quebraAntes:true});
+  c+=pPara("Patrimônio líquido de "+moedaCurta(ctx.patrimonio)+
+    (ctx.patrimonio>=1e6?" ("+extensoMilhoes(ctx.patrimonio)+")":"")+
+    ". A alocação-alvo abaixo consolida os blocos e representa a referência de longo "+
+    "prazo da carteira. "+(p.texto_banda||""));
+  c+=sub("Por categoria");
+  c+=tabelaAlvo(ctx.linhasCategoria,"Categoria");
+  var alvoCat=ctx.linhasCategoria.filter(function(l){return l.alvo>0;})
+    .map(function(l){return {nome:l.nome,valor:l.alvo};});
+  if(alvoCat.length){
+    c+=pPara("Distribuição visual da alocação-alvo",{tamanho:9.5,cor:"5A6472",antes:140,depois:40});
+    var r1=graficoRosca(alvoCat); imgs.push(r1.png);
+    c+=pImagem(imgs.length,6.0,6.0*r1.h/r1.w);
   }
-  if(p.secoes && p.secoes.imobilizado && (p.imobilizado||[]).length){
-    c+=pTitulo(nx(),"Patrimônio Imobilizado");
-    p.imobilizado.forEach(function(g){
-      c+=pPara(g.titulo,{negrito:true,serif:true,tamanho:11,cor:CORES.navy,antes:140,depois:40});
-      c+=pPara(g.texto);
-    });
+  c+=sub("Por estratégia");
+  c+=tabelaAlvo(ctx.linhasEstrategia,"Estratégia");
+  var alvoEst=ctx.linhasEstrategia.filter(function(l){return l.nivel===1&&l.alvo>0;})
+    .map(function(l){return {nome:l.nome,valor:l.alvo};});
+  if(alvoEst.length){
+    c+=pPara("Distribuição visual da alocação-alvo",{tamanho:9.5,cor:"5A6472",antes:140,depois:40});
+    var r2=graficoRosca(alvoEst); imgs.push(r2.png);
+    c+=pImagem(imgs.length,6.0,6.0*r2.h/r2.w);
   }
 
+  if(p.secoes && p.secoes.imobilizado && (p.imobilizado||[]).length){
+    c+=pTitulo(nx(),"Patrimônio Imobilizado",{quebraAntes:true});
+    p.imobilizado.forEach(function(g){ c+=sub(g.titulo); c+=pPara(g.texto); });
+  }
+
+  c+=pTitulo(nx(),"Diretrizes de Produtos");
+  (p.diretrizes_produtos||[]).forEach(function(g){ c+=sub(g.titulo); c+=pPara(g.texto); });
+
   var gov=p.governanca||{};
-  c+=pTitulo(nx(),"Governança e Revisão");
+  c+=pTitulo(nx(),"Revisão e Governança");
   c+=pPara("A política é revista com periodicidade "+(gov.periodicidade||"—")+
     ", e extraordinariamente diante dos gatilhos abaixo.");
   (gov.gatilhos||[]).forEach(function(g){
@@ -989,7 +1020,9 @@ function gerarPlano(){
   if(!travadoPorErro()) baixarDocx("Plano_Patrimonial_"+nomeBase()+".docx", docPlano);
 }
 function travadoPorErro(){
-  var erros=(CTX.problemas||[]).filter(function(p){return p.severidade==="erro";});
+  /* nao depender de pintar() ter rodado: a geracao recalcula por conta */
+  if(!CTX) recalcular();
+  var erros=((CTX&&CTX.problemas)||[]).filter(function(p){return p.severidade==="erro";});
   if(!erros.length) return false;
   return !confirm("Há "+erros.length+" erro(s) de consistência.\n\n"+
     erros.map(function(e){return "• "+e.onde+": "+e.mensagem;}).join("\n\n")+
@@ -1218,7 +1251,6 @@ function irPara(id){
   var el=document.getElementById(id);
   if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
 }
-
 
 pintar();
 </script>
