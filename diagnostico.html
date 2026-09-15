@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Plano de Liberdade Financeira — Adami Wealth</title>
+<title>Ferramenta Wealth Planning — Adami Wealth</title>
 <style>
   :root {
     --navy: #1B2A4A;
@@ -209,6 +209,20 @@
     @page { size: A4; margin: 0; }
     .report-pane { padding: 18mm 16mm 15mm; }
   }
+  .mini-table.sens td .sub, .mini-table.sens .sub { font-size:10.5px; color:var(--muted); }
+  .mini-table.sens td.destaque { background:#FBF6EA; font-weight:700; box-shadow: inset 0 0 0 1px #E8DBBB; }
+  .obj-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .obj-row .obj-rec { display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--muted); white-space:nowrap; }
+  .obj-row .obj-rec input { width:auto; margin:0; }
+  .suc-grupo { font-family:var(--serif); color:var(--navy); font-size:13.5px; margin:18px 0 10px; }
+  .suc-grade { display:grid; grid-template-columns:repeat(auto-fit,minmax(248px,1fr)); gap:12px; }
+  .suc-item { border:1px solid #E3E7EE; border-radius:10px; padding:13px 15px; background:#fff; break-inside:avoid; }
+  .suc-item.on { border-color:#C9A24B; background:#FDFBF6; box-shadow:0 0 0 1px #C9A24B inset; }
+  .suc-nome { font-weight:700; color:var(--navy); font-size:13.5px; margin-bottom:7px; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .suc-tag { font-size:9.5px; letter-spacing:.6px; text-transform:uppercase; color:#8A6D2F; border:1px solid #C9A24B; border-radius:3px; padding:1px 5px; font-weight:600; }
+  .suc-lista { margin:0; padding-left:16px; }
+  .suc-lista li { font-size:11.5px; line-height:1.5; color:var(--ink); margin-bottom:3px; }
+  .suc-motivo { margin-top:9px; padding-top:8px; border-top:1px solid #EDE2C8; font-size:11.5px; line-height:1.5; color:#7A6122; }
 </style>
 <script>
 /* --- acesso restrito: exige sessão iniciada no portal --- */
@@ -231,7 +245,7 @@
 <header class="top">
   <div>
     <img id="topLogo" alt="Adami Wealth" style="height:24px;width:auto;display:block;margin-bottom:5px;">
-    <div class="subtitle">Plano de Liberdade Financeira</div>
+    <div class="subtitle">Ferramenta Wealth Planning</div>
   </div>
   <div class="subtitle">Ferramenta interna · preencha ao vivo ou antes da reunião <span id="selo" style="opacity:.55;font-size:11px;letter-spacing:.5px"></span></div>
 </header>
@@ -320,6 +334,15 @@
         </div>
 
         <div class="field">
+          <label>Possui bens ou investimentos no exterior?</label>
+          <span class="hint">Muda a regra sucessória aplicável e a incidência de ITCMD</span>
+          <div class="toggle-group" id="exteriorGroup">
+            <div class="toggle-btn" data-val="sim" onclick="selectToggle('exteriorGroup', this, render)">Sim</div>
+            <div class="toggle-btn active" data-val="nao" onclick="selectToggle('exteriorGroup', this, render)">Não</div>
+          </div>
+        </div>
+
+        <div class="field">
           <label>Alocação atual da carteira (%)</label>
           <span class="hint">Usada para estimar a renda mensal líquida (Renda Fixa e Fundos são a parcela geradora de caixa)</span>
           <div class="alocacao-grid">
@@ -339,9 +362,19 @@
       <div class="form-body">
         <div class="field">
           <label>Objetivos e quando deseja realizá-los</label>
-          <span class="hint">Ex: Compra de casa, R$ 3.000.000, 2029 · Viagem, R$ 150.000, 2027</span>
+          <span class="hint">Escolha um objetivo da lista ou escreva o seu. Alguns da lista abrem uma
+            análise própria no relatório. Marque <b>recorrente</b> para gastos que se repetem, como
+            faculdade ou apoio mensal.</span>
           <div class="dynamic-list" id="objetivosList"></div>
           <button type="button" class="add-row-btn" onclick="addObjetivo()">+ Adicionar objetivo</button>
+        </div>
+
+        <div class="field">
+          <label>Receitas além do aporte</label>
+          <span class="hint">Entradas que não são o aporte mensal e têm prazo próprio: aluguel,
+            pró-labore, venda de participação. Deixe o fim em branco se não acaba.</span>
+          <div class="dynamic-list" id="receitasList"></div>
+          <button type="button" class="add-row-btn" onclick="addReceita()">+ Adicionar receita</button>
         </div>
       </div>
     </details>
@@ -439,6 +472,7 @@ const LOGO_WHITE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAtwAAACxCAYAAA
 const LOGO_NAVY = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAtwAAACxCAYAAAD3XGrEAAAtS0lEQVR4nO3dQZKbyLYG4L9f3HnprqB0RxqWtALwvCOsXkHh4R1ZXkHjFTRegVUraHkFTlaANGTU0gqetIL3BhxcFCVBApkkoP+LqLBLoMxTEkKH5JD89vt/v4CIiIiIiOz4H9cBEBERERFNGRNuIiIiIiKLmHATEREREVnEhJuIiIiIyCIm3EREREREFv3LdQD3IolTH4Df8GnH/GflLY5GAyIiIiKiXjDh7s8MwJ9tn5zE6QmAArBbeYudmZCIiIiIyDYm3P1RHZ//COAZwHMSpxcAWwARR76JiIiIho013D1ZeYszgIOh5h4AfAbwTxKn2yRO54baJSIiIiLDmHD3a2ehzWdkiXeUxOnMQvtERERE1AET7n4pi21/BnBM4nRtsQ8iIiIiaogJd49W3kJZ7uIBwN9SZjKz3BcRERERaWDC3b+4hz6eASgm3URERETuMeHun+qpnydkJSbLnvojIiIioiuYcPdv12NfD8hGupc99klEREREBUy4e7byFnsAlx67zJPuWY99EhEREZFgwu2G6rk/Jt1EREREjjDhdkM56PMJQOSgXyIiIqK7xoTbDeWo32fO001ERETULybcDjio4y7iHN1EREREPWLC7Y5y1O8DWFpCRERE1Bsm3O7sHPb9zKkCiYiIiPrBhNsd5bj/yHH/RERERHeBCbcjK29xBHByGIKXxOncYf9EREREd4EJt1vKcf+h4/6JiIiIJo8Jt1vKcf9rx/0TERERTR4TbreU4/4fOC83ERERkV1MuB2SOu6D4zB8x/0TERERTRoTbveU4/59x/0TERERTRoTbveU4/6feOdJIiIiInuYcLunXAcAXjxJREREZA0TbsdW3uIM1nETERERTRYT7mFQjvv3HfdPRERENFlMuIdBOe7/MYnTpeMYiIiIiCaJCfcArLzFznUM4Cg3ERERkRVMuIcjdty/77h/IiIiokliwj0cynH/Hx33T0RERDRJTLiHQ7kOIIlT33UMRERERFPDhHsgVt5CuY4BLCshIiIiMo4J97C4ruNeO+6fiIiIaHKYcA/LznH/vM07ERERkWFMuIdFuQ4ALCshIiIiMooJ94CsvMUewMVxGL7j/omIiIgmhQn38CjH/a8d909EREQ0KUy4h0c57v8xidO5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';
 
 const ICONS = {
+  target: '<svg viewBox="0 0 24 24" fill="none" stroke="#1B2A4A" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4" fill="#1B2A4A"/></svg>',
   house: '<svg viewBox="0 0 24 24" fill="none" stroke="#1B2A4A" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>',
   shield: '<svg viewBox="0 0 24 24" fill="none" stroke="#1B2A4A" stroke-width="2"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
   sprout: '<svg viewBox="0 0 24 24" fill="none" stroke="#1B2A4A" stroke-width="2"><path d="M12 21V9"/><path d="M12 9C12 5 9 4 5 4c0 4 2 7 7 7"/><path d="M12 9c0-3 2-5 7-5 0 4-2 7-7 7"/></svg>',
@@ -461,32 +495,142 @@ function addFilho() {
   render();
 }
 
+/* ---------- Objetivos ----------
+   Os tres primeiros sao ANALISES: escolher um deles acrescenta uma
+   secao propria no relatorio, e os campos mudam de acordo. Os demais
+   sao objetivos comuns, com valor e ano.                            */
+var OBJETIVOS_PRONTOS = [
+  { id:"poder_compra",  label:"Preservar poder de compra da próxima geração", analise:true,
+    ajuda:"Informe a renda mensal que a próxima geração deve receber para sempre. "+
+          "O relatório desenha os cenários para chegar lá." },
+  { id:"liberdade",     label:"Distância para a liberdade financeira", analise:true,
+    ajuda:"Informe a despesa mensal desejada. O relatório calcula quanto precisa estar "+
+          "investido e em quanto tempo você chega." },
+  { id:"protecao",      label:"Proteção de patrimônio", analise:true, semValor:true,
+    ajuda:"Fica registrado como prioridade do cliente. Não entra na projeção." },
+  { id:"imovel",        label:"Compra de imóvel" },
+  { id:"educacao",      label:"Educação dos filhos" },
+  { id:"viagem",        label:"Viagem" },
+  { id:"veiculo",       label:"Troca de veículo" },
+  { id:"negocio",       label:"Abrir ou capitalizar um negócio" },
+  { id:"apoio",         label:"Apoio financeiro à família" },
+  { id:"reforma",       label:"Reforma ou construção" },
+  { id:"livre",         label:"Outro (escrever)" }
+];
+function objetivoPronto(id){
+  for (var i=0;i<OBJETIVOS_PRONTOS.length;i++)
+    if (OBJETIVOS_PRONTOS[i].id===id) return OBJETIVOS_PRONTOS[i];
+  return null;
+}
+
 let objetivoCount = 0;
 function addObjetivo() {
   objetivoCount++;
   const id = 'obj_' + objetivoCount;
   const div = document.createElement('div');
-  div.className = 'dynamic-row';
+  div.className = 'dynamic-row obj-row';
   div.id = 'row_' + id;
-  div.innerHTML = `<input type="text" placeholder="Objetivo" id="${id}_desc" oninput="render()">
+  div.innerHTML =
+    `<select id="${id}_tipo" onchange="ajustaObjetivo('${id}'); render()" style="max-width:230px">`+
+      OBJETIVOS_PRONTOS.map(function(o){
+        return '<option value="'+o.id+'">'+o.label+'</option>'; }).join('')+
+    `</select>
+    <input type="text" placeholder="Descreva o objetivo" id="${id}_desc" oninput="render()" style="display:none">
     <input type="text" inputmode="numeric" placeholder="R$ 0" style="max-width:120px" id="${id}_valor" oninput="formatMoneyInput(this); render()">
-    <input type="number" placeholder="Ano" style="max-width:70px" id="${id}_ano" oninput="render()">
+    <input type="number" placeholder="Ano" style="max-width:72px" id="${id}_ano" oninput="render()">
+    <label class="obj-rec" title="Repete ao longo do tempo"><input type="checkbox" id="${id}_rec" onchange="ajustaObjetivo('${id}'); render()"> recorrente</label>
+    <select id="${id}_cada" onchange="render()" style="max-width:112px;display:none">
+      <option value="1">todo mês</option>
+      <option value="3">a cada 3 meses</option>
+      <option value="6">a cada 6 meses</option>
+      <option value="12" selected>uma vez por ano</option>
+    </select>
+    <input type="number" placeholder="até (ano)" style="max-width:96px;display:none" id="${id}_fim" oninput="render()">
     <button type="button" onclick="removeRow('row_${id}')">&times;</button>`;
   document.getElementById('objetivosList').appendChild(div);
+  ajustaObjetivo(id);
   render();
+}
+/* mostra e esconde campos conforme o objetivo escolhido */
+function ajustaObjetivo(id){
+  const tipo = document.getElementById(id+'_tipo').value;
+  const def  = objetivoPronto(tipo) || {};
+  const rec  = document.getElementById(id+'_rec').checked;
+  const mostrar = function(sufixo, ligado){
+    const el=document.getElementById(id+sufixo);
+    if(el) el.style.display = ligado ? '' : 'none';
+  };
+  mostrar('_desc', tipo==='livre');
+  mostrar('_valor', !def.semValor);
+  /* as analises nao pedem ano nem recorrencia: elas respondem "quando" */
+  const comum = !def.analise;
+  mostrar('_ano', comum);
+  const cx=document.getElementById(id+'_rec');
+  if(cx) cx.parentElement.style.display = comum ? '' : 'none';
+  mostrar('_cada', comum && rec);
+  mostrar('_fim',  comum && rec);
+  const campoValor=document.getElementById(id+'_valor');
+  if(campoValor) campoValor.placeholder =
+    tipo==='poder_compra' ? 'Renda/mês' : (tipo==='liberdade' ? 'Despesa/mês' : 'R$ 0');
+}
+
+/* ---------- Receitas ---------- */
+let receitaCount = 0;
+function addReceita() {
+  receitaCount++;
+  const id = 'rec_' + receitaCount;
+  const div = document.createElement('div');
+  div.className = 'dynamic-row';
+  div.id = 'row_' + id;
+  div.innerHTML = `<input type="text" placeholder="Receita (ex.: aluguel)" id="${id}_desc" oninput="render()">
+    <input type="text" inputmode="numeric" placeholder="R$ 0 /mês" style="max-width:130px" id="${id}_valor" oninput="formatMoneyInput(this); render()">
+    <input type="number" placeholder="de (ano)" style="max-width:92px" id="${id}_de" oninput="render()">
+    <input type="number" placeholder="até (ano)" style="max-width:96px" id="${id}_ate" oninput="render()">
+    <button type="button" onclick="removeRow('row_${id}')">&times;</button>`;
+  document.getElementById('receitasList').appendChild(div);
+  render();
+}
+function getReceitas(){
+  const out=[];
+  document.querySelectorAll('#receitasList .dynamic-row').forEach(function(row){
+    const q=function(suf){ return row.querySelector('input[id$="'+suf+'"]'); };
+    const desc=(q('_desc').value||'').trim();
+    const bruto=q('_valor').value;
+    const valor=bruto?parseInt(bruto.replace(/\D/g,''),10):NaN;
+    const de=parseInt(q('_de').value), ate=parseInt(q('_ate').value);
+    if(valor>0) out.push({label:desc||'Receita', valor:valor,
+                          anoDe:isNaN(de)?null:de, anoAte:isNaN(ate)?null:ate});
+  });
+  return out;
 }
 
 function removeRow(rowId) { const el = document.getElementById(rowId); if (el) el.remove(); render(); }
 function getFilhosIdades() { return Array.from(document.querySelectorAll('#filhosList input')).map(i => i.value).filter(v => v !== ''); }
 function getObjetivos() {
-  const rows = document.querySelectorAll('#objetivosList .dynamic-row');
   const out = [];
-  rows.forEach(row => {
-    const desc = row.querySelector('input[id$="_desc"]').value.trim();
-    const rawValor = row.querySelector('input[id$="_valor"]').value;
-    const valor = rawValor ? parseInt(rawValor.replace(/\D/g, ''), 10) : NaN;
-    const ano = parseInt(row.querySelector('input[id$="_ano"]').value);
-    if (desc && !isNaN(valor) && valor > 0 && !isNaN(ano)) out.push({ label: desc, valor, ano });
+  document.querySelectorAll('#objetivosList .obj-row').forEach(function(row){
+    const id = row.id.replace('row_','');
+    const g  = function(suf){ return document.getElementById(id+suf); };
+    const tipo = g('_tipo').value;
+    const def  = objetivoPronto(tipo) || {};
+    const label = tipo==='livre' ? (g('_desc').value||'').trim() : def.label;
+    const bruto = g('_valor') ? g('_valor').value : '';
+    const valor = bruto ? parseInt(bruto.replace(/\D/g,''),10) : NaN;
+    const ano   = parseInt(g('_ano').value);
+    const rec   = g('_rec').checked;
+
+    if (def.analise){
+      /* analises entram no relatorio, nao na linha do tempo */
+      if (def.semValor || valor>0)
+        out.push({ tipo:tipo, label:label, analise:true,
+                   valor:isNaN(valor)?0:valor });
+      return;
+    }
+    if (!label || !(valor>0) || isNaN(ano)) return;
+    out.push({ tipo:tipo, label:label, valor:valor, ano:ano,
+               recorrente:rec,
+               cada: rec ? parseInt(g('_cada').value)||12 : null,
+               anoFim: rec ? (parseInt(g('_fim').value)||null) : null });
   });
   return out;
 }
@@ -559,6 +703,126 @@ function fmtBRLCompact(v) {
   return sign + fmtBRL(v);
 }
 function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+/* ============================================================
+   MOTOR DE PROJEÇÃO — linha do tempo única
+   ------------------------------------------------------------
+   O motor antigo tinha duas fases separadas: acumulação mês a mês
+   e decumulação por fórmula fechada de anuidade. Objetivo marcado
+   para depois da aposentadoria não tinha onde entrar, e acabava
+   GRAMPEADO no último mês da acumulação:
+
+       const m = Math.max(0, Math.min(mesesTotal, g.mesAlvo));
+
+   Resultado: um objetivo de 2037, com aposentadoria em 2036, era
+   descontado em 2036. Sumia do gráfico e ainda derrubava o saldo
+   da aposentadoria pelo valor inteiro.
+
+   Aqui a linha do tempo é uma só, de hoje até o fim do horizonte,
+   e cada mês recebe os eventos que caem nele. Objetivo pontual,
+   objetivo recorrente, receita temporária e a renda da
+   aposentadoria são todos eventos na mesma régua.
+   ============================================================ */
+
+/* eventos aceitos:
+   {tipo:'aporte',    valor, de, ate}            entra todo mês no intervalo
+   {tipo:'receita',   valor, de, ate}            idem, com prazo próprio
+   {tipo:'objetivo',  valor, mes, label}         saque pontual
+   {tipo:'recorrente',valor, de, ate, cada, label} saque a cada N meses
+   {tipo:'renda',     valor, de, ate}            retirada mensal          */
+
+function montarEventos(cfg){
+  var ev=[];
+  if(cfg.aporteMensal>0)
+    ev.push({tipo:"aporte", valor:cfg.aporteMensal, de:1, ate:cfg.mesAposentadoria});
+  (cfg.receitas||[]).forEach(function(r){
+    if(r.valor>0) ev.push({tipo:"receita", valor:r.valor, de:Math.max(1,r.de||1),
+                           ate:(r.ate==null?cfg.mesFinal:r.ate), label:r.label});
+  });
+  (cfg.objetivos||[]).forEach(function(o){
+    if(!(o.valor>0)) return;
+    if(o.recorrente){
+      ev.push({tipo:"recorrente", valor:o.valor, label:o.label,
+               de:Math.max(1,o.mes), ate:(o.mesFim==null?cfg.mesFinal:o.mesFim),
+               cada:Math.max(1,o.cada||12)});
+    } else {
+      ev.push({tipo:"objetivo", valor:o.valor, mes:Math.max(0,o.mes), label:o.label});
+    }
+  });
+  return ev;
+}
+
+/* Projeta a linha inteira. A renda da aposentadoria é calculada por
+   fora e entra como evento, para que saques posteriores continuem
+   pesando no saldo em vez de serem ignorados.                      */
+function projetar(cfg){
+  var tx=cfg.taxaMensal, saldo=cfg.patrimonioInicial;
+  var ev=montarEventos(cfg).concat(cfg.eventosExtras||[]);
+  var serie=[{mes:0, saldo:saldo, evento:null}];
+  var marcos=[];
+  var quebrouEm=null;
+
+  for(var m=1; m<=cfg.mesFinal; m++){
+    saldo = saldo*(1+tx);
+    var rotulo=null, saqueMes=0;
+
+    ev.forEach(function(e){
+      if(e.tipo==="aporte"||e.tipo==="receita"){
+        if(m>=e.de && m<=e.ate) saldo += e.valor;
+      } else if(e.tipo==="renda"){
+        if(m>=e.de && m<=e.ate) saqueMes += e.valor;
+      } else if(e.tipo==="objetivo"){
+        if(m===e.mes){ saqueMes += e.valor; rotulo=e.label; }
+      } else if(e.tipo==="recorrente"){
+        if(m>=e.de && m<=e.ate && ((m-e.de)%e.cada===0)){
+          saqueMes += e.valor;
+          if(!rotulo) rotulo=e.label;
+        }
+      }
+    });
+
+    if(saqueMes>0){
+      saldo -= saqueMes;
+      if(saldo<0 && quebrouEm===null) quebrouEm=m;
+      saldo = Math.max(0, saldo);
+    }
+    if(rotulo) marcos.push({mes:m, label:rotulo, saldo:saldo});
+    serie.push({mes:m, saldo:saldo, evento:rotulo});
+  }
+  return {serie:serie, marcos:marcos, quebrouEm:quebrouEm,
+          saldoFinal:serie[serie.length-1].saldo};
+}
+
+/* Renda que o patrimônio sustenta, nas duas leituras:
+   - perpétua: só o rendimento real, patrimônio intacto em poder de compra
+   - consumo: gasta o principal até o fim do horizonte                     */
+function rendaSustentavel(saldo, taxaMensal, meses){
+  var perpetua = saldo*taxaMensal;
+  var consumo;
+  if(taxaMensal>0 && meses>0) consumo = saldo*taxaMensal/(1-Math.pow(1+taxaMensal,-meses));
+  else consumo = meses>0 ? saldo/meses : 0;
+  return {perpetua:perpetua, consumo:consumo};
+}
+
+/* Capital necessário para uma renda mensal, preservando poder de compra.
+   Em termos reais, patrimônio constante => renda = saldo * taxa real.    */
+function capitalParaRenda(rendaMensal, taxaMensal){
+  return taxaMensal>0 ? rendaMensal/taxaMensal : Infinity;
+}
+
+/* Em quantos meses o patrimônio chega a um alvo, dado aporte e taxa.
+   Devolve null se nunca chega dentro do horizonte.                       */
+function mesesAteAlvo(patrimonioInicial, aporteMensal, taxaMensal, alvo, limite){
+  limite = limite || 1200;
+  if(patrimonioInicial>=alvo) return 0;
+  var saldo=patrimonioInicial;
+  for(var m=1;m<=limite;m++){
+    saldo = saldo*(1+taxaMensal)+aporteMensal;
+    if(saldo>=alvo) return m;
+  }
+  return null;
+}
+
 
 // ---------- Accumulation phase ----------
 function projectPatrimony(patrimonioInicial, aporteMensal, taxaMensal, mesesTotal, goals) {
@@ -741,7 +1005,7 @@ function render() {
   const pane = document.getElementById('reportPane');
 
   if (!hasBasics) {
-    pane.innerHTML = `<div class="empty-state"><h3>Plano de Liberdade Financeira</h3><p>Preencha os dados do cliente ao lado — o plano aparece aqui em tempo real.</p></div>`;
+    pane.innerHTML = `<div class="empty-state"><h3>Ferramenta Wealth Planning</h3><p>Preencha os dados do cliente ao lado — o plano aparece aqui em tempo real.</p></div>`;
     return;
   }
 
@@ -755,12 +1019,51 @@ function render() {
   const idadeFinal = 95;
   const mesesAte95 = Math.max(mesesAteAposentadoria + 12, Math.round((idadeFinal - idade) * 12));
 
-  const goalsComMes = objetivos.map(o => ({ ...o, mesAlvo: (o.ano - anoAtual) * 12 }));
-  const seriesAccum = projectPatrimony(patrimonioTotal, aportesMensais, taxaMensalReal, mesesAteAposentadoria, goalsComMes);
-  const saldoAposentadoria = seriesAccum[seriesAccum.length - 1].saldo;
+  /* Linha do tempo unica. Objetivo depois da aposentadoria era grampeado
+     no ultimo mes da acumulacao pelo motor antigo; agora cai no mes certo. */
+  const mesDe = function(ano){ return Math.max(0, Math.round((ano - anoAtual) * 12)); };
+  const comuns = objetivos.filter(function(o){ return !o.analise; });
+  const analises = objetivos.filter(function(o){ return o.analise; });
 
+  const objsLinha = comuns.map(function(o){
+    return { valor:o.valor, label:o.label, mes:mesDe(o.ano),
+             recorrente:!!o.recorrente, cada:o.cada,
+             mesFim:o.anoFim ? mesDe(o.anoFim) : null };
+  });
+  const receitas = getReceitas().map(function(r){
+    return { valor:r.valor, label:r.label,
+             de:r.anoDe ? Math.max(1,mesDe(r.anoDe)) : 1,
+             ate:r.anoAte ? mesDe(r.anoAte) : null };
+  });
+
+  const cfgBase = { patrimonioInicial:patrimonioTotal, aporteMensal:aportesMensais,
+                    taxaMensal:taxaMensalReal, mesAposentadoria:mesesAteAposentadoria,
+                    mesFinal:mesesAte95, objetivos:objsLinha, receitas:receitas };
+
+  const proj = projetar(cfgBase);
+  const saldoAposentadoria = proj.serie[Math.min(mesesAteAposentadoria, proj.serie.length-1)].saldo;
   const mesesDecumulacao = mesesAte95 - mesesAteAposentadoria;
-  const decum = projectDecumulation(saldoAposentadoria, taxaMensalReal, mesesDecumulacao, mesesAteAposentadoria);
+  const rend = rendaSustentavel(saldoAposentadoria, taxaMensalReal, mesesDecumulacao);
+
+  /* as duas trajetorias, agora com os saques posteriores contando */
+  const linhaPerp = projetar({ ...cfgBase, eventosExtras:[
+    { tipo:'renda', valor:rend.perpetua, de:mesesAteAposentadoria+1, ate:mesesAte95 }]});
+  const linhaConsumo = projetar({ ...cfgBase, eventosExtras:[
+    { tipo:'renda', valor:rend.consumo, de:mesesAteAposentadoria+1, ate:mesesAte95 }]});
+
+  const seriesAccum = proj.serie.slice(0, mesesAteAposentadoria+1);
+  const decum = {
+    seriesPerp: linhaPerp.serie.slice(mesesAteAposentadoria),
+    seriesConsumo: linhaConsumo.serie.slice(mesesAteAposentadoria),
+    pmt: rend.consumo,
+    rendaPerpetuidade: rend.perpetua
+  };
+  const patrimonioFinalPerp = linhaPerp.saldoFinal;
+  const patrimonioFinalConsumo = linhaConsumo.saldoFinal;
+  /* marcos de TODA a linha, inclusive depois da aposentadoria */
+  const goalsComMes = proj.marcos.map(function(m){
+    return { label:m.label, valor:0, mesAlvo:m.mes, ano:anoAtual+Math.round(m.mes/12) };
+  });
 
   // simulação de consórcio
   const simConsorcio = getToggleVal('simConsorcioGroup') === 'sim';
@@ -771,7 +1074,7 @@ function render() {
   let seriesConsorcio = null;
   const prazoConsorcio = simConsorcio ? (num('prazoConsorcio') || 200) : 0;
   if (simConsorcio && valorCarta > 0 && mesContemplacao > 0) {
-    seriesConsorcio = projectWithConsorcio(patrimonioTotal, aportesMensais, taxaMensalReal, mesesAteAposentadoria, goalsComMes, valorCarta, mesContemplacao, parcelaConsorcio, prazoConsorcio);
+    seriesConsorcio = projectWithConsorcio(patrimonioTotal, aportesMensais, taxaMensalReal, mesesAteAposentadoria, objsLinha.map(function(o){return {valor:o.valor,mesAlvo:o.mes};}), valorCarta, mesContemplacao, parcelaConsorcio, prazoConsorcio);
   }
   const saldoConsorcioFinal = seriesConsorcio ? seriesConsorcio[seriesConsorcio.length-1].saldo : 0;
 
@@ -819,7 +1122,7 @@ function render() {
   // ---- print cover ----
   html += `<div class="print-cover">
     <div class="eyebrow">Relatório</div>
-    <h1>Plano de Liberdade Financeira</h1>
+    <h1>Ferramenta Wealth Planning</h1>
     <div class="cli">${nome ? escapeHtml(nome) : 'Cliente'}</div>
     <hr class="rule">
     <div class="ref">${dataHoje}</div>
@@ -830,7 +1133,7 @@ function render() {
   html += `<div class="report-header">
     <div>
       <img src="${LOGO_NAVY}" alt="Adami Wealth" style="height:26px;width:auto;display:block;margin-bottom:10px;">
-      <h1>Plano de Liberdade Financeira ${nome ? '— <span class="client-name">' + escapeHtml(nome) + '</span>' : ''}</h1>
+      <h1>Ferramenta Wealth Planning ${nome ? '— <span class="client-name">' + escapeHtml(nome) + '</span>' : ''}</h1>
       <div class="meta">${profissao ? escapeHtml(profissao) + ' · ' : ''}${idade ? idade + ' anos · ' : ''}${uf ? uf : ''}</div>
     </div>
     <div class="date">${dataHoje}</div>
@@ -899,8 +1202,244 @@ function render() {
         <div class="stat-box"><div class="stat-value">${fmtBRLCompact(saldoAposentadoria)}</div><div class="stat-label">Patrimônio na aposentadoria</div></div>
         <div class="stat-box"><div class="stat-value accent">${fmtBRLCompact(decum.rendaPerpetuidade)}/mês</div><div class="stat-label">Renda em perpetuidade</div></div>
         <div class="stat-box"><div class="stat-value accent">${fmtBRLCompact(decum.pmt)}/mês</div><div class="stat-label">Renda até os ${idadeFinal} anos (consome tudo)</div></div>
+        <div class="stat-box"><div class="stat-value">${fmtBRLCompact(patrimonioFinalPerp)}</div><div class="stat-label">Patrimônio aos ${idadeFinal} anos, na perpetuidade</div></div>
       </div>
+      ${(function(){
+        /* Saque grande durante a aposentadoria quebra a perpetuidade: o principal
+           cai, mas a renda continua sendo retirada no mesmo nivel. */
+        const erosao = saldoAposentadoria - patrimonioFinalPerp;
+        if (erosao <= saldoAposentadoria * 0.05) return '';
+        return `<div class="insight-box"><strong>Atenção à perpetuidade:</strong> mantendo a renda de
+          ${fmtBRL(decum.rendaPerpetuidade)}/mês e realizando os objetivos marcados após a aposentadoria,
+          o patrimônio aos ${idadeFinal} anos cai de ${fmtBRLCompact(saldoAposentadoria)} para
+          <strong>${fmtBRLCompact(patrimonioFinalPerp)}</strong>. Os saques posteriores reduzem o principal,
+          e a renda deixa de ser sustentável no nível atual. Para preservar o patrimônio seria preciso
+          reduzir a renda para ${fmtBRL(patrimonioFinalPerp * taxaMensalReal)}/mês ou rever esses objetivos.</div>`;
+      })()}
       <p class="narrative" style="font-size:11px;color:var(--muted);margin-top:10px;margin-bottom:0;">Valores em poder de compra de hoje (termos reais). "Perpetuidade" preserva o principal indefinidamente; "consumindo o patrimônio" distribui tudo até os ${idadeFinal} anos, chegando a zero.</p>
+    </div>`;
+  }
+
+  // ---- GRADE DE SENSIBILIDADE DA RENDA ----
+  if (patrimonioTotal > 0 && anosParaAposentar > 0) {
+    const idades = [idadeAposentadoria-5, idadeAposentadoria, idadeAposentadoria+5, idadeAposentadoria+10]
+      .filter(function(i){ return i > idade; });
+    const fatores = [{f:0.5,r:'Aporte 50% menor'},{f:1,r:'Aporte atual'},{f:1.5,r:'Aporte 50% maior'}];
+    let grade = `<table class="mini-table sens"><tr><th>Aporte mensal</th>`+
+      idades.map(function(i){ return '<th class="num">Aposentar aos '+i+'</th>'; }).join('')+'</tr>';
+    fatores.forEach(function(ft){
+      const aporte = aportesMensais * ft.f;
+      grade += '<tr><td>'+ft.r+'<br><span class="sub">'+fmtBRL(aporte)+'/mês</span></td>';
+      idades.forEach(function(i){
+        const meses = Math.max(1, Math.round((i - idade) * 12));
+        const fim = Math.max(meses + 12, Math.round((idadeFinal - idade) * 12));
+        const p = projetar({ patrimonioInicial:patrimonioTotal, aporteMensal:aporte,
+          taxaMensal:taxaMensalReal, mesAposentadoria:meses, mesFinal:meses,
+          objetivos:objsLinha, receitas:receitas });
+        const r = rendaSustentavel(p.saldoFinal, taxaMensalReal, fim - meses);
+        const atual = (ft.f === 1 && i === idadeAposentadoria);
+        grade += '<td class="num'+(atual?' destaque':'')+'">'+fmtBRLCompact(r.perpetua)+
+                 '<br><span class="sub">'+fmtBRLCompact(p.saldoFinal)+'</span></td>';
+      });
+      grade += '</tr>';
+    });
+    grade += '</table>';
+    html += `<div class="section-block">
+      <div class="head-row"><div class="icon-circle">${ICONS.chart}</div><h2 style="margin:0;">Sensibilidade da renda</h2></div>
+      <p class="subtext">Renda mensal em perpetuidade conforme a idade de aposentadoria e o esforço de aporte.
+        Em cinza, o patrimônio acumulado em cada combinação. A célula destacada é o cenário atual.</p>
+      ${grade}
+      <p class="narrative" style="font-size:11px;color:var(--muted);margin:10px 0 0;">
+        Valores em poder de compra de hoje. Cada célula refaz a projeção inteira, incluindo objetivos e receitas informados.</p>
+    </div>`;
+  }
+
+  // ---- ANÁLISES ESCOLHIDAS NOS OBJETIVOS ----
+  analises.forEach(function(a){
+    if (a.tipo === 'liberdade' && a.valor > 0) {
+      const capital = capitalParaRenda(a.valor, taxaMensalReal);
+      const meses = mesesAteAlvo(patrimonioTotal, aportesMensais, taxaMensalReal, capital);
+      const falta = Math.max(0, capital - patrimonioTotal);
+      const pctPronto = capital > 0 ? Math.min(100, patrimonioTotal / capital * 100) : 0;
+      html += `<div class="section-block">
+        <div class="head-row"><div class="icon-circle">${ICONS.target}</div><h2 style="margin:0;">Distância para a liberdade financeira</h2></div>
+        <p class="subtext">Quanto é preciso ter investido para que a carteira sustente ${fmtBRL(a.valor)}/mês sem consumir o principal.</p>
+        <div class="summary-strip">
+          <div class="stat-box"><div class="stat-value">${fmtBRLCompact(capital)}</div><div class="stat-label">Capital necessário</div></div>
+          <div class="stat-box"><div class="stat-value">${fmtBRLCompact(patrimonioTotal)}</div><div class="stat-label">Patrimônio hoje (${pctPronto.toFixed(0)}% do caminho)</div></div>
+          <div class="stat-box"><div class="stat-value accent">${meses === null ? '—' : (meses === 0 ? 'já atingido' : (meses/12).toFixed(1).replace('.',',')+' anos')}</div><div class="stat-label">${meses === 0 ? 'Situação atual' : 'Tempo no ritmo atual'}</div></div>
+        </div>
+        ${meses === null
+          ? `<div class="insight-box"><strong>Fora de alcance no ritmo atual.</strong> Com aportes de ${fmtBRL(aportesMensais)}/mês e rentabilidade real de ${rentabilidadeAnual}% a.a., a carteira não chega a ${fmtBRLCompact(capital)} dentro de 100 anos. Reveja a despesa-alvo, o aporte ou a rentabilidade.</div>`
+          : (meses === 0
+            ? `<div class="insight-box"><strong>Independência já atingida.</strong> O patrimônio atual sustenta ${fmtBRL(a.valor)}/mês em perpetuidade. A conversa deixa de ser de acumulação e passa a ser de preservação e sucessão.</div>`
+            : `<p class="narrative">Faltam <strong>${fmtBRLCompact(falta)}</strong>. Mantendo aportes de ${fmtBRL(aportesMensais)}/mês e rentabilidade real de ${rentabilidadeAnual}% a.a., o patrimônio chega lá em <strong>${(meses/12).toFixed(1).replace('.',',')} anos</strong>, aos ${Math.round(idade + meses/12)} anos de idade.</p>`)}
+      </div>`;
+    }
+
+    if (a.tipo === 'poder_compra' && a.valor > 0) {
+      const capital = capitalParaRenda(a.valor, taxaMensalReal);
+      const falta = Math.max(0, capital - saldoAposentadoria);
+      /* Cenario A: mesma data, rentabilidade maior. Procura a taxa que fecha a conta. */
+      let taxaNec = null;
+      for (let bp = 1; bp <= 1500; bp++) {
+        const t = Math.pow(1 + bp/10000, 1/12) - 1;
+        const p = projetar({ patrimonioInicial:patrimonioTotal, aporteMensal:aportesMensais,
+          taxaMensal:t, mesAposentadoria:mesesAteAposentadoria, mesFinal:mesesAteAposentadoria,
+          objetivos:objsLinha, receitas:receitas });
+        if (p.saldoFinal * t >= a.valor) { taxaNec = bp/100; break; }
+      }
+      /* Cenario B: mesma rentabilidade, aporte maior. */
+      let aporteNec = null;
+      for (let mult = 1; mult <= 400; mult++) {
+        const ap = aportesMensais * mult * 0.25 + (aportesMensais === 0 ? mult * 1000 : 0);
+        const p = projetar({ patrimonioInicial:patrimonioTotal, aporteMensal:ap,
+          taxaMensal:taxaMensalReal, mesAposentadoria:mesesAteAposentadoria, mesFinal:mesesAteAposentadoria,
+          objetivos:objsLinha, receitas:receitas });
+        if (p.saldoFinal * taxaMensalReal >= a.valor) { aporteNec = ap; break; }
+      }
+      /* Cenario C: mesmas premissas, mais tempo. */
+      let anosNec = null;
+      for (let m = mesesAteAposentadoria; m <= mesesAteAposentadoria + 480; m++) {
+        const p = projetar({ patrimonioInicial:patrimonioTotal, aporteMensal:aportesMensais,
+          taxaMensal:taxaMensalReal, mesAposentadoria:m, mesFinal:m,
+          objetivos:objsLinha, receitas:receitas });
+        if (p.saldoFinal * taxaMensalReal >= a.valor) { anosNec = m/12; break; }
+      }
+      const jaAtinge = saldoAposentadoria * taxaMensalReal >= a.valor;
+      html += `<div class="section-block">
+        <div class="head-row"><div class="icon-circle">${ICONS.target}</div><h2 style="margin:0;">Preservar o poder de compra da próxima geração</h2></div>
+        <p class="subtext">Renda perpétua de ${fmtBRL(a.valor)}/mês, em poder de compra de hoje, sem consumir o principal — o patrimônio atravessa a geração intacto em termos reais.</p>
+        <div class="summary-strip">
+          <div class="stat-box"><div class="stat-value">${fmtBRLCompact(capital)}</div><div class="stat-label">Patrimônio necessário</div></div>
+          <div class="stat-box"><div class="stat-value">${fmtBRLCompact(saldoAposentadoria)}</div><div class="stat-label">Projetado na aposentadoria</div></div>
+          <div class="stat-box"><div class="stat-value ${jaAtinge ? 'accent' : ''}">${jaAtinge ? 'atingido' : fmtBRLCompact(falta)}</div><div class="stat-label">${jaAtinge ? 'No cenário atual' : 'Diferença a cobrir'}</div></div>
+        </div>
+        ${jaAtinge
+          ? `<div class="insight-box"><strong>O cenário atual já entrega esse objetivo.</strong> A projeção chega a ${fmtBRLCompact(saldoAposentadoria)}, que sustenta ${fmtBRL(saldoAposentadoria * taxaMensalReal)}/mês em perpetuidade — acima dos ${fmtBRL(a.valor)} pretendidos. A discussão passa a ser de estrutura sucessória, não de acumulação.</div>`
+          : `<p class="narrative">Três caminhos para cobrir a diferença, cada um mexendo em uma variável:</p>
+            <table class="mini-table"><tr><th>Cenário</th><th>O que muda</th><th class="num">Necessário</th></tr>
+            <tr><td><strong>A</strong> · Mais rentabilidade</td><td>Mesma data, mesmo aporte</td><td class="num">${taxaNec === null ? 'acima de 15% a.a.' : taxaNec.toFixed(2).replace('.',',')+'% a.a. real'}</td></tr>
+            <tr><td><strong>B</strong> · Mais aporte</td><td>Mesma data, mesma rentabilidade</td><td class="num">${aporteNec === null ? 'fora de alcance' : fmtBRL(aporteNec)+'/mês'}</td></tr>
+            <tr><td><strong>C</strong> · Mais tempo</td><td>Mesmo aporte, mesma rentabilidade</td><td class="num">${anosNec === null ? 'fora de alcance' : 'aposentar aos '+Math.round(idade + anosNec)+' anos'}</td></tr>
+            </table>
+            <div class="insight-box">Hoje o aporte é de ${fmtBRL(aportesMensais)}/mês a ${rentabilidadeAnual}% a.a. real, com aposentadoria aos ${idadeAposentadoria}. O cenário A costuma ser o mais arriscado dos três: exige assumir mais volatilidade justamente num patrimônio cuja finalidade é atravessar gerações.</div>`}
+      </div>`;
+    }
+
+    if (a.tipo === 'protecao') {
+      html += `<div class="section-block">
+        <div class="head-row"><div class="icon-circle">${ICONS.shield}</div><h2 style="margin:0;">Proteção de patrimônio</h2></div>
+        <p class="subtext">Registrado como prioridade declarada do cliente.</p>
+        <p class="narrative">O cliente indicou a proteção do patrimônio como objetivo. Não entra na projeção por não ter valor nem prazo associados — é diretriz para as decisões de alocação, estrutura e seguro discutidas nas seções seguintes.</p>
+      </div>`;
+    }
+  });
+
+  // ---- PLANEJAMENTO SUCESSÓRIO ----
+  if (patrimonioTotal > 0) {
+    const exterior = getToggleVal('exteriorGroup') === 'sim';
+    const filhosNum = filhos.map(function(x){ return parseInt(x,10); })
+                                  .filter(function(x){ return !isNaN(x); });
+    const temMenor = filhosNum.some(function(i){ return i < 18; });
+    const temFilhos = filhosNum.length > 0;
+    const imobRelevante = patrimonioImobilizado > patrimonioTotal * 0.2;
+    const semHolding = holding === 'nao';
+    const holdingParcial = holding === 'parcial';
+    const prevBaixa = alocPrev < 10;
+    const semSeguro = !jaSeguro;
+    const patrimonioAlto = (patrimonioTotal + patrimonioImobilizado) > 20000000;
+
+    /* Cada instrumento traz as caracteristicas como estao no material da casa.
+       O destaque sai das respostas do formulario, e o motivo fica escrito —
+       sem motivo visivel, recomendacao vira palpite.                        */
+    const instrumentos = [
+      { grupo:'nao', nome:'Testamento',
+        carac:['Assegura que a vontade do testador seja cumprida após o falecimento',
+               'Evita conflitos entre os herdeiros',
+               'Pode precisar ser alterado quando há mudança relevante no patrimônio ou na família',
+               'Não evita o processo de inventário'],
+        destaque: temMenor || patrimonioAlto,
+        motivo: temMenor ? 'Há filho menor de idade: a indicação de tutor e a destinação dos bens precisam estar escritas.'
+              : (patrimonioAlto ? 'Patrimônio relevante e múltiplos ativos aumentam o risco de disputa entre herdeiros.' : '') },
+      { grupo:'nao', nome:'Cláusulas restritivas',
+        carac:['Usufruto político e econômico',
+               'Incomunicabilidade, impenhorabilidade e inalienabilidade',
+               'Reversão',
+               'Não aplicável a todos os ativos'],
+        destaque: temMenor,
+        motivo: temMenor ? 'Com herdeiro menor, as cláusulas protegem o bem até a maturidade e blindam de terceiros.' : '' },
+      { grupo:'nao', nome:'Doação em vida',
+        carac:['Diminui o patrimônio a ser inventariado no falecimento',
+               '"Trava" a alíquota de ITCMD aplicável',
+               'Alguns estados têm alíquota de ITCMD menor na doação do que no falecimento',
+               'Uma vez doado, está doado'],
+        destaque: imobRelevante && (semHolding || holdingParcial),
+        motivo: (imobRelevante && (semHolding || holdingParcial))
+          ? 'Parcela relevante em imóveis fora de estrutura: doar em vida antecipa a transmissão e pode travar alíquota menor.' : '' },
+      { grupo:'nao', nome:'Holding patrimonial',
+        carac:['Simplifica o processo de inventário',
+               'Permite mecanismos de governança para mitigar conflitos entre herdeiros',
+               'Não evita o processo de inventário',
+               'Tributação elevada em relação a ativos financeiros'],
+        destaque: imobRelevante && semHolding,
+        motivo: (imobRelevante && semHolding)
+          ? fmtBRLCompact(patrimonioImobilizado) + ' em imóveis fora de holding. Estruturar simplifica o inventário e organiza a governança familiar.'
+          : (holdingParcial ? 'Estrutura parcial: vale avaliar se os imóveis restantes entram na holding.' : '') },
+      { grupo:'fin', nome:'Previdência privada',
+        carac:['Não passa pelo processo de inventário',
+               'Diferimento tributário, sem come-cotas',
+               'Não há cobrança de ITCMD e o IR pode ser menor',
+               'Recursos para o longo prazo'],
+        destaque: prevBaixa,
+        motivo: prevBaixa ? 'Apenas ' + alocPrev + '% da carteira em previdência. É o instrumento financeiro mais direto para transmitir fora do inventário.' : '' },
+      { grupo:'fin', nome:'Fundo de investimento exclusivo',
+        carac:['Concentra o patrimônio em uma estrutura única',
+               'Facilita a sucessão',
+               'Tributação periódica em alguns casos (come-cotas)',
+               'Custos elevados'],
+        destaque: patrimonioAlto,
+        motivo: patrimonioAlto ? 'Patrimônio acima de R$ 20 milhões costuma diluir o custo fixo da estrutura.' : '' },
+      { grupo:'fin', nome:'Seguro de vida',
+        carac:['Não passa pelo processo de inventário',
+               'Não há cobrança de ITCMD nem de IR',
+               'Alavanca o patrimônio: o capital segurado é garantido desde o primeiro prêmio',
+               'Não gera rendimento financeiro'],
+        destaque: semSeguro,
+        motivo: semSeguro ? 'Sem cobertura contratada. É o único instrumento que cria liquidez imediata para o inventário sem depender do patrimônio existente.' : '' },
+      { grupo:'fin', nome:'Aplicações financeiras no exterior',
+        carac:['Diversificação do patrimônio e alocação em moeda forte',
+               'Facilita o processo sucessório em alguns casos',
+               'Atualmente sem cobrança de ITCMD na sucessão',
+               'Exige atenção ao tipo de investimento, à regra sucessória da jurisdição e à tributação'],
+        destaque: exterior || alocIntl < 10,
+        motivo: exterior ? 'O cliente já tem bens no exterior: a regra sucessória da jurisdição precisa ser verificada, sob risco de o espólio travar lá fora.'
+              : (alocIntl < 10 ? 'Apenas ' + alocIntl + '% no exterior. Além da diversificação, hoje não há ITCMD sobre esses ativos na sucessão.' : '') }
+    ];
+
+    const destacados = instrumentos.filter(function(i){ return i.destaque; });
+    const cartao = function(i){
+      return '<div class="suc-item' + (i.destaque ? ' on' : '') + '">' +
+        '<div class="suc-nome">' + escapeHtml(i.nome) +
+        (i.destaque ? '<span class="suc-tag">indicado</span>' : '') + '</div>' +
+        '<ul class="suc-lista">' + i.carac.map(function(c){
+          return '<li>' + escapeHtml(c) + '</li>'; }).join('') + '</ul>' +
+        (i.destaque && i.motivo ? '<div class="suc-motivo">' + escapeHtml(i.motivo) + '</div>' : '') +
+        '</div>';
+    };
+
+    html += `<div class="section-block page-break">
+      <div class="head-row"><div class="icon-circle">${ICONS.shield}</div><h2 style="margin:0;">Planejamento sucessório</h2></div>
+      <p class="subtext">Instrumentos disponíveis, com os marcados como <strong>indicado</strong> a partir das respostas deste cliente${temFilhos ? ' — inclusive as idades dos filhos' : ''}. Os demais continuam válidos, apenas não são prioridade agora.</p>
+      ${destacados.length
+        ? `<div class="insight-box"><strong>Prioridades para este caso:</strong> ${destacados.map(function(i){ return escapeHtml(i.nome); }).join(' · ')}.</div>`
+        : `<div class="insight-box">Nenhum instrumento se destaca a partir das respostas atuais. Estrutura, previdência e seguro já estão contemplados; a conversa é de manutenção.</div>`}
+      <h3 class="suc-grupo">Instrumentos não financeiros</h3>
+      <div class="suc-grade">${instrumentos.filter(function(i){ return i.grupo==='nao'; }).map(cartao).join('')}</div>
+      <h3 class="suc-grupo">Instrumentos financeiros</h3>
+      <div class="suc-grade">${instrumentos.filter(function(i){ return i.grupo==='fin'; }).map(cartao).join('')}</div>
+      <p class="narrative" style="font-size:11px;color:var(--muted);margin:12px 0 0;">
+        Material de apoio à conversa. A escolha e a implementação de qualquer instrumento dependem de análise jurídica e tributária específica.</p>
     </div>`;
   }
 
@@ -1006,7 +1545,7 @@ function render() {
   }
   html += `</div></div>`;
 
-  html += `<div class="disclaimer disclaimer-page">Ferramenta de apoio à reunião de planejamento — estimativas ilustrativas para orientar a conversa com o cliente, não constituem aconselhamento tributário, atuarial ou de investimento. A projeção patrimonial assume rentabilidade real constante e não elimina o risco de mercado, de crédito ou de liquidez. Validar percentuais de ITCMD, custas e cobertura recomendada com as áreas jurídica, contábil e de produtos antes de formalizar qualquer proposta. Plano de Liberdade Financeira · Adami Wealth.</div>`;
+  html += `<div class="disclaimer disclaimer-page">Ferramenta de apoio à reunião de planejamento — estimativas ilustrativas para orientar a conversa com o cliente, não constituem aconselhamento tributário, atuarial ou de investimento. A projeção patrimonial assume rentabilidade real constante e não elimina o risco de mercado, de crédito ou de liquidez. Validar percentuais de ITCMD, custas e cobertura recomendada com as áreas jurídica, contábil e de produtos antes de formalizar qualquer proposta. Ferramenta Wealth Planning · Adami Wealth.</div>`;
 
   pane.innerHTML = html;
 }
@@ -1016,7 +1555,7 @@ toggleSeguro();
 toggleSimConsorcio();
 render();
 /* selo de versao — serve para identificar cache antes de investigar bug */
-var VERSAO_DIAG = "versão 2.40";
+var VERSAO_DIAG = "versão 2.41";
 document.getElementById('selo').textContent = VERSAO_DIAG;
 </script>
 
