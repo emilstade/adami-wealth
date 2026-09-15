@@ -105,6 +105,36 @@ input,select,textarea{font-family:inherit;font-size:13px}
   padding:26px 40px;border-bottom:1px solid #24405F;flex-wrap:wrap}
 .hub-top img{height:30px;width:auto;flex:none}
 
+.eqabas{display:flex;gap:6px;margin:0 0 16px;border-bottom:1px solid #E3E7EE}
+.eqaba{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;
+  font-size:12.5px;color:#8A93A6;cursor:pointer;font-family:inherit;margin-bottom:-1px}
+.eqaba:hover{color:#12263F}
+.eqaba.on{color:#12263F;border-bottom-color:#C9A24B;font-weight:600}
+.eqx .eqsel{padding:5px 7px;border:1px solid #D8DEE8;border-radius:6px;font-size:12px;
+  font-family:inherit;background:#fff;max-width:150px}
+.eqpend{font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:#8A6D2F;
+  border:1px solid #DCC287;border-radius:3px;padding:1px 5px;margin-left:6px}
+.eqtag.eu{color:#3D5178;border-color:#3D5178}
+.eqprod td{padding-top:0!important;border-bottom:1px solid #F1F4F8}
+.eqprodlbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#8A93A6;
+  margin-right:8px;font-weight:600}
+.eqchip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:#26313F;
+  border:1px solid #D8DEE8;border-radius:20px;padding:3px 10px;margin:3px 5px 3px 0;cursor:pointer}
+.eqchip.on{background:#FBF6EA;border-color:#C9A24B;color:#7A6122}
+.eqchip input{width:auto;margin:0}
+.eqform{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}
+.eqform .eqc{display:flex;flex-direction:column;gap:4px}
+.eqform label{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:#8A93A6;font-weight:600}
+.eqform input,.eqform select{padding:8px 9px;border:1px solid #D8DEE8;border-radius:7px;
+  font-size:13px;font-family:inherit}
+.eqform .eqchk{display:flex;align-items:center;gap:6px;font-size:12.5px;text-transform:none;
+  letter-spacing:0;color:#26313F;font-weight:400}
+.eqform .eqchk input{width:auto}
+.eqform .btn{grid-column:1/-1}
+.pe-links{display:flex;gap:16px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.pe-links .link{background:none;border:0;color:#8AA8C6;font-size:12.5px;cursor:pointer;
+  font-family:inherit;text-decoration:underline;padding:2px}
+.pe-links .link:hover{color:#fff}
 .eqv{position:fixed;inset:0;background:rgba(12,20,34,.72);z-index:9000;display:flex;
      align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
 .eqx{background:#fff;border-radius:10px;max-width:760px;width:100%;padding:26px 28px;
@@ -534,6 +564,43 @@ function limparSessao(){
   SESSAO=null;
   try{ localStorage.removeItem("aw_sessao"); }catch(e){}
 }
+/* Primeiro acesso: /auth/v1/signup funciona com a chave publicavel,
+   entao a pessoa define a propria senha sem o master precisar criar
+   nem guardar senha de ninguem. Quem nao foi convidado e recusado
+   por um gatilho no banco, nao por checagem aqui na tela.          */
+function primeiroAcesso(email,senha){
+  return fetch(SB_URL+"/auth/v1/signup",{
+    method:"POST",
+    headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({email:email,password:senha})
+  }).then(function(res){
+    return res.json().then(function(j){
+      if(!res.ok){
+        var m=(j&&(j.msg||j.error_description||j.message))||"Não foi possível criar o acesso.";
+        if(/convidad/i.test(m)) m="Este e-mail não foi convidado. Peça o convite a um master.";
+        else if(/already regist|already been/i.test(m)) m="Já existe conta com este e-mail. Use Entrar.";
+        else if(/password/i.test(m)) m="A senha precisa ter pelo menos 6 caracteres.";
+        throw new Error(m);
+      }
+      return j;
+    });
+  });
+}
+/* Recuperação de senha depende de e-mail, e o serviço embutido do
+   Supabase entrega 2 por hora no projeto inteiro. Só funciona de
+   verdade com SMTP próprio configurado no painel.                  */
+function recuperarSenha(email){
+  return fetch(SB_URL+"/auth/v1/recover",{
+    method:"POST",
+    headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({email:email})
+  }).then(function(res){
+    if(!res.ok) return res.json().then(function(j){
+      throw new Error((j&&(j.msg||j.message))||"Não foi possível enviar o e-mail.");
+    });
+    return true;
+  });
+}
 function entrar(email,senha){
   return fetch(SB_URL+"/auth/v1/token?grant_type=password",{
     method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
@@ -561,6 +628,9 @@ function renovar(){
    Toda mudanca passa pela funcao definir_privilegio no banco, que
    confere de novo quem esta chamando antes de gravar.               */
 var EQUIPE=[];
+var EQUIPE=[], CONVITES=[], ABA_EQ="equipe";
+var PRODUTOS_ESP=["Consórcio","Seguros","Previdência","Câmbio","Crédito","Renda Variável","Offshore"];
+
 function abrirEquipe(){
   if(!EU.super) return;
   if(!document.getElementById("eqv")){
@@ -572,56 +642,173 @@ function abrirEquipe(){
   }
   document.getElementById("eqv").style.display="flex";
   pintarEquipe("<p class='eqsub'>Carregando…</p>");
-  api("rpc/listar_equipe",{method:"POST",body:{}})
-    .then(function(r){ EQUIPE=r||[]; pintarEquipe(); })
+  Promise.all([
+    api("rpc/listar_equipe",{method:"POST",body:{}}).catch(function(){ return []; }),
+    api("rpc/listar_convites",{method:"POST",body:{}}).catch(function(){ return []; })
+  ]).then(function(r){ EQUIPE=r[0]||[]; CONVITES=r[1]||[]; pintarEquipe(); })
     .catch(function(e){ pintarEquipe("<p class='eqsub err'>"+esc(e.message||e)+"</p>"); });
 }
 function fecharEquipe(){
   var d=document.getElementById("eqv"); if(d) d.style.display="none";
 }
+function abaEq(a){ ABA_EQ=a; pintarEquipe(); }
+
 function pintarEquipe(aviso){
   var h='<h2>Equipe</h2>'+
-    '<p class="eqsub">Usuário novo é criado no Supabase, em Authentication &rarr; Users. '+
-    'Ele já entra funcionando, enxergando apenas os próprios clientes. '+
-    'Use os controles abaixo só para dar acesso além disso.</p>';
+    '<div class="eqabas">'+
+      '<button class="eqaba'+(ABA_EQ==="equipe"?" on":"")+'" onclick="abaEq(\'equipe\')">Quem já tem conta</button>'+
+      '<button class="eqaba'+(ABA_EQ==="convidar"?" on":"")+'" onclick="abaEq(\'convidar\')">Convidar pessoa</button>'+
+    '</div>';
   if(aviso){ pintar(h+aviso); return; }
-  if(!EQUIPE.length){ pintar(h+'<p class="eqsub">Nenhum usuário encontrado.</p>'); return; }
-  h+='<table><tr><th>Pessoa</th><th class="c">Administrador</th><th class="c">Mesa RV</th></tr>';
-  EQUIPE.forEach(function(p,i){
-    var trava=p.super;
-    h+='<tr><td><div class="eqnome">'+esc(p.nome||p.email.split("@")[0])+
-       (trava?' <span class="eqtag">supremo</span>':'')+'</div>'+
-       '<div class="eqmail">'+esc(p.email)+'</div></td>'+
-       '<td class="c"><button class="eqsw'+(p.admin||trava?' on':'')+'"'+(trava?' disabled':'')+
-         ' onclick="alternarPriv('+i+',\'admin\')"><span></span></button></td>'+
-       '<td class="c"><button class="eqsw'+(p.mesa_rv||p.admin||trava?' on':'')+'"'+
-         (trava||p.admin?' disabled':'')+' onclick="alternarPriv('+i+',\'mesa_rv\')"><span></span></button></td></tr>';
-  });
-  h+='</table><div class="eqfoot"><span class="eqmsg" id="eqmsg">'+
-     'Administrador vê os clientes de todos e edita a Mesa RV por herança.</span>'+
-     '<button class="btn" onclick="fecharEquipe()">Fechar</button></div>';
-  pintar(h);
+  pintar(h + (ABA_EQ==="equipe" ? blocoEquipe() : blocoConvite()) +
+    '<div class="eqfoot"><span class="eqmsg" id="eqmsg"></span>'+
+    '<button class="btn" onclick="fecharEquipe()">Fechar</button></div>');
 }
-function pintar(html){ var x=document.getElementById("eqx"); if(x) x.innerHTML=html; }
+
+/* ---------- quem já tem conta ---------- */
+function blocoEquipe(){
+  if(!EQUIPE.length) return '<p class="eqsub">Nenhum usuário encontrado.</p>';
+  var h='<p class="eqsub">Cada pessoa tem acesso no portal e um papel no CRM. '+
+    'Master enxerga tudo e é o único que concede acesso — por isso não pode ser desmarcado aqui.</p>'+
+    '<table><tr><th>Pessoa</th><th class="c">Master</th><th class="c">Admin</th>'+
+    '<th class="c">Mesa RV</th><th>Papel no CRM</th></tr>';
+  EQUIPE.forEach(function(p,i){
+    var eu = p.user_id===EU.id;
+    h+='<tr><td><div class="eqnome">'+esc(p.nome||p.email.split("@")[0])+
+       (p.super?' <span class="eqtag">master</span>':'')+
+       (eu?' <span class="eqtag eu">você</span>':'')+'</div>'+
+       '<div class="eqmail">'+esc(p.email)+'</div></td>'+
+       '<td class="c"><button class="eqsw'+(p.super?" on":"")+'"'+(eu?' disabled':'')+
+         ' onclick="alternarPriv('+i+',\'super\')"><span></span></button></td>'+
+       '<td class="c"><button class="eqsw'+(p.admin||p.super?" on":"")+'"'+(p.super?' disabled':'')+
+         ' onclick="alternarPriv('+i+',\'admin\')"><span></span></button></td>'+
+       '<td class="c"><button class="eqsw'+(p.mesa_rv||p.admin||p.super?" on":"")+'"'+
+         ((p.super||p.admin)?' disabled':'')+' onclick="alternarPriv('+i+',\'mesa_rv\')"><span></span></button></td>'+
+       '<td>'+seletorCrm(p,i)+'</td></tr>';
+    if(p.crm_role==="especialista"){
+      h+='<tr class="eqprod"><td colspan="5">'+
+         '<span class="eqprodlbl">Produtos do especialista</span>'+
+         PRODUTOS_ESP.map(function(pr){
+           var tem=(p.crm_produtos||[]).indexOf(pr)>=0;
+           return '<label class="eqchip'+(tem?" on":"")+'">'+
+             '<input type="checkbox" '+(tem?"checked":"")+
+             ' onchange="alternarProduto('+i+',\''+pr+'\',this.checked)"> '+esc(pr)+'</label>';
+         }).join("")+'</td></tr>';
+    }
+  });
+  return h+'</table>';
+}
+function seletorCrm(p,i){
+  var papeis=[["vendedor","Assessor"],["especialista","Especialista"],["admin","Admin do CRM"]];
+  var atual=p.crm_role||"vendedor";
+  return '<select class="eqsel" onchange="definirPapelCrm('+i+',this.value)">'+
+    papeis.map(function(x){
+      return '<option value="'+x[0]+'"'+(x[0]===atual?" selected":"")+'>'+x[1]+'</option>';
+    }).join("")+'</select>'+
+    (p.crm_status==="pendente"?'<span class="eqpend">pendente</span>':'');
+}
+function msgEq(txt,erro){
+  var m=document.getElementById("eqmsg");
+  if(m){ m.className="eqmsg"+(erro?" err":""); m.textContent=txt; }
+}
 function alternarPriv(i,campo){
-  var p=EQUIPE[i]; if(!p||p.super) return;
+  var p=EQUIPE[i]; if(!p) return;
+  if(p.user_id===EU.id && campo==="super"){
+    msgEq("Você não pode remover o próprio acesso de master.",true); return;
+  }
   var novo=!p[campo];
-  var msg=document.getElementById("eqmsg");
-  if(msg){ msg.className="eqmsg"; msg.textContent="Salvando…"; }
+  msgEq("Salvando…");
   api("rpc/definir_privilegio",{method:"POST",
       body:{p_user_id:p.user_id,p_campo:campo,p_valor:novo}})
     .then(function(){
-      p[campo]=novo;
-      pintarEquipe();
-      var m=document.getElementById("eqmsg");
-      if(m) m.textContent=(campo==="admin"?"Administrador":"Mesa RV")+
-        (novo?" concedido a ":" removido de ")+(p.nome||p.email);
+      p[campo]=novo; pintarEquipe();
+      var nomes={super:"Master",admin:"Administrador",mesa_rv:"Mesa RV"};
+      msgEq(nomes[campo]+(novo?" concedido a ":" removido de ")+(p.nome||p.email));
     })
-    .catch(function(e){
-      var m=document.getElementById("eqmsg");
-      if(m){ m.className="eqmsg err"; m.textContent=String(e.message||e); }
-    });
+    .catch(function(e){ msgEq(String(e.message||e),true); });
 }
+function definirPapelCrm(i,papel){
+  var p=EQUIPE[i]; if(!p) return;
+  msgEq("Salvando…");
+  api("rpc/definir_papel_crm",{method:"POST",
+      body:{p_user_id:p.user_id,p_role:papel,p_status:"ativo",
+            p_produtos:(papel==="especialista"?(p.crm_produtos||[]):[])}})
+    .then(function(){
+      p.crm_role=papel; p.crm_status="ativo";
+      if(papel!=="especialista") p.crm_produtos=[];
+      pintarEquipe();
+      msgEq("Papel no CRM de "+(p.nome||p.email)+" agora é "+papel+".");
+    })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
+}
+function alternarProduto(i,prod,ligado){
+  var p=EQUIPE[i]; if(!p) return;
+  var lista=(p.crm_produtos||[]).slice();
+  var k=lista.indexOf(prod);
+  if(ligado && k<0) lista.push(prod);
+  if(!ligado && k>=0) lista.splice(k,1);
+  msgEq("Salvando…");
+  api("rpc/definir_papel_crm",{method:"POST",
+      body:{p_user_id:p.user_id,p_role:"especialista",p_status:p.crm_status||"ativo",p_produtos:lista}})
+    .then(function(){ p.crm_produtos=lista; pintarEquipe();
+      msgEq("Produtos de "+(p.nome||p.email)+": "+(lista.join(", ")||"nenhum")); })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
+}
+
+/* ---------- convidar ---------- */
+function blocoConvite(){
+  var h='<p class="eqsub">O convite libera o e-mail para o primeiro acesso. '+
+    'A pessoa escolhe a própria senha ao entrar pela primeira vez — você não precisa criar nem '+
+    'guardar senha de ninguém. Sem convite, o cadastro é recusado.</p>'+
+    '<div class="eqform">'+
+      '<div class="eqc"><label>Nome</label><input id="cvNome" placeholder="Maria Silva"></div>'+
+      '<div class="eqc"><label>E-mail</label><input id="cvEmail" type="email" placeholder="maria@'+EMPRESA.dominio+'"></div>'+
+      '<div class="eqc"><label>Papel no CRM</label><select id="cvRole">'+
+        '<option value="vendedor">Assessor</option>'+
+        '<option value="especialista">Especialista</option>'+
+        '<option value="admin">Admin do CRM</option></select></div>'+
+      '<div class="eqc"><label>Acesso no portal</label>'+
+        '<label class="eqchk"><input type="checkbox" id="cvAdmin"> Administrador</label>'+
+        '<label class="eqchk"><input type="checkbox" id="cvRv"> Mesa RV</label>'+
+        '<label class="eqchk"><input type="checkbox" id="cvMaster"> Master</label></div>'+
+      '<button class="btn" onclick="enviarConvite()">Convidar</button>'+
+    '</div>';
+  if(CONVITES.length){
+    h+='<p class="eqsub" style="margin-top:18px">Convites aguardando primeiro acesso</p><table>';
+    CONVITES.forEach(function(c){
+      h+='<tr><td><div class="eqnome">'+esc(c.nome||"—")+'</div>'+
+         '<div class="eqmail">'+esc(c.email)+'</div></td>'+
+         '<td>'+esc(c.role)+(c.master?" · master":"")+(c.admin?" · admin":"")+(c.mesa_rv?" · mesa RV":"")+'</td>'+
+         '<td class="c"><button class="eqsw" onclick="revogar(\''+esc(c.email)+'\')" '+
+         'style="width:auto;padding:4px 10px;border-radius:6px;font-size:11px">revogar</button></td></tr>';
+    });
+    h+='</table>';
+  }
+  return h;
+}
+function enviarConvite(){
+  var g=function(id){ var e=document.getElementById(id); return e?e.value.trim():""; };
+  var c=function(id){ var e=document.getElementById(id); return !!(e&&e.checked); };
+  var email=g("cvEmail").toLowerCase(), nome=g("cvNome");
+  if(!nome){ msgEq("Informe o nome.",true); return; }
+  if(email.indexOf("@")<1){ msgEq("E-mail inválido.",true); return; }
+  msgEq("Enviando…");
+  api("rpc/convidar",{method:"POST",body:{
+    p_email:email, p_nome:nome, p_role:g("cvRole"),
+    p_master:c("cvMaster"), p_admin:c("cvAdmin"), p_mesa_rv:c("cvRv"), p_produtos:[]}})
+    .then(function(){
+      msgEq(nome+" pode entrar agora pelo \"Primeiro acesso\" com o e-mail "+email+".");
+      return abrirEquipe();
+    })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
+}
+function revogar(email){
+  if(!confirm("Revogar o convite de "+email+"?")) return;
+  api("rpc/revogar_convite",{method:"POST",body:{p_email:email}})
+    .then(function(){ msgEq("Convite revogado."); return abrirEquipe(); })
+    .catch(function(e){ msgEq(String(e.message||e),true); });
+}
+function pintar(html){ var x=document.getElementById("eqx"); if(x) x.innerHTML=html; }
 
 function sair(){
   if(!confirm("Sair da conta?")) return;
@@ -655,7 +842,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.48";
+var VERSAO="versão 2.49";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2325,17 +2512,69 @@ function viewLogin(erro){
     '<div class="auth-form"><div class="auth-card">'+
       '<div class="rule"></div>'+
       '<h1>Admin '+EMPRESA.nome+'</h1>'+
-      '<p class="hint">Entre com o e-mail cadastrado pela empresa.</p>'+
+      '<p class="hint">'+(MODO_LOGIN==="novo"
+        ? "Use o e-mail que recebeu o convite e escolha a sua senha."
+        : "Entre com o e-mail cadastrado pela empresa.")+'</p>'+
       (erro?'<div class="erro">'+esc(erro)+'</div>':'')+
       '<label for="lgEmail">E-mail</label>'+
       '<div class="campo"><input type="email" id="lgEmail" autocomplete="username" placeholder="nome@'+EMPRESA.dominio+'"></div>'+
-      '<label for="lgSenha">Senha</label>'+
+      '<label for="lgSenha">'+(MODO_LOGIN==="novo"?"Crie uma senha":"Senha")+'</label>'+
       '<div class="campo"><input type="password" id="lgSenha" autocomplete="current-password" placeholder="••••••••">'+
         '<button type="button" class="olho" id="lgOlho" onclick="verSenha()" aria-label="Mostrar senha" title="Mostrar senha">'+iconeOlho(false)+'</button></div>'+
-      '<button class="entrar" id="lgBtn" onclick="fazerLogin()">Entrar</button>'+
-      '<p class="pe">Esqueceu a senha ou precisa de acesso? Fale com o administrador do sistema.</p>'+
+      (MODO_LOGIN==="novo"?'<p class="hint" style="margin:-6px 0 14px">Mínimo de 6 caracteres.</p>':'')+
+      '<button class="entrar" id="lgBtn" onclick="'+(MODO_LOGIN==="novo"?"criarAcesso()":"fazerLogin()")+'">'+
+        (MODO_LOGIN==="novo"?"Criar meu acesso":"Entrar")+'</button>'+
+      '<div class="pe-links">'+
+        (MODO_LOGIN==="novo"
+          ? '<button type="button" class="link" onclick="modoLogin(\'entrar\')">Já tenho acesso</button>'
+          : '<button type="button" class="link" onclick="modoLogin(\'novo\')">Primeiro acesso</button>'+
+            '<button type="button" class="link" onclick="esqueciSenha()">Esqueci minha senha</button>')+
+      '</div>'+
     '</div></div>'+
   '</div>';
+}
+var MODO_LOGIN="entrar";
+function modoLogin(m){
+  MODO_LOGIN=m;
+  document.getElementById("view").innerHTML=viewLogin();
+  var i=document.getElementById("lgEmail"); if(i) i.focus();
+}
+function criarAcesso(){
+  var e=document.getElementById("lgEmail").value.trim().toLowerCase();
+  var p=document.getElementById("lgSenha").value;
+  if(!e||!p){ document.getElementById("view").innerHTML=viewLogin("Preencha e-mail e senha."); MODO_LOGIN="novo"; return; }
+  if(p.length<6){ document.getElementById("view").innerHTML=viewLogin("A senha precisa ter pelo menos 6 caracteres."); MODO_LOGIN="novo"; return; }
+  var b=document.getElementById("lgBtn"); if(b){ b.disabled=true; b.textContent="Criando…"; }
+  primeiroAcesso(e,p)
+    .then(function(){ return entrar(e,p); })
+    .then(function(){
+      MODO_LOGIN="entrar";
+      return carregar().then(function(){
+        if(db.clientes.length) S.cliente=db.clientes[0].id;
+        S.app=null; S.tab="preencher"; montarRascunho(); render();
+        registrar("primeiro acesso","","");
+      });
+    })
+    .catch(function(err){
+      MODO_LOGIN="novo";
+      document.getElementById("view").innerHTML=viewLogin(String(err.message||err));
+    });
+}
+function esqueciSenha(){
+  var e=document.getElementById("lgEmail").value.trim().toLowerCase();
+  if(e.indexOf("@")<1){
+    document.getElementById("view").innerHTML=viewLogin("Digite o seu e-mail acima e clique de novo.");
+    return;
+  }
+  var b=document.getElementById("lgBtn"); if(b) b.disabled=true;
+  recuperarSenha(e)
+    .then(function(){
+      document.getElementById("view").innerHTML=
+        viewLogin("Se este e-mail tiver conta, o link de redefinição foi enviado. Verifique a caixa de entrada e o spam.");
+    })
+    .catch(function(err){
+      document.getElementById("view").innerHTML=viewLogin(String(err.message||err));
+    });
 }
 function fazerLogin(){
   var e=document.getElementById("lgEmail").value.trim();
