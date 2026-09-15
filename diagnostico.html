@@ -209,20 +209,66 @@
     @page { size: A4; margin: 0; }
     .report-pane { padding: 18mm 16mm 15mm; }
   }
+  /* --- linhas de objetivo e receita: grade com rótulo, em vez de campos
+         espremidos numa linha só --- */
+  .linha-obj { position:relative; display:grid; gap:10px 12px; padding:14px 34px 14px 14px;
+    border:1px solid #E3E7EE; border-radius:10px; background:#FCFDFE; margin-bottom:10px;
+    grid-template-columns: minmax(200px,1.5fr) minmax(130px,1fr) minmax(90px,.7fr) auto minmax(120px,.9fr) minmax(100px,.8fr); }
+  @media (max-width:900px){ .linha-obj { grid-template-columns:1fr 1fr; } }
+  @media (max-width:560px){ .linha-obj { grid-template-columns:1fr; } }
+  .campo-obj { display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .campo-obj label { font-size:10px; text-transform:uppercase; letter-spacing:.5px;
+    color:var(--muted); font-weight:600; white-space:nowrap; }
+  .campo-obj input, .campo-obj select { width:100%; padding:8px 9px; font-size:13px;
+    border:1px solid #D8DEE8; border-radius:7px; background:#fff; min-width:0; }
+  .campo-obj select { text-overflow:ellipsis; }
+  .campo-obj .chk { display:flex; align-items:center; gap:6px; font-size:12.5px;
+    text-transform:none; letter-spacing:0; color:var(--ink); font-weight:400;
+    padding:8px 0; white-space:nowrap; }
+  .campo-obj .chk input { width:auto; }
+  .linha-x { position:absolute; top:9px; right:9px; background:none; border:0; color:#C3CBD6;
+    font-size:19px; line-height:1; cursor:pointer; padding:2px 5px; border-radius:5px; }
+  .linha-x:hover { color:var(--red); background:#FBEDE9; }
+  .ajuda-obj { grid-column:1/-1; margin:0; font-size:11.5px; line-height:1.5; color:#7A6122;
+    background:#FBF6EA; border-radius:7px; padding:8px 11px; }
+
+  /* --- planejamento sucessório --- */
+  .suc-grupo { font-family:var(--serif); color:var(--navy); font-size:13px; margin:22px 0 12px;
+    text-transform:uppercase; letter-spacing:1.2px; display:flex; align-items:center; gap:10px; }
+  .suc-grupo::after { content:""; flex:1; height:1px; background:#E3E7EE; }
+  .suc-grade { display:grid; grid-template-columns:repeat(auto-fit,minmax(272px,1fr)); gap:13px; }
+  .suc-item { border:1px solid #E7EBF1; border-radius:11px; padding:15px 17px; background:#fff;
+    break-inside:avoid; display:flex; flex-direction:column; }
+  .suc-item.on { border-color:#DCC287; background:linear-gradient(#FEFCF7,#FDFAF2); }
+  .suc-cab { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:5px; }
+  .suc-nome { font-family:var(--serif); font-weight:700; color:var(--navy); font-size:14.5px; }
+  .suc-tag { font-size:9px; letter-spacing:.8px; text-transform:uppercase; color:#fff;
+    background:#C9A24B; border-radius:20px; padding:3px 9px; font-weight:700; white-space:nowrap; }
+  .suc-resumo { font-size:12px; color:var(--muted); margin:0 0 11px; line-height:1.45; font-style:italic; }
+  .suc-lista { margin:0; padding:0; list-style:none; }
+  .suc-lista li { font-size:12px; line-height:1.5; color:var(--ink); margin-bottom:6px;
+    padding-left:19px; position:relative; }
+  .suc-lista li::before { position:absolute; left:0; top:0; font-weight:700; }
+  .suc-lista li.bom::before  { content:"+"; color:#5C7A5C; font-size:14px; line-height:1.25; }
+  .suc-lista li.ruim::before { content:"!"; color:#B5563A; font-size:12px; line-height:1.4; }
+  .suc-lista li.ruim { color:#6B7787; }
+  .suc-motivo { margin-top:auto; padding-top:11px; margin-bottom:0; border-top:1px dashed #E2D3A8;
+    font-size:11.5px; line-height:1.5; color:#7A6122; }
+  @media print { .suc-item { border:1px solid #E3E7EE; } .suc-item.on { background:#FDFBF6; } }
   .mini-table.sens td .sub, .mini-table.sens .sub { font-size:10.5px; color:var(--muted); }
   .mini-table.sens td.destaque { background:#FBF6EA; font-weight:700; box-shadow: inset 0 0 0 1px #E8DBBB; }
-  .obj-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .obj-row .obj-rec { display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--muted); white-space:nowrap; }
-  .obj-row .obj-rec input { width:auto; margin:0; }
-  .suc-grupo { font-family:var(--serif); color:var(--navy); font-size:13.5px; margin:18px 0 10px; }
-  .suc-grade { display:grid; grid-template-columns:repeat(auto-fit,minmax(248px,1fr)); gap:12px; }
-  .suc-item { border:1px solid #E3E7EE; border-radius:10px; padding:13px 15px; background:#fff; break-inside:avoid; }
-  .suc-item.on { border-color:#C9A24B; background:#FDFBF6; box-shadow:0 0 0 1px #C9A24B inset; }
-  .suc-nome { font-weight:700; color:var(--navy); font-size:13.5px; margin-bottom:7px; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
-  .suc-tag { font-size:9.5px; letter-spacing:.6px; text-transform:uppercase; color:#8A6D2F; border:1px solid #C9A24B; border-radius:3px; padding:1px 5px; font-weight:600; }
-  .suc-lista { margin:0; padding-left:16px; }
-  .suc-lista li { font-size:11.5px; line-height:1.5; color:var(--ink); margin-bottom:3px; }
-  .suc-motivo { margin-top:9px; padding-top:8px; border-top:1px solid #EDE2C8; font-size:11.5px; line-height:1.5; color:#7A6122; }
+
+
+
+
+
+
+
+
+
+
+
+
 </style>
 <script>
 /* --- acesso restrito: exige sessão iniciada no portal --- */
@@ -528,25 +574,47 @@ function addObjetivo() {
   objetivoCount++;
   const id = 'obj_' + objetivoCount;
   const div = document.createElement('div');
-  div.className = 'dynamic-row obj-row';
+  div.className = 'linha-obj';
   div.id = 'row_' + id;
   div.innerHTML =
-    `<select id="${id}_tipo" onchange="ajustaObjetivo('${id}'); render()" style="max-width:230px">`+
-      OBJETIVOS_PRONTOS.map(function(o){
-        return '<option value="'+o.id+'">'+o.label+'</option>'; }).join('')+
-    `</select>
-    <input type="text" placeholder="Descreva o objetivo" id="${id}_desc" oninput="render()" style="display:none">
-    <input type="text" inputmode="numeric" placeholder="R$ 0" style="max-width:120px" id="${id}_valor" oninput="formatMoneyInput(this); render()">
-    <input type="number" placeholder="Ano" style="max-width:72px" id="${id}_ano" oninput="render()">
-    <label class="obj-rec" title="Repete ao longo do tempo"><input type="checkbox" id="${id}_rec" onchange="ajustaObjetivo('${id}'); render()"> recorrente</label>
-    <select id="${id}_cada" onchange="render()" style="max-width:112px;display:none">
-      <option value="1">todo mês</option>
-      <option value="3">a cada 3 meses</option>
-      <option value="6">a cada 6 meses</option>
-      <option value="12" selected>uma vez por ano</option>
-    </select>
-    <input type="number" placeholder="até (ano)" style="max-width:96px;display:none" id="${id}_fim" oninput="render()">
-    <button type="button" onclick="removeRow('row_${id}')">&times;</button>`;
+    `<button type="button" class="linha-x" onclick="removeRow('row_${id}')" title="remover">&times;</button>
+     <div class="campo-obj c-tipo">
+       <label>Objetivo</label>
+       <select id="${id}_tipo" onchange="ajustaObjetivo('${id}'); render()">`+
+         OBJETIVOS_PRONTOS.map(function(o){
+           return '<option value="'+o.id+'">'+o.label+'</option>'; }).join('')+
+       `</select>
+     </div>
+     <div class="campo-obj c-desc" id="${id}_descBox">
+       <label>Descrição</label>
+       <input type="text" placeholder="Ex.: reforma da casa de praia" id="${id}_desc" oninput="render()">
+     </div>
+     <div class="campo-obj c-valor" id="${id}_valorBox">
+       <label id="${id}_valorLbl">Valor</label>
+       <input type="text" inputmode="numeric" placeholder="R$ 0" id="${id}_valor" oninput="formatMoneyInput(this); render()">
+     </div>
+     <div class="campo-obj c-ano" id="${id}_anoBox">
+       <label>Ano</label>
+       <input type="number" placeholder="2030" id="${id}_ano" oninput="render()">
+     </div>
+     <div class="campo-obj c-rec" id="${id}_recBox">
+       <label>Repete?</label>
+       <label class="chk"><input type="checkbox" id="${id}_rec" onchange="ajustaObjetivo('${id}'); render()"> recorrente</label>
+     </div>
+     <div class="campo-obj c-cada" id="${id}_cadaBox">
+       <label>Frequência</label>
+       <select id="${id}_cada" onchange="render()">
+         <option value="1">todo mês</option>
+         <option value="3">a cada 3 meses</option>
+         <option value="6">a cada 6 meses</option>
+         <option value="12" selected>uma vez por ano</option>
+       </select>
+     </div>
+     <div class="campo-obj c-fim" id="${id}_fimBox">
+       <label>Até o ano</label>
+       <input type="number" placeholder="2040" id="${id}_fim" oninput="render()">
+     </div>
+     <p class="ajuda-obj" id="${id}_ajuda"></p>`;
   document.getElementById('objetivosList').appendChild(div);
   ajustaObjetivo(id);
   render();
@@ -556,22 +624,28 @@ function ajustaObjetivo(id){
   const tipo = document.getElementById(id+'_tipo').value;
   const def  = objetivoPronto(tipo) || {};
   const rec  = document.getElementById(id+'_rec').checked;
-  const mostrar = function(sufixo, ligado){
+  const ver = function(sufixo, ligado){
     const el=document.getElementById(id+sufixo);
     if(el) el.style.display = ligado ? '' : 'none';
   };
-  mostrar('_desc', tipo==='livre');
-  mostrar('_valor', !def.semValor);
-  /* as analises nao pedem ano nem recorrencia: elas respondem "quando" */
   const comum = !def.analise;
-  mostrar('_ano', comum);
-  const cx=document.getElementById(id+'_rec');
-  if(cx) cx.parentElement.style.display = comum ? '' : 'none';
-  mostrar('_cada', comum && rec);
-  mostrar('_fim',  comum && rec);
-  const campoValor=document.getElementById(id+'_valor');
-  if(campoValor) campoValor.placeholder =
-    tipo==='poder_compra' ? 'Renda/mês' : (tipo==='liberdade' ? 'Despesa/mês' : 'R$ 0');
+  ver('_descBox',  tipo==='livre');
+  ver('_valorBox', !def.semValor);
+  ver('_anoBox',   comum);
+  ver('_recBox',   comum);
+  ver('_cadaBox',  comum && rec);
+  ver('_fimBox',   comum && rec);
+
+  const lbl=document.getElementById(id+'_valorLbl');
+  if(lbl) lbl.textContent = tipo==='poder_compra' ? 'Renda mensal desejada'
+                          : (tipo==='liberdade' ? 'Despesa mensal desejada' : 'Valor');
+  const campo=document.getElementById(id+'_valor');
+  if(campo) campo.placeholder = def.analise ? 'R$ 0 /mês' : 'R$ 0';
+  const ajuda=document.getElementById(id+'_ajuda');
+  if(ajuda){
+    ajuda.textContent = def.ajuda || '';
+    ajuda.style.display = def.ajuda ? '' : 'none';
+  }
 }
 
 /* ---------- Receitas ---------- */
@@ -580,15 +654,48 @@ function addReceita() {
   receitaCount++;
   const id = 'rec_' + receitaCount;
   const div = document.createElement('div');
-  div.className = 'dynamic-row';
+  div.className = 'linha-obj';
   div.id = 'row_' + id;
-  div.innerHTML = `<input type="text" placeholder="Receita (ex.: aluguel)" id="${id}_desc" oninput="render()">
-    <input type="text" inputmode="numeric" placeholder="R$ 0 /mês" style="max-width:130px" id="${id}_valor" oninput="formatMoneyInput(this); render()">
-    <input type="number" placeholder="de (ano)" style="max-width:92px" id="${id}_de" oninput="render()">
-    <input type="number" placeholder="até (ano)" style="max-width:96px" id="${id}_ate" oninput="render()">
-    <button type="button" onclick="removeRow('row_${id}')">&times;</button>`;
+  div.innerHTML =
+    `<button type="button" class="linha-x" onclick="removeRow('row_${id}')" title="remover">&times;</button>
+     <div class="campo-obj c-tipo">
+       <label>Receita</label>
+       <input type="text" placeholder="Ex.: aluguel do galpão" id="${id}_desc" oninput="render()">
+     </div>
+     <div class="campo-obj c-rec">
+       <label>Natureza</label>
+       <select id="${id}_nat" onchange="ajustaReceita('${id}'); render()">
+         <option value="mensal" selected>Recorrente, todo mês</option>
+         <option value="unica">Entrada única</option>
+       </select>
+     </div>
+     <div class="campo-obj c-valor">
+       <label id="${id}_valorLbl">Valor por mês</label>
+       <input type="text" inputmode="numeric" placeholder="R$ 0" id="${id}_valor" oninput="formatMoneyInput(this); render()">
+     </div>
+     <div class="campo-obj c-ano" id="${id}_deBox">
+       <label id="${id}_deLbl">A partir de</label>
+       <input type="number" placeholder="2026" id="${id}_de" oninput="render()">
+     </div>
+     <div class="campo-obj c-fim" id="${id}_ateBox">
+       <label>Até o ano</label>
+       <input type="number" placeholder="deixe vazio se não acaba" id="${id}_ate" oninput="render()">
+     </div>`;
   document.getElementById('receitasList').appendChild(div);
+  ajustaReceita(id);
   render();
+}
+/* Entrada unica — venda de um imovel, por exemplo — nao tem "ate": e um
+   evento num ano so. Deixar o campo visivel convidava a preencher errado. */
+function ajustaReceita(id){
+  const nat=document.getElementById(id+'_nat').value;
+  const unica = nat==='unica';
+  const ate=document.getElementById(id+'_ateBox');
+  if(ate) ate.style.display = unica ? 'none' : '';
+  const lbl=document.getElementById(id+'_valorLbl');
+  if(lbl) lbl.textContent = unica ? 'Valor total' : 'Valor por mês';
+  const dl=document.getElementById(id+'_deLbl');
+  if(dl) dl.textContent = unica ? 'No ano de' : 'A partir de';
 }
 function getReceitas(){
   const out=[];
@@ -598,8 +705,11 @@ function getReceitas(){
     const bruto=q('_valor').value;
     const valor=bruto?parseInt(bruto.replace(/\D/g,''),10):NaN;
     const de=parseInt(q('_de').value), ate=parseInt(q('_ate').value);
-    if(valor>0) out.push({label:desc||'Receita', valor:valor,
-                          anoDe:isNaN(de)?null:de, anoAte:isNaN(ate)?null:ate});
+    const nat=row.querySelector('select[id$="_nat"]');
+    const unica=nat && nat.value==='unica';
+    if(valor>0) out.push({label:desc||'Receita', valor:valor, unica:unica,
+                          anoDe:isNaN(de)?null:de,
+                          anoAte:unica?(isNaN(de)?null:de):(isNaN(ate)?null:ate)});
   });
   return out;
 }
@@ -1216,6 +1326,9 @@ function render() {
           e a renda deixa de ser sustentável no nível atual. Para preservar o patrimônio seria preciso
           reduzir a renda para ${fmtBRL(patrimonioFinalPerp * taxaMensalReal)}/mês ou rever esses objetivos.</div>`;
       })()}
+      ${analises.some(function(a){ return a.tipo==='protecao'; })
+        ? `<p class="narrative" style="font-size:12px;margin-top:12px;margin-bottom:0;"><strong>Proteção de patrimônio</strong> consta como prioridade declarada do cliente. Sem valor ou prazo associados, não entra na projeção — orienta as decisões de alocação, estrutura e seguro discutidas adiante.</p>`
+        : ''}
       <p class="narrative" style="font-size:11px;color:var(--muted);margin-top:10px;margin-bottom:0;">Valores em poder de compra de hoje (termos reais). "Perpetuidade" preserva o principal indefinidamente; "consumindo o patrimônio" distribui tudo até os ${idadeFinal} anos, chegando a zero.</p>
     </div>`;
   }
@@ -1327,13 +1440,6 @@ function render() {
       </div>`;
     }
 
-    if (a.tipo === 'protecao') {
-      html += `<div class="section-block">
-        <div class="head-row"><div class="icon-circle">${ICONS.shield}</div><h2 style="margin:0;">Proteção de patrimônio</h2></div>
-        <p class="subtext">Registrado como prioridade declarada do cliente.</p>
-        <p class="narrative">O cliente indicou a proteção do patrimônio como objetivo. Não entra na projeção por não ter valor nem prazo associados — é diretriz para as decisões de alocação, estrutura e seguro discutidas nas seções seguintes.</p>
-      </div>`;
-    }
   });
 
   // ---- PLANEJAMENTO SUCESSÓRIO ----
@@ -1353,65 +1459,330 @@ function render() {
     /* Cada instrumento traz as caracteristicas como estao no material da casa.
        O destaque sai das respostas do formulario, e o motivo fica escrito —
        sem motivo visivel, recomendacao vira palpite.                        */
+    /* Vantagem e ressalva vinham misturadas na mesma lista do material.
+       Separadas, o assessor lê o trade-off de cada instrumento de relance. */
     const instrumentos = [
       { grupo:'nao', nome:'Testamento',
-        carac:['Assegura que a vontade do testador seja cumprida após o falecimento',
-               'Evita conflitos entre os herdeiros',
-               'Pode precisar ser alterado quando há mudança relevante no patrimônio ou na família',
+        resumo:'Registra a vontade, mas não dispensa o inventário.',
+        bons:['Assegura que a vontade do testador seja cumprida',
+              'Evita conflitos entre os herdeiros'],
+        ruins:['Precisa ser revisto a cada mudança relevante no patrimônio ou na família',
                'Não evita o processo de inventário'],
         destaque: temMenor || patrimonioAlto,
         motivo: temMenor ? 'Há filho menor de idade: a indicação de tutor e a destinação dos bens precisam estar escritas.'
               : (patrimonioAlto ? 'Patrimônio relevante e múltiplos ativos aumentam o risco de disputa entre herdeiros.' : '') },
       { grupo:'nao', nome:'Cláusulas restritivas',
-        carac:['Usufruto político e econômico',
-               'Incomunicabilidade, impenhorabilidade e inalienabilidade',
-               'Reversão',
-               'Não aplicável a todos os ativos'],
+        resumo:'Protegem o bem depois de transmitido.',
+        bons:['Usufruto político e econômico',
+              'Incomunicabilidade, impenhorabilidade e inalienabilidade',
+              'Reversão ao doador'],
+        ruins:['Não se aplicam a todos os ativos'],
         destaque: temMenor,
-        motivo: temMenor ? 'Com herdeiro menor, as cláusulas protegem o bem até a maturidade e blindam de terceiros.' : '' },
+        motivo: temMenor ? 'Com herdeiro menor, protegem o bem até a maturidade e blindam de terceiros.' : '' },
       { grupo:'nao', nome:'Doação em vida',
-        carac:['Diminui o patrimônio a ser inventariado no falecimento',
-               '"Trava" a alíquota de ITCMD aplicável',
-               'Alguns estados têm alíquota de ITCMD menor na doação do que no falecimento',
-               'Uma vez doado, está doado'],
+        resumo:'Antecipa a transmissão e pode travar alíquota menor.',
+        bons:['Reduz o patrimônio a ser inventariado',
+              '"Trava" a alíquota de ITCMD aplicável',
+              'Alguns estados cobram menos na doação do que no falecimento'],
+        ruins:['Uma vez doado, está doado — não há volta'],
         destaque: imobRelevante && (semHolding || holdingParcial),
         motivo: (imobRelevante && (semHolding || holdingParcial))
           ? 'Parcela relevante em imóveis fora de estrutura: doar em vida antecipa a transmissão e pode travar alíquota menor.' : '' },
       { grupo:'nao', nome:'Holding patrimonial',
-        carac:['Simplifica o processo de inventário',
-               'Permite mecanismos de governança para mitigar conflitos entre herdeiros',
-               'Não evita o processo de inventário',
-               'Tributação elevada em relação a ativos financeiros'],
+        resumo:'Organiza a governança, não elimina o inventário.',
+        bons:['Simplifica o processo de inventário',
+              'Permite governança para mitigar conflitos entre herdeiros'],
+        ruins:['Não evita o processo de inventário',
+               'Tributação elevada frente a ativos financeiros'],
         destaque: imobRelevante && semHolding,
         motivo: (imobRelevante && semHolding)
           ? fmtBRLCompact(patrimonioImobilizado) + ' em imóveis fora de holding. Estruturar simplifica o inventário e organiza a governança familiar.'
           : (holdingParcial ? 'Estrutura parcial: vale avaliar se os imóveis restantes entram na holding.' : '') },
       { grupo:'fin', nome:'Previdência privada',
-        carac:['Não passa pelo processo de inventário',
-               'Diferimento tributário, sem come-cotas',
-               'Não há cobrança de ITCMD e o IR pode ser menor',
-               'Recursos para o longo prazo'],
+        resumo:'Transmite fora do inventário, com vantagem tributária.',
+        bons:['Não passa pelo processo de inventário',
+              'Diferimento tributário, sem come-cotas',
+              'Sem ITCMD, e o IR pode ser menor'],
+        ruins:['Recursos comprometidos com o longo prazo'],
         destaque: prevBaixa,
-        motivo: prevBaixa ? 'Apenas ' + alocPrev + '% da carteira em previdência. É o instrumento financeiro mais direto para transmitir fora do inventário.' : '' },
+        motivo: prevBaixa ? 'Apenas ' + alocPrev + '% da carteira em previdência. É o caminho financeiro mais direto para transmitir fora do inventário.' : '' },
       { grupo:'fin', nome:'Fundo de investimento exclusivo',
-        carac:['Concentra o patrimônio em uma estrutura única',
-               'Facilita a sucessão',
-               'Tributação periódica em alguns casos (come-cotas)',
-               'Custos elevados'],
+        resumo:'Concentra a gestão; custo só compensa em escala.',
+        bons:['Concentra o patrimônio em uma estrutura única',
+              'Facilita a sucessão'],
+        ruins:['Tributação periódica em alguns casos (come-cotas)',
+               'Custos elevados de estruturação e manutenção'],
         destaque: patrimonioAlto,
         motivo: patrimonioAlto ? 'Patrimônio acima de R$ 20 milhões costuma diluir o custo fixo da estrutura.' : '' },
       { grupo:'fin', nome:'Seguro de vida',
-        carac:['Não passa pelo processo de inventário',
-               'Não há cobrança de ITCMD nem de IR',
-               'Alavanca o patrimônio: o capital segurado é garantido desde o primeiro prêmio',
-               'Não gera rendimento financeiro'],
+        resumo:'Cria liquidez imediata que o patrimônio não tem.',
+        bons:['Não passa pelo processo de inventário',
+              'Sem cobrança de ITCMD nem de IR',
+              'Alavanca o patrimônio: o capital é garantido desde o primeiro prêmio'],
+        ruins:['Não gera rendimento financeiro'],
         destaque: semSeguro,
-        motivo: semSeguro ? 'Sem cobertura contratada. É o único instrumento que cria liquidez imediata para o inventário sem depender do patrimônio existente.' : '' },
-      { grupo:'fin', nome:'Aplicações financeiras no exterior',
-        carac:['Diversificação do patrimônio e alocação em moeda forte',
-               'Facilita o processo sucessório em alguns casos',
-               'Atualmente sem cobrança de ITCMD na sucessão',
-               'Exige atenção ao tipo de investimento, à regra sucessória da jurisdição e à tributação'],
+        motivo: semSeguro ? 'Sem cobertura contratada. É o único instrumento que cria liquidez para o inventário sem depender do patrimônio existente.' : '' },
+      { grupo:'fin', nome:'Aplicações no exterior',
+        resumo:'Diversifica em moeda forte, com regra sucessória própria.',
+        bons:['Diversificação do patrimônio e alocação em moeda forte',
+              'Facilita o processo sucessório em alguns casos',
+              'Atualmente sem cobrança de ITCMD na sucessão'],
+        ruins:['Exige atenção ao tipo de investimento, à jurisdição e à tributação'],
+        destaque: exterior || alocIntl < 10,
+        motivo: exterior ? 'O cliente já tem bens no exterior: a regra sucessória da jurisdição precisa ser verificada, sob risco de o espólio travar lá fora.'
+              : (alocIntl < 10 ? 'Apenas ' + alocIntl + '% no exterior. Além da diversificação, hoje não há ITCMD sobre esses ativos na sucessão.' : '') }
+    ];
+
+    const destacados = instrumentos.filter(function(i){ return i.destaque; });
+    const cartao = function(i){
+      return '<div class="suc-item' + (i.destaque ? ' on' : '') + '">' +
+        '<div class="suc-cab">' +
+          '<span class="suc-nome">' + escapeHtml(i.nome) + '</span>' +
+          (i.destaque ? '<span class="suc-tag">indicado</span>' : '') +
+        '</div>' +
+        '<p class="suc-resumo">' + escapeHtml(i.resumo) + '</p>' +
+        '<ul class="suc-lista">' +
+          i.bons.map(function(c){ return '<li class="bom">' + escapeHtml(c) + '</li>'; }).join('') +
+          i.ruins.map(function(c){ return '<li class="ruim">' + escapeHtml(c) + '</li>'; }).join('') +
+        '</ul>' +
+        (i.destaque && i.motivo ? '<div class="suc-motivo">' + escapeHtml(i.motivo) + '</div>' : '') +
+        '</div>';
+    };
+
+    html += `<div class="section-block page-break">
+      <div class="head-row"><div class="icon-circle">${ICONS.chart}</div><h2 style="margin:0;">Projeção Patrimonial</h2></div>
+      <p class="subtext">De hoje (${anoAtual}) até os ${idadeFinal} anos, considerando rentabilidade real de ${rentabilidadeAnual}% a.a., aportes de ${fmtBRL(aportesMensais)}/mês${goalsComMes.length ? ' e os objetivos marcados no gráfico' : ''}. Após a aposentadoria, duas trajetórias possíveis:</p>
+      ${renderPatrimonyChart(seriesAccum, decum.seriesPerp, decum.seriesConsumo, goalsComMes, anoAtual, mesesAte95, mesesAteAposentadoria, seriesConsorcio)}
+      <div class="chart-legend" style="margin-top:10px;">
+        <span><span class="dash" style="background:#1B2A4A;"></span>Acumulação${seriesConsorcio ? ' (sem consórcio)' : ''}</span>
+        ${seriesConsorcio ? `<span><span class="dash" style="background:#5C7A5C;"></span>Com consórcio (inclui o bem adquirido)</span>` : ''}
+        <span><span class="dash" style="background:#C9A24B;"></span>Renda em perpetuidade</span>
+        <span><span class="dash" style="background:#B5563A;"></span>Consumindo o patrimônio até os ${idadeFinal} anos</span>
+      </div>
+      ${seriesConsorcio ? (() => {
+        const delta = saldoConsorcioFinal - saldoAposentadoria;
+        const positivo = delta >= 0;
+        return `<div class="insight-box"><strong>Simulação de alavancagem:</strong> carta de ${fmtBRLCompact(valorCarta)} contemplada em ${anoContemplacao}, parcela estimada de ${fmtBRL(parcelaConsorcio)}/mês por ${prazoConsorcio} meses. Patrimônio total na aposentadoria: <strong>${fmtBRLCompact(saldoConsorcioFinal)}</strong> (${positivo ? '+' : ''}${fmtBRLCompact(delta)} frente ao cenário sem consórcio, somando o bem adquirido ao saldo investido).<br><br>${positivo
+          ? 'Nesta simulação a estratégia é acretiva também em termos financeiros.'
+          : `Nesta simulação o custo da taxa de administração supera o retorno de manter o valor investido — a diferença de ${fmtBRLCompact(Math.abs(delta))} é o preço de antecipar a aquisição do bem. O ganho do consórcio aqui não é financeiro, e sim de acesso: adquirir o bem em ${anoContemplacao} sem liquidar a carteira nem tomar crédito com juros.`}</div>`;
+      })() : ''}
+      <div class="summary-strip" style="margin-top:16px;">
+        <div class="stat-box"><div class="stat-value">${fmtBRLCompact(saldoAposentadoria)}</div><div class="stat-label">Patrimônio na aposentadoria</div></div>
+        <div class="stat-box"><div class="stat-value accent">${fmtBRLCompact(decum.rendaPerpetuidade)}/mês</div><div class="stat-label">Renda em perpetuidade</div></div>
+        <div class="stat-box"><div class="stat-value accent">${fmtBRLCompact(decum.pmt)}/mês</div><div class="stat-label">Renda até os ${idadeFinal} anos (consome tudo)</div></div>
+        <div class="stat-box"><div class="stat-value">${fmtBRLCompact(patrimonioFinalPerp)}</div><div class="stat-label">Patrimônio aos ${idadeFinal} anos, na perpetuidade</div></div>
+      </div>
+      ${(function(){
+        /* Saque grande durante a aposentadoria quebra a perpetuidade: o principal
+           cai, mas a renda continua sendo retirada no mesmo nivel. */
+        const erosao = saldoAposentadoria - patrimonioFinalPerp;
+        if (erosao <= saldoAposentadoria * 0.05) return '';
+        return `<div class="insight-box"><strong>Atenção à perpetuidade:</strong> mantendo a renda de
+          ${fmtBRL(decum.rendaPerpetuidade)}/mês e realizando os objetivos marcados após a aposentadoria,
+          o patrimônio aos ${idadeFinal} anos cai de ${fmtBRLCompact(saldoAposentadoria)} para
+          <strong>${fmtBRLCompact(patrimonioFinalPerp)}</strong>. Os saques posteriores reduzem o principal,
+          e a renda deixa de ser sustentável no nível atual. Para preservar o patrimônio seria preciso
+          reduzir a renda para ${fmtBRL(patrimonioFinalPerp * taxaMensalReal)}/mês ou rever esses objetivos.</div>`;
+      })()}
+      <p class="narrative" style="font-size:11px;color:var(--muted);margin-top:10px;margin-bottom:0;">Valores em poder de compra de hoje (termos reais). "Perpetuidade" preserva o principal indefinidamente; "consumindo o patrimônio" distribui tudo até os ${idadeFinal} anos, chegando a zero.</p>
+    </div>`;
+  }
+
+  // ---- GRADE DE SENSIBILIDADE DA RENDA ----
+  if (patrimonioTotal > 0 && anosParaAposentar > 0) {
+    const idades = [idadeAposentadoria-5, idadeAposentadoria, idadeAposentadoria+5, idadeAposentadoria+10]
+      .filter(function(i){ return i > idade; });
+    const fatores = [{f:0.5,r:'Aporte 50% menor'},{f:1,r:'Aporte atual'},{f:1.5,r:'Aporte 50% maior'}];
+    let grade = `<table class="mini-table sens"><tr><th>Aporte mensal</th>`+
+      idades.map(function(i){ return '<th class="num">Aposentar aos '+i+'</th>'; }).join('')+'</tr>';
+    fatores.forEach(function(ft){
+      const aporte = aportesMensais * ft.f;
+      grade += '<tr><td>'+ft.r+'<br><span class="sub">'+fmtBRL(aporte)+'/mês</span></td>';
+      idades.forEach(function(i){
+        const meses = Math.max(1, Math.round((i - idade) * 12));
+        const fim = Math.max(meses + 12, Math.round((idadeFinal - idade) * 12));
+        const p = projetar({ patrimonioInicial:patrimonioTotal, aporteMensal:aporte,
+          taxaMensal:taxaMensalReal, mesAposentadoria:meses, mesFinal:meses,
+          objetivos:objsLinha, receitas:receitas });
+        const r = rendaSustentavel(p.saldoFinal, taxaMensalReal, fim - meses);
+        const atual = (ft.f === 1 && i === idadeAposentadoria);
+        grade += '<td class="num'+(atual?' destaque':'')+'">'+fmtBRLCompact(r.perpetua)+
+                 '<br><span class="sub">'+fmtBRLCompact(p.saldoFinal)+'</span></td>';
+      });
+      grade += '</tr>';
+    });
+    grade += '</table>';
+    html += `<div class="section-block">
+      <div class="head-row"><div class="icon-circle">${ICONS.chart}</div><h2 style="margin:0;">Sensibilidade da renda</h2></div>
+      <p class="subtext">Renda mensal em perpetuidade conforme a idade de aposentadoria e o esforço de aporte.
+        Em cinza, o patrimônio acumulado em cada combinação. A célula destacada é o cenário atual.</p>
+      ${grade}
+      <p class="narrative" style="font-size:11px;color:var(--muted);margin:10px 0 0;">
+        Valores em poder de compra de hoje. Cada célula refaz a projeção inteira, incluindo objetivos e receitas informados.</p>
+    </div>`;
+  }
+
+  // ---- ANÁLISES ESCOLHIDAS NOS OBJETIVOS ----
+  analises.forEach(function(a){
+    if (a.tipo === 'liberdade' && a.valor > 0) {
+      const capital = capitalParaRenda(a.valor, taxaMensalReal);
+      const meses = mesesAteAlvo(patrimonioTotal, aportesMensais, taxaMensalReal, capital);
+      const falta = Math.max(0, capital - patrimonioTotal);
+      const pctPronto = capital > 0 ? Math.min(100, patrimonioTotal / capital * 100) : 0;
+      html += `<div class="section-block">
+        <div class="head-row"><div class="icon-circle">${ICONS.target}</div><h2 style="margin:0;">Distância para a liberdade financeira</h2></div>
+        <p class="subtext">Quanto é preciso ter investido para que a carteira sustente ${fmtBRL(a.valor)}/mês sem consumir o principal.</p>
+        <div class="summary-strip">
+          <div class="stat-box"><div class="stat-value">${fmtBRLCompact(capital)}</div><div class="stat-label">Capital necessário</div></div>
+          <div class="stat-box"><div class="stat-value">${fmtBRLCompact(patrimonioTotal)}</div><div class="stat-label">Patrimônio hoje (${pctPronto.toFixed(0)}% do caminho)</div></div>
+          <div class="stat-box"><div class="stat-value accent">${meses === null ? '—' : (meses === 0 ? 'já atingido' : (meses/12).toFixed(1).replace('.',',')+' anos')}</div><div class="stat-label">${meses === 0 ? 'Situação atual' : 'Tempo no ritmo atual'}</div></div>
+        </div>
+        ${meses === null
+          ? `<div class="insight-box"><strong>Fora de alcance no ritmo atual.</strong> Com aportes de ${fmtBRL(aportesMensais)}/mês e rentabilidade real de ${rentabilidadeAnual}% a.a., a carteira não chega a ${fmtBRLCompact(capital)} dentro de 100 anos. Reveja a despesa-alvo, o aporte ou a rentabilidade.</div>`
+          : (meses === 0
+            ? `<div class="insight-box"><strong>Independência já atingida.</strong> O patrimônio atual sustenta ${fmtBRL(a.valor)}/mês em perpetuidade. A conversa deixa de ser de acumulação e passa a ser de preservação e sucessão.</div>`
+            : `<p class="narrative">Faltam <strong>${fmtBRLCompact(falta)}</strong>. Mantendo aportes de ${fmtBRL(aportesMensais)}/mês e rentabilidade real de ${rentabilidadeAnual}% a.a., o patrimônio chega lá em <strong>${(meses/12).toFixed(1).replace('.',',')} anos</strong>, aos ${Math.round(idade + meses/12)} anos de idade.</p>`)}
+      </div>`;
+    }
+
+    if (a.tipo === 'poder_compra' && a.valor > 0) {
+      const capital = capitalParaRenda(a.valor, taxaMensalReal);
+      const falta = Math.max(0, capital - saldoAposentadoria);
+      /* Cenario A: mesma data, rentabilidade maior. Procura a taxa que fecha a conta. */
+      let taxaNec = null;
+      for (let bp = 1; bp <= 1500; bp++) {
+        const t = Math.pow(1 + bp/10000, 1/12) - 1;
+        const p = projetar({ patrimonioInicial:patrimonioTotal, aporteMensal:aportesMensais,
+          taxaMensal:t, mesAposentadoria:mesesAteAposentadoria, mesFinal:mesesAteAposentadoria,
+          objetivos:objsLinha, receitas:receitas });
+        if (p.saldoFinal * t >= a.valor) { taxaNec = bp/100; break; }
+      }
+      /* Cenario B: mesma rentabilidade, aporte maior. */
+      let aporteNec = null;
+      for (let mult = 1; mult <= 400; mult++) {
+        const ap = aportesMensais * mult * 0.25 + (aportesMensais === 0 ? mult * 1000 : 0);
+        const p = projetar({ patrimonioInicial:patrimonioTotal, aporteMensal:ap,
+          taxaMensal:taxaMensalReal, mesAposentadoria:mesesAteAposentadoria, mesFinal:mesesAteAposentadoria,
+          objetivos:objsLinha, receitas:receitas });
+        if (p.saldoFinal * taxaMensalReal >= a.valor) { aporteNec = ap; break; }
+      }
+      /* Cenario C: mesmas premissas, mais tempo. */
+      let anosNec = null;
+      for (let m = mesesAteAposentadoria; m <= mesesAteAposentadoria + 480; m++) {
+        const p = projetar({ patrimonioInicial:patrimonioTotal, aporteMensal:aportesMensais,
+          taxaMensal:taxaMensalReal, mesAposentadoria:m, mesFinal:m,
+          objetivos:objsLinha, receitas:receitas });
+        if (p.saldoFinal * taxaMensalReal >= a.valor) { anosNec = m/12; break; }
+      }
+      const jaAtinge = saldoAposentadoria * taxaMensalReal >= a.valor;
+      html += `<div class="section-block">
+        <div class="head-row"><div class="icon-circle">${ICONS.target}</div><h2 style="margin:0;">Preservar o poder de compra da próxima geração</h2></div>
+        <p class="subtext">Renda perpétua de ${fmtBRL(a.valor)}/mês, em poder de compra de hoje, sem consumir o principal — o patrimônio atravessa a geração intacto em termos reais.</p>
+        <div class="summary-strip">
+          <div class="stat-box"><div class="stat-value">${fmtBRLCompact(capital)}</div><div class="stat-label">Patrimônio necessário</div></div>
+          <div class="stat-box"><div class="stat-value">${fmtBRLCompact(saldoAposentadoria)}</div><div class="stat-label">Projetado na aposentadoria</div></div>
+          <div class="stat-box"><div class="stat-value ${jaAtinge ? 'accent' : ''}">${jaAtinge ? 'atingido' : fmtBRLCompact(falta)}</div><div class="stat-label">${jaAtinge ? 'No cenário atual' : 'Diferença a cobrir'}</div></div>
+        </div>
+        ${jaAtinge
+          ? `<div class="insight-box"><strong>O cenário atual já entrega esse objetivo.</strong> A projeção chega a ${fmtBRLCompact(saldoAposentadoria)}, que sustenta ${fmtBRL(saldoAposentadoria * taxaMensalReal)}/mês em perpetuidade — acima dos ${fmtBRL(a.valor)} pretendidos. A discussão passa a ser de estrutura sucessória, não de acumulação.</div>`
+          : `<p class="narrative">Três caminhos para cobrir a diferença, cada um mexendo em uma variável:</p>
+            <table class="mini-table"><tr><th>Cenário</th><th>O que muda</th><th class="num">Necessário</th></tr>
+            <tr><td><strong>A</strong> · Mais rentabilidade</td><td>Mesma data, mesmo aporte</td><td class="num">${taxaNec === null ? 'acima de 15% a.a.' : taxaNec.toFixed(2).replace('.',',')+'% a.a. real'}</td></tr>
+            <tr><td><strong>B</strong> · Mais aporte</td><td>Mesma data, mesma rentabilidade</td><td class="num">${aporteNec === null ? 'fora de alcance' : fmtBRL(aporteNec)+'/mês'}</td></tr>
+            <tr><td><strong>C</strong> · Mais tempo</td><td>Mesmo aporte, mesma rentabilidade</td><td class="num">${anosNec === null ? 'fora de alcance' : 'aposentar aos '+Math.round(idade + anosNec)+' anos'}</td></tr>
+            </table>
+            <div class="insight-box">Hoje o aporte é de ${fmtBRL(aportesMensais)}/mês a ${rentabilidadeAnual}% a.a. real, com aposentadoria aos ${idadeAposentadoria}. O cenário A costuma ser o mais arriscado dos três: exige assumir mais volatilidade justamente num patrimônio cuja finalidade é atravessar gerações.</div>`}
+      </div>`;
+    }
+
+  });
+
+  // ---- PLANEJAMENTO SUCESSÓRIO ----
+  if (patrimonioTotal > 0) {
+    const exterior = getToggleVal('exteriorGroup') === 'sim';
+    const filhosNum = filhos.map(function(x){ return parseInt(x,10); })
+                                  .filter(function(x){ return !isNaN(x); });
+    const temMenor = filhosNum.some(function(i){ return i < 18; });
+    const temFilhos = filhosNum.length > 0;
+    const imobRelevante = patrimonioImobilizado > patrimonioTotal * 0.2;
+    const semHolding = holding === 'nao';
+    const holdingParcial = holding === 'parcial';
+    const prevBaixa = alocPrev < 10;
+    const semSeguro = !jaSeguro;
+    const patrimonioAlto = (patrimonioTotal + patrimonioImobilizado) > 20000000;
+
+    /* Cada instrumento traz as caracteristicas como estao no material da casa.
+       O destaque sai das respostas do formulario, e o motivo fica escrito —
+       sem motivo visivel, recomendacao vira palpite.                        */
+    /* Vantagem e ressalva vinham misturadas na mesma lista do material.
+       Separadas, o assessor lê o trade-off de cada instrumento de relance. */
+    const instrumentos = [
+      { grupo:'nao', nome:'Testamento',
+        resumo:'Registra a vontade, mas não dispensa o inventário.',
+        bons:['Assegura que a vontade do testador seja cumprida',
+              'Evita conflitos entre os herdeiros'],
+        ruins:['Precisa ser revisto a cada mudança relevante no patrimônio ou na família',
+               'Não evita o processo de inventário'],
+        destaque: temMenor || patrimonioAlto,
+        motivo: temMenor ? 'Há filho menor de idade: a indicação de tutor e a destinação dos bens precisam estar escritas.'
+              : (patrimonioAlto ? 'Patrimônio relevante e múltiplos ativos aumentam o risco de disputa entre herdeiros.' : '') },
+      { grupo:'nao', nome:'Cláusulas restritivas',
+        resumo:'Protegem o bem depois de transmitido.',
+        bons:['Usufruto político e econômico',
+              'Incomunicabilidade, impenhorabilidade e inalienabilidade',
+              'Reversão ao doador'],
+        ruins:['Não se aplicam a todos os ativos'],
+        destaque: temMenor,
+        motivo: temMenor ? 'Com herdeiro menor, protegem o bem até a maturidade e blindam de terceiros.' : '' },
+      { grupo:'nao', nome:'Doação em vida',
+        resumo:'Antecipa a transmissão e pode travar alíquota menor.',
+        bons:['Reduz o patrimônio a ser inventariado',
+              '"Trava" a alíquota de ITCMD aplicável',
+              'Alguns estados cobram menos na doação do que no falecimento'],
+        ruins:['Uma vez doado, está doado — não há volta'],
+        destaque: imobRelevante && (semHolding || holdingParcial),
+        motivo: (imobRelevante && (semHolding || holdingParcial))
+          ? 'Parcela relevante em imóveis fora de estrutura: doar em vida antecipa a transmissão e pode travar alíquota menor.' : '' },
+      { grupo:'nao', nome:'Holding patrimonial',
+        resumo:'Organiza a governança, não elimina o inventário.',
+        bons:['Simplifica o processo de inventário',
+              'Permite governança para mitigar conflitos entre herdeiros'],
+        ruins:['Não evita o processo de inventário',
+               'Tributação elevada frente a ativos financeiros'],
+        destaque: imobRelevante && semHolding,
+        motivo: (imobRelevante && semHolding)
+          ? fmtBRLCompact(patrimonioImobilizado) + ' em imóveis fora de holding. Estruturar simplifica o inventário e organiza a governança familiar.'
+          : (holdingParcial ? 'Estrutura parcial: vale avaliar se os imóveis restantes entram na holding.' : '') },
+      { grupo:'fin', nome:'Previdência privada',
+        resumo:'Transmite fora do inventário, com vantagem tributária.',
+        bons:['Não passa pelo processo de inventário',
+              'Diferimento tributário, sem come-cotas',
+              'Sem ITCMD, e o IR pode ser menor'],
+        ruins:['Recursos comprometidos com o longo prazo'],
+        destaque: prevBaixa,
+        motivo: prevBaixa ? 'Apenas ' + alocPrev + '% da carteira em previdência. É o caminho financeiro mais direto para transmitir fora do inventário.' : '' },
+      { grupo:'fin', nome:'Fundo de investimento exclusivo',
+        resumo:'Concentra a gestão; custo só compensa em escala.',
+        bons:['Concentra o patrimônio em uma estrutura única',
+              'Facilita a sucessão'],
+        ruins:['Tributação periódica em alguns casos (come-cotas)',
+               'Custos elevados de estruturação e manutenção'],
+        destaque: patrimonioAlto,
+        motivo: patrimonioAlto ? 'Patrimônio acima de R$ 20 milhões costuma diluir o custo fixo da estrutura.' : '' },
+      { grupo:'fin', nome:'Seguro de vida',
+        resumo:'Cria liquidez imediata que o patrimônio não tem.',
+        bons:['Não passa pelo processo de inventário',
+              'Sem cobrança de ITCMD nem de IR',
+              'Alavanca o patrimônio: o capital é garantido desde o primeiro prêmio'],
+        ruins:['Não gera rendimento financeiro'],
+        destaque: semSeguro,
+        motivo: semSeguro ? 'Sem cobertura contratada. É o único instrumento que cria liquidez para o inventário sem depender do patrimônio existente.' : '' },
+      { grupo:'fin', nome:'Aplicações no exterior',
+        resumo:'Diversifica em moeda forte, com regra sucessória própria.',
+        bons:['Diversificação do patrimônio e alocação em moeda forte',
+              'Facilita o processo sucessório em alguns casos',
+              'Atualmente sem cobrança de ITCMD na sucessão'],
+        ruins:['Exige atenção ao tipo de investimento, à jurisdição e à tributação'],
         destaque: exterior || alocIntl < 10,
         motivo: exterior ? 'O cliente já tem bens no exterior: a regra sucessória da jurisdição precisa ser verificada, sob risco de o espólio travar lá fora.'
               : (alocIntl < 10 ? 'Apenas ' + alocIntl + '% no exterior. Além da diversificação, hoje não há ITCMD sobre esses ativos na sucessão.' : '') }
@@ -1555,7 +1926,7 @@ toggleSeguro();
 toggleSimConsorcio();
 render();
 /* selo de versao — serve para identificar cache antes de investigar bug */
-var VERSAO_DIAG = "versão 2.41";
+var VERSAO_DIAG = "versão 2.42";
 document.getElementById('selo').textContent = VERSAO_DIAG;
 </script>
 
