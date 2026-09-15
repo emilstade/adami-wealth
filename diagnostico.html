@@ -413,37 +413,10 @@
       </div>
     </details>
 
-    <details class="form-section">
-      <summary><span class="num">4</span> Alavancagem Patrimonial <span class="chev">&#9656;</span></summary>
-      <div class="form-body">
-        <div class="field">
-          <label>Já possui consórcio ativo?</label>
-          <div class="toggle-group" id="jaConsorcioGroup">
-            <div class="toggle-btn" data-val="sim" onclick="selectToggle('jaConsorcioGroup', this, render)">Sim</div>
-            <div class="toggle-btn active" data-val="nao" onclick="selectToggle('jaConsorcioGroup', this, render)">Não</div>
-          </div>
-        </div>
-        <div class="field">
-          <label>Simular consórcio na projeção patrimonial?</label>
-          <span class="hint">Adiciona uma segunda linha no gráfico comparando o patrimônio com e sem a estratégia</span>
-          <div class="toggle-group" id="simConsorcioGroup">
-            <div class="toggle-btn" data-val="sim" onclick="selectToggle('simConsorcioGroup', this, toggleSimConsorcio)">Sim</div>
-            <div class="toggle-btn active" data-val="nao" onclick="selectToggle('simConsorcioGroup', this, toggleSimConsorcio)">Não</div>
-          </div>
-        </div>
-        <div class="conditional-block" id="simConsorcioDetails">
-          <div class="row2">
-            <div class="field"><label for="valorCarta">Valor da carta (R$)</label><input type="text" inputmode="numeric" id="valorCarta" value="R$ 1.000.000" oninput="formatMoneyInput(this); render()" placeholder="R$ 0"></div>
-            <div class="field"><label for="anoContemplacao">Ano da contemplação</label><input type="number" id="anoContemplacao" min="2026" max="2080" oninput="render()"></div>
-          </div>
-          <div class="field"><label for="prazoConsorcio">Prazo do consórcio (meses)</label><input type="number" id="prazoConsorcio" min="12" max="240" step="12" value="200" oninput="render()"></div>
-          <span class="hint">Parcela estimada em 0,45% a.m. sobre o valor da carta, paga durante o prazo do plano a partir da renda mensal da carteira.</span>
-        </div>
-      </div>
-    </details>
+    
 
     <details class="form-section">
-      <summary><span class="num">5</span> Proteção Patrimonial <span class="chev">&#9656;</span></summary>
+      <summary><span class="num">4</span> Proteção Patrimonial <span class="chev">&#9656;</span></summary>
       <div class="form-body">
         <div class="field">
           <label>Já possui seguro de vida?</label>
@@ -474,7 +447,7 @@
     </details>
 
     <details class="form-section">
-      <summary><span class="num">6</span> Previdência <span class="chev">&#9656;</span></summary>
+      <summary><span class="num">5</span> Previdência <span class="chev">&#9656;</span></summary>
       <div class="form-body">
         <div class="field">
           <label>Posição atual em previdência</label>
@@ -486,6 +459,35 @@
             <div class="toggle-btn active" data-val="completa" onclick="selectToggle('declaracaoIrGroup', this, render)">Completa</div>
             <div class="toggle-btn" data-val="simplificada" onclick="selectToggle('declaracaoIrGroup', this, render)">Simplificada</div>
           </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="form-section">
+      <summary><span class="num">6</span> Alavancagem Patrimonial <span class="chev">&#9656;</span></summary>
+      <div class="form-body">
+        <div class="field">
+          <label>Já possui consórcio ativo?</label>
+          <div class="toggle-group" id="jaConsorcioGroup">
+            <div class="toggle-btn" data-val="sim" onclick="selectToggle('jaConsorcioGroup', this, render)">Sim</div>
+            <div class="toggle-btn active" data-val="nao" onclick="selectToggle('jaConsorcioGroup', this, render)">Não</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Simular consórcio na projeção patrimonial?</label>
+          <span class="hint">Adiciona uma segunda linha no gráfico comparando o patrimônio com e sem a estratégia</span>
+          <div class="toggle-group" id="simConsorcioGroup">
+            <div class="toggle-btn" data-val="sim" onclick="selectToggle('simConsorcioGroup', this, toggleSimConsorcio)">Sim</div>
+            <div class="toggle-btn active" data-val="nao" onclick="selectToggle('simConsorcioGroup', this, toggleSimConsorcio)">Não</div>
+          </div>
+        </div>
+        <div class="conditional-block" id="simConsorcioDetails">
+          <div class="row2">
+            <div class="field"><label for="valorCarta">Valor da carta (R$)</label><input type="text" inputmode="numeric" id="valorCarta" value="R$ 1.000.000" oninput="formatMoneyInput(this); render()" placeholder="R$ 0"></div>
+            <div class="field"><label for="anoContemplacao">Ano da contemplação</label><input type="number" id="anoContemplacao" min="2026" max="2080" oninput="render()"></div>
+          </div>
+          <div class="field"><label for="prazoConsorcio">Prazo do consórcio (meses)</label><input type="number" id="prazoConsorcio" min="12" max="240" step="12" value="200" oninput="render()"></div>
+          <span class="hint">Parcela estimada em 0,45% a.m. sobre o valor da carta, paga durante o prazo do plano a partir da renda mensal da carteira.</span>
         </div>
       </div>
     </details>
@@ -1553,36 +1555,6 @@ function render() {
   html += `<h2 style="font-family:var(--serif);color:var(--navy);font-size:17px;margin:0 0 4px;" class="page-break">Estruturação Patrimonial</h2>
   <p class="narrative" style="margin-bottom:20px;">Um plano patrimonial completo vai além da carteira de investimentos. As frentes abaixo fazem parte da estruturação patrimonial da família e valem ser discutidas nesta reunião:</p>`;
 
-  // ---- ALAVANCAGEM PATRIMONIAL ----
-  const alavancagemActive = patrimonioTotal > 0 && rendaMensalGerada > 0 && !jaConsorcio;
-  html += `<div class="trigger-card ${alavancagemActive ? '' : 'inactive'}">
-    <div class="card-head"><div class="icon-badge">${ICONS.house}</div><h2>Alavancagem Patrimonial</h2>
-      <span class="tag ${alavancagemActive ? 'hot' : 'cold'}">${jaConsorcio ? 'Já possui' : 'Avaliar nesta reunião'}</span></div>
-    <div class="card-body">`;
-  if (rendaMensalGerada <= 0) {
-    html += `<p class="narrative">Preencha o patrimônio, rentabilidade, alocação e aportes na seção 2 para estimar a capacidade de alavancagem.</p>`;
-  } else {
-    html += `<div class="kpi-row"><span class="kpi-number">${fmtBRLCompact(carta100)}</span><span class="kpi-caption">carta de crédito compatível com a renda mensal gerada pela carteira, direcionando 100% dela</span></div>
-    <p class="narrative">A renda mensal gerada pela carteira (aportes + rendimento líquido estimado) permite avaliar as seguintes faixas de carta de consórcio, sem depender do principal investido:</p>
-    <table class="mini-table">
-      <tr><th>% da renda mensal</th><th>Valor/mês</th><th>Carta de crédito</th></tr>
-      <tr><td>20%</td><td class="num">${fmtBRL(rendaMensalGerada*0.20)}</td><td class="num">${fmtBRLCompact(carta20)}</td></tr>
-      <tr><td>50%</td><td class="num">${fmtBRL(rendaMensalGerada*0.50)}</td><td class="num">${fmtBRLCompact(carta50)}</td></tr>
-      <tr><td>100%</td><td class="num">${fmtBRL(rendaMensalGerada*1.00)}</td><td class="num">${fmtBRLCompact(carta100)}</td></tr>
-    </table>`;
-    const objetivosCompativeis = objetivos.filter(o => o.valor > 0);
-    if (objetivosCompativeis.length > 0) {
-      html += `<p class="narrative" style="margin-top:10px">Cruzando com os objetivos informados:</p><table class="mini-table"><tr><th>Objetivo</th><th>Valor</th><th>% da renda necessária</th></tr>`;
-      objetivosCompativeis.forEach(o => {
-        const pctNecessario = Math.min(999, (o.valor * taxaParcela / rendaMensalGerada) * 100);
-        html += `<tr><td>${escapeHtml(o.label)} (${o.ano})</td><td class="num">${fmtBRLCompact(o.valor)}</td><td class="num">${pctNecessario.toFixed(0)}%</td></tr>`;
-      });
-      html += `</table>`;
-    }
-    html += `<p class="narrative" style="font-size:11px;color:var(--muted);margin-top:10px">*Parcela de referência: 0,45% a.m. Taxas variam por administradora e prazo — validar simulação oficial antes de apresentar ao cliente.</p>`;
-  }
-  html += `</div></div>`;
-
   // ---- PROTEÇÃO PATRIMONIAL ----
   const seguroActive = patrimonioTotal > 0 && gapSeguro > 0;
   html += `<div class="trigger-card ${seguroActive ? '' : 'inactive'} page-break">
@@ -1654,6 +1626,37 @@ function render() {
 
   html += `<div class="disclaimer disclaimer-page">Ferramenta de apoio à reunião de planejamento — estimativas ilustrativas para orientar a conversa com o cliente, não constituem aconselhamento tributário, atuarial ou de investimento. A projeção patrimonial assume rentabilidade real constante e não elimina o risco de mercado, de crédito ou de liquidez. Validar percentuais de ITCMD, custas e cobertura recomendada com as áreas jurídica, contábil e de produtos antes de formalizar qualquer proposta. Ferramenta Wealth Planning · Adami Wealth.</div>`;
 
+  // ---- ALAVANCAGEM PATRIMONIAL ----
+  const alavancagemActive = patrimonioTotal > 0 && rendaMensalGerada > 0 && !jaConsorcio;
+  html += `<div class="trigger-card ${alavancagemActive ? '' : 'inactive'}">
+    <div class="card-head"><div class="icon-badge">${ICONS.house}</div><h2>Alavancagem Patrimonial</h2>
+      <span class="tag ${alavancagemActive ? 'hot' : 'cold'}">${jaConsorcio ? 'Já possui' : 'Avaliar nesta reunião'}</span></div>
+    <div class="card-body">`;
+  if (rendaMensalGerada <= 0) {
+    html += `<p class="narrative">Preencha o patrimônio, rentabilidade, alocação e aportes na seção 2 para estimar a capacidade de alavancagem.</p>`;
+  } else {
+    html += `<div class="kpi-row"><span class="kpi-number">${fmtBRLCompact(carta100)}</span><span class="kpi-caption">carta de crédito compatível com a renda mensal gerada pela carteira, direcionando 100% dela</span></div>
+    <p class="narrative">A renda mensal gerada pela carteira (aportes + rendimento líquido estimado) permite avaliar as seguintes faixas de carta de consórcio, sem depender do principal investido:</p>
+    <table class="mini-table">
+      <tr><th>% da renda mensal</th><th>Valor/mês</th><th>Carta de crédito</th></tr>
+      <tr><td>20%</td><td class="num">${fmtBRL(rendaMensalGerada*0.20)}</td><td class="num">${fmtBRLCompact(carta20)}</td></tr>
+      <tr><td>50%</td><td class="num">${fmtBRL(rendaMensalGerada*0.50)}</td><td class="num">${fmtBRLCompact(carta50)}</td></tr>
+      <tr><td>100%</td><td class="num">${fmtBRL(rendaMensalGerada*1.00)}</td><td class="num">${fmtBRLCompact(carta100)}</td></tr>
+    </table>`;
+    const objetivosCompativeis = objetivos.filter(o => o.valor > 0);
+    if (objetivosCompativeis.length > 0) {
+      html += `<p class="narrative" style="margin-top:10px">Cruzando com os objetivos informados:</p><table class="mini-table"><tr><th>Objetivo</th><th>Valor</th><th>% da renda necessária</th></tr>`;
+      objetivosCompativeis.forEach(o => {
+        const pctNecessario = Math.min(999, (o.valor * taxaParcela / rendaMensalGerada) * 100);
+        html += `<tr><td>${escapeHtml(o.label)} (${o.ano})</td><td class="num">${fmtBRLCompact(o.valor)}</td><td class="num">${pctNecessario.toFixed(0)}%</td></tr>`;
+      });
+      html += `</table>`;
+    }
+    html += `<p class="narrative" style="font-size:11px;color:var(--muted);margin-top:10px">*Parcela de referência: 0,45% a.m. Taxas variam por administradora e prazo — validar simulação oficial antes de apresentar ao cliente.</p>`;
+  }
+  html += `</div></div>`;
+
+
   pane.innerHTML = html;
 }
 
@@ -1662,7 +1665,7 @@ toggleSeguro();
 toggleSimConsorcio();
 render();
 /* selo de versao — serve para identificar cache antes de investigar bug */
-var VERSAO_DIAG = "versão 2.43";
+var VERSAO_DIAG = "versão 2.44";
 document.getElementById('selo').textContent = VERSAO_DIAG;
 </script>
 
