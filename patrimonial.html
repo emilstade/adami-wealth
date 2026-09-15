@@ -108,7 +108,7 @@
 <header>
   <span class="mark">ADAMI</span>
   <span class="sub">Gerador de Planos Patrimoniais</span>
-  <span class="sub" style="opacity:.6">versão 2.46</span>
+  <span class="sub" style="opacity:.6">versão 2.47</span>
   <span class="dir">
     <span class="selo bom" id="selo">—</span>
     <button class="btn ghost" onclick="novoDoPadrao()">Novo</button>
@@ -128,6 +128,7 @@
     <a onclick="irPara('s3c')">Restrições</a>
     <a onclick="irPara('s4')">Política — categoria</a>
     <a onclick="irPara('s5')">Política — estratégia</a>
+    <a onclick="irPara('s5b')">Política — liquidez</a>
     <a onclick="irPara('s6')">Instituições</a>
     <a onclick="irPara('s7')">Posição atual</a>
     <a onclick="irPara('s7b')">Imobiliário</a>
@@ -163,6 +164,10 @@
       <p class="cap"><b>Nível 1</b> é linha principal e entra na soma de 100%. <b>Nível 2</b> é sub-item que compõe a linha de nível 1 logo acima — por exemplo, Pós-fixado, Pré-fixado e IPCA+ dentro de Renda Fixa. Os sub-itens devem somar o valor do pai.</p>
       <div id="fEstrategia"></div></div>
 
+    <div class="pane" id="s5b"><h2>Política de liquidez</h2>
+      <p class="cap">Em quanto tempo o dinheiro vira caixa. É a dimensão que responde se o cliente consegue honrar um compromisso sem vender ativo no pior momento. Os alvos somam 100% e cada faixa tem a sua banda, como nas outras políticas.</p>
+      <div id="fLiquidez"></div></div>
+
     <div class="pane" id="s6"><h2>Instituições</h2>
       <p class="cap">Onde o dinheiro está hoje, por emissor. Digite o <b>valor</b>; o percentual é calculado, nunca digitado. Marque <b>S1</b> nos bancos do Segmento S1 do Banco Central — Banco do Brasil, Bradesco, BTG Pactual, Caixa, Itaú e Santander —, que têm limite de concentração próprio no Plano. Em branco, o sistema deduz pelo nome.</p>
       <div id="fInstituicoes"></div></div>
@@ -170,7 +175,8 @@
     <div class="pane" id="s7"><h2>Posição atual</h2>
       <p class="cap">Como a carteira está distribuída hoje, em percentual. É o que o sistema compara com os alvos para achar os desvios. Onde houver sub-itens, preencha só os filhos: o pai é somado automaticamente. Deixe em branco o que não se aplica — em branco conta como zero.</p>
       <div class="grid"><div><label>Por categoria</label><div id="fAtualCat"></div></div>
-      <div><label>Por estratégia</label><div id="fAtualEst"></div></div></div></div>
+      <div><label>Por estratégia</label><div id="fAtualEst"></div></div></div>
+    <div style="margin-top:14px"><label>Por faixa de liquidez</label><div id="fAtualLiq"></div></div></div>
 
     <div class="pane" id="s7b"><h2>Patrimônio imobiliário</h2>
       <p class="cap">Um imóvel por linha. Informe os valores <b>por metro quadrado</b> — o sistema multiplica pela área e consolida os totais abaixo. O <b>venal</b> é a base do IPTU e do ITBI; o de <b>venda</b> é o preço de mercado. Comparar o aluguel praticado com o de mercado costuma ser a conversa mais rentável da reunião.</p>
@@ -207,7 +213,7 @@
   if(!ok){ location.replace("index.html"); }
 })();
 
-var PADRAO_CASA = {"cliente": {"nome": "", "assessoria": "Adami Captal"}, "plano": {"mes_referencia": "", "data_base": "", "versao_politica": "", "patrimonio_liquido": 0, "texto_plataforma": "Importante ressaltar que o BTG Pactual trabalha no modelo de plataforma aberta, na qual instituições financeiras e gestoras distribuem os produtos de investimentos, permitindo a diversificação de emissores (Banco do Brasil, Bradesco, Itaú, Safra, Goldman Sachs entre outros) dentro de uma única conta.", "perfil": {"declarado": "Moderado", "capacidade": "", "disposicao": "", "observacao": ""}, "blocos": [], "restricoes": [{"titulo": "Holding", "texto": "manutenção dos valores alocados na holding; valores destinados à manutenção e custo de padrão de vida serão concentrados na conta da holding."}, {"titulo": "Internacional", "texto": "investimentos internacionais serão concentrados via mutual funds e UCITs, com propósito de evitar estate tax e facilitar sucessão patrimonial."}, {"titulo": "Liquidez", "texto": "manutenção de reserva equivalente a doze meses de custo de vida em ativos de liquidez diária, não sujeitos a marcação a mercado."}, {"titulo": "Crédito privado", "texto": "vedada a aquisição de emissores sem rating público ou com rating inferior a A-, e de ativos cujo prazo de resgate no mercado secundário seja superior a trinta dias."}, {"titulo": "Previdência", "texto": "planos existentes serão mantidos até a análise de portabilidade; novos aportes ficam condicionados à comparação de taxa de administração e histórico de performance contra a carteira sugerida."}, {"titulo": "Sucessão", "texto": "estrutura de investimentos deve considerar o desenho sucessório vigente, evitando ativos que dificultem a transmissão ou gerem custo tributário adicional no inventário."}], "limites_concentracao": [{"tipo": "Bancos / instituições financeiras (exceto Segmento S1)", "limite": 15, "base": "Patrimônio total"}, {"tipo": "Bancos / instituições financeiras (Segmento S1)", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Títulos Públicos", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Fundos de investimento, por gestora", "limite": 20, "base": "Patrimônio total"}, {"tipo": "Ações individuais (por emissor)", "limite": 20, "base": "Bloco Renda Variável BR"}, {"tipo": "Fundo multimercado ou alternativo individual", "limite": 5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Yield)*", "limite": 0.5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Grade)*", "limite": 1, "base": "Patrimônio total"}], "notas_limites": ["*High Yield: emissores com taxas elevadas e maior risco de crédito. *High Grade: emissores com taxas menores comparadas a high yield e menor risco de crédito."], "texto_banda": "Cada categoria possui uma banda de rebalanceamento em torno do peso-alvo; desvios que ultrapassem essa banda disparam a recomendação de rebalanceamento.", "alocacao_categoria": [{"nome": "Renda Fixa", "alvo": 25, "min": 20, "max": 50}, {"nome": "Renda Variável", "alvo": 5, "min": 0, "max": 10}, {"nome": "Fundos", "alvo": 25, "min": 20, "max": 50}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20}, {"nome": "Previdência", "alvo": 30, "min": 25, "max": 50}], "alocacao_estrategia": [{"nome": "Renda Fixa", "alvo": 76.5, "min": 43, "max": 100, "nivel": 1}, {"nome": "Pós-fixado (CDI)", "alvo": 50, "min": 30, "max": 60, "nivel": 2}, {"nome": "Pré-fixado", "alvo": 6.5, "min": 3, "max": 10, "nivel": 2}, {"nome": "IPCA+", "alvo": 20, "min": 10, "max": 30, "nivel": 2}, {"nome": "Renda Variável (Brasil)", "alvo": 5, "min": 0, "max": 10, "nivel": 1}, {"nome": "Multimercado", "alvo": 2.5, "min": 0, "max": 5, "nivel": 1}, {"nome": "Alternativo", "alvo": 1, "min": 0, "max": 2, "nivel": 1}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20, "nivel": 1}, {"nome": "Renda Fixa Internacional", "alvo": 10, "min": 5, "max": 15, "nivel": 2}, {"nome": "Renda Variável Internacional", "alvo": 5, "min": 0, "max": 10, "nivel": 2}], "secoes": {"imobilizado": true}, "imoveis": [], "imobilizado": [{"titulo": "Empresas", "texto": "A frente dedicada às empresas e participações societárias atua na estruturação de valuation e na modelagem financeira das operações do grupo. O objetivo é mensurar o valor corporativo real e monitorar a saúde dos negócios, servindo como base indispensável para estratégias de liquidez e para o planejamento sucessório familiar."}], "diretrizes_produtos": [{"titulo": "Renda Fixa", "texto": "títulos públicos (Tesouro Direto), CDBs, LFs, LCIs/LCAs e crédito privado de emissores com rating mínimo A-."}, {"titulo": "Renda Variável (Brasil)", "texto": "ações individuais, ETFs de índice amplo (Ibovespa, small caps), opções."}, {"titulo": "Multimercado", "texto": "fundos com histórico mínimo de 2 anos e patrimônio líquido superior a R$ 50 milhões."}, {"titulo": "Internacional", "texto": "Mutual Funds e ETFs internacionais, respeitando o limite regulatório e cambial vigente."}], "governanca": {"periodicidade": "semestral", "gatilhos": ["aporte ou resgate", "mudança relevante no regime tributário", "alteração significativa na necessidade de liquidez operacional"]}}, "enquadramento": {"data_posicao": "", "instituicoes": [], "atual_categoria": {}, "atual_estrategia": {}, "observacoes_produto": [], "movimentacoes_extras": [], "nota_assessor": "", "proximos_passos": []}}
+var PADRAO_CASA = {"cliente": {"nome": "", "assessoria": "Adami Captal"}, "plano": {"mes_referencia": "", "data_base": "", "versao_politica": "", "patrimonio_liquido": 0, "texto_plataforma": "Importante ressaltar que o BTG Pactual trabalha no modelo de plataforma aberta, na qual instituições financeiras e gestoras distribuem os produtos de investimentos, permitindo a diversificação de emissores (Banco do Brasil, Bradesco, Itaú, Safra, Goldman Sachs entre outros) dentro de uma única conta.", "perfil": {"declarado": "Moderado", "capacidade": "", "disposicao": "", "observacao": ""}, "blocos": [], "restricoes": [{"titulo": "Holding", "texto": "manutenção dos valores alocados na holding; valores destinados à manutenção e custo de padrão de vida serão concentrados na conta da holding."}, {"titulo": "Internacional", "texto": "investimentos internacionais serão concentrados via mutual funds e UCITs, com propósito de evitar estate tax e facilitar sucessão patrimonial."}, {"titulo": "Liquidez", "texto": "manutenção de reserva equivalente a doze meses de custo de vida em ativos de liquidez diária, não sujeitos a marcação a mercado."}, {"titulo": "Crédito privado", "texto": "vedada a aquisição de emissores sem rating público ou com rating inferior a A-, e de ativos cujo prazo de resgate no mercado secundário seja superior a trinta dias."}, {"titulo": "Previdência", "texto": "planos existentes serão mantidos até a análise de portabilidade; novos aportes ficam condicionados à comparação de taxa de administração e histórico de performance contra a carteira sugerida."}, {"titulo": "Sucessão", "texto": "estrutura de investimentos deve considerar o desenho sucessório vigente, evitando ativos que dificultem a transmissão ou gerem custo tributário adicional no inventário."}], "limites_concentracao": [{"tipo": "Bancos / instituições financeiras (exceto Segmento S1)", "limite": 15, "base": "Patrimônio total"}, {"tipo": "Bancos / instituições financeiras (Segmento S1)", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Títulos Públicos", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Fundos de investimento, por gestora", "limite": 20, "base": "Patrimônio total"}, {"tipo": "Ações individuais (por emissor)", "limite": 20, "base": "Bloco Renda Variável BR"}, {"tipo": "Fundo multimercado ou alternativo individual", "limite": 5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Yield)*", "limite": 0.5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Grade)*", "limite": 1, "base": "Patrimônio total"}], "notas_limites": ["*High Yield: emissores com taxas elevadas e maior risco de crédito. *High Grade: emissores com taxas menores comparadas a high yield e menor risco de crédito."], "texto_banda": "Cada categoria possui uma banda de rebalanceamento em torno do peso-alvo; desvios que ultrapassem essa banda disparam a recomendação de rebalanceamento.", "alocacao_categoria": [{"nome": "Renda Fixa", "alvo": 25, "min": 20, "max": 50}, {"nome": "Renda Variável", "alvo": 5, "min": 0, "max": 10}, {"nome": "Fundos", "alvo": 25, "min": 20, "max": 50}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20}, {"nome": "Previdência", "alvo": 30, "min": 25, "max": 50}], "alocacao_estrategia": [{"nome": "Renda Fixa", "alvo": 76.5, "min": 43, "max": 100, "nivel": 1}, {"nome": "Pós-fixado (CDI)", "alvo": 50, "min": 30, "max": 60, "nivel": 2}, {"nome": "Pré-fixado", "alvo": 6.5, "min": 3, "max": 10, "nivel": 2}, {"nome": "IPCA+", "alvo": 20, "min": 10, "max": 30, "nivel": 2}, {"nome": "Renda Variável (Brasil)", "alvo": 5, "min": 0, "max": 10, "nivel": 1}, {"nome": "Multimercado", "alvo": 2.5, "min": 0, "max": 5, "nivel": 1}, {"nome": "Alternativo", "alvo": 1, "min": 0, "max": 2, "nivel": 1}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20, "nivel": 1}, {"nome": "Renda Fixa Internacional", "alvo": 10, "min": 5, "max": 15, "nivel": 2}, {"nome": "Renda Variável Internacional", "alvo": 5, "min": 0, "max": 10, "nivel": 2}], "secoes": {"imobilizado": true}, "imoveis": [], "imobilizado": [{"titulo": "Empresas", "texto": "A frente dedicada às empresas e participações societárias atua na estruturação de valuation e na modelagem financeira das operações do grupo. O objetivo é mensurar o valor corporativo real e monitorar a saúde dos negócios, servindo como base indispensável para estratégias de liquidez e para o planejamento sucessório familiar."}], "diretrizes_produtos": [{"titulo": "Renda Fixa", "texto": "títulos públicos (Tesouro Direto), CDBs, LFs, LCIs/LCAs e crédito privado de emissores com rating mínimo A-."}, {"titulo": "Renda Variável (Brasil)", "texto": "ações individuais, ETFs de índice amplo (Ibovespa, small caps), opções."}, {"titulo": "Multimercado", "texto": "fundos com histórico mínimo de 2 anos e patrimônio líquido superior a R$ 50 milhões."}, {"titulo": "Internacional", "texto": "Mutual Funds e ETFs internacionais, respeitando o limite regulatório e cambial vigente."}], "governanca": {"periodicidade": "semestral", "gatilhos": ["aporte ou resgate", "mudança relevante no regime tributário", "alteração significativa na necessidade de liquidez operacional"]}, "alocacao_liquidez": [{"nome": "Liquidez diária", "alvo": 15, "min": 10, "max": 30}, {"nome": "Até D+60", "alvo": 15, "min": 5, "max": 30}, {"nome": "Até 1 ano", "alvo": 20, "min": 10, "max": 35}, {"nome": "Acima de 1 ano", "alvo": 30, "min": 15, "max": 45}, {"nome": "Acima de 5 anos", "alvo": 20, "min": 5, "max": 35}]}, "enquadramento": {"data_posicao": "", "instituicoes": [], "atual_categoria": {}, "atual_estrategia": {}, "observacoes_produto": [], "movimentacoes_extras": [], "nota_assessor": "", "proximos_passos": [], "atual_liquidez": {}}}
 
 /* ============================================================
    MOTOR DE CALCULO — Plano Patrimonial e Enquadramento
@@ -379,11 +385,13 @@ function checarLimitesEmissor(consolidadas, limites){
 }
 
 /* ---------- validacoes ---------- */
-function validar(dados, linhasCat, linhasEst, instituicoes){
+function validar(dados, linhasCat, linhasEst, instituicoes, linhasLiq){
   var probs = [], plano = dados.plano, patr = Number(plano.patrimonio_liquido);
   function add(sev, onde, msg){ probs.push({severidade:sev, onde:onde, mensagem:msg}); }
 
-  [["Categoria", linhasCat], ["Estrategia", linhasEst]].forEach(function(par){
+  var dims = [["Categoria", linhasCat], ["Estrategia", linhasEst]];
+  if (linhasLiq && linhasLiq.length) dims.push(["Liquidez", linhasLiq]);
+  dims.forEach(function(par){
     var soma = par[1].filter(function(l){return l.nivel===1;})
                      .reduce(function(a,l){return a+l.alvo;},0);
     if (Math.abs(soma - 100) > 0.05)
@@ -400,7 +408,7 @@ function validar(dados, linhasCat, linhasEst, instituicoes){
     } else acum += l.alvo;
   });
 
-  linhasCat.concat(linhasEst).forEach(function(l){
+  linhasCat.concat(linhasEst).concat(linhasLiq||[]).forEach(function(l){
     if (!(l.minimo - TOLERANCIA <= l.alvo && l.alvo <= l.maximo + TOLERANCIA))
       add("erro","Plano §05","'"+l.nome+"': o peso-alvo "+pct(l.alvo)+
           " está fora da banda definida ("+pct(l.minimo)+"–"+pct(l.maximo)+").");
@@ -415,7 +423,8 @@ function validar(dados, linhasCat, linhasEst, instituicoes){
           " (diferença de "+moedaCurta(Math.abs(somaB-patr))+").");
   }
 
-  [["Categoria", linhasCat, 3], ["Estrategia", linhasEst, 4]].forEach(function(par){
+  [["Categoria", linhasCat, 3], ["Estrategia", linhasEst, 4],
+   ["Liquidez", linhasLiq||[], 4]].forEach(function(par){
     var comAtual = par[1].filter(function(l){return l.nivel===1 && l.atual!==null;});
     if (comAtual.length){
       var soma = comAtual.reduce(function(a,l){return a+l.atual;},0);
@@ -442,9 +451,11 @@ function processar(dados, comEnquadramento){
 
   var linhasCat = montarLinhas(plano.alocacao_categoria, enq.atual_categoria, patr);
   var linhasEst = montarLinhas(plano.alocacao_estrategia, enq.atual_estrategia, patr);
+  var linhasLiq = montarLinhas(plano.alocacao_liquidez || [], enq.atual_liquidez, patr);
 
   var ctx = { dados: dados, patrimonio: patr,
-              linhasCategoria: linhasCat, linhasEstrategia: linhasEst };
+              linhasCategoria: linhasCat, linhasEstrategia: linhasEst,
+              linhasLiquidez: linhasLiq };
 
   if (comEnquadramento && dados.enquadramento){
     var c = consolidarInstituicoes(enq.instituicoes || []);
@@ -456,7 +467,7 @@ function processar(dados, comEnquadramento){
     ctx.movimentacoes = sugerirMovimentacoes(linhasCat, enq.movimentacoes_extras);
   }
   ctx.problemas = validar(dados, linhasCat, linhasEst,
-                          dados.enquadramento ? enq.instituicoes : null);
+                          dados.enquadramento ? enq.instituicoes : null, linhasLiq);
   return ctx;
 }
 
@@ -947,9 +958,9 @@ function graficoRosca(insts, largLegenda){
 function docEnquadramento(){
   var d=DADOS, ctx=CTX, enq=d.enquadramento, imgs=[], c="";
   var nx=(function(){var n=0;return function(){n++;return (n<10?"0":"")+n;};})();
-  function tabelaAloc(linhas, comSub){
+  function tabelaAloc(linhas, comSub, rotulo){
     return pTabela([3000,1100,1100,1400,1800],
-      [[{t:comSub?"Estratégia":"Categoria"},{t:"Peso-alvo",alinha:"d"},
+      [[{t:rotulo || (comSub?"Estratégia":"Categoria")},{t:"Peso-alvo",alinha:"d"},
         {t:"Atual",alinha:"d"},{t:"Desvio",alinha:"d"},{t:"Status",alinha:"c"}]]
       .concat(linhas.map(function(l){
         return [{t:(l.nivel===2?"     ":"")+l.nome,negrito:l.nivel===1},
@@ -1001,6 +1012,15 @@ function docEnquadramento(){
   c+=tabelaAloc(ctx.linhasEstrategia,true);
   var g2=graficoAlvoAtual(ctx.linhasEstrategia,true); imgs.push(g2.png);
   c+=pImagem(imgs.length,6.4,6.4*g2.h/g2.w);
+
+  if((ctx.linhasLiquidez||[]).length && ctx.linhasLiquidez.some(function(l){ return l.atual!=null; })){
+    c+=pTitulo(nx(),"Comparativo: Alvo vs. Atual — Liquidez",{quebraAntes:true});
+    c+=pPara("Desvio na liquidez costuma ser o mais caro de corrigir: sair de um ativo "+
+      "travado antes do prazo tem custo, e faltar caixa obriga a vender no pior momento.");
+    c+=tabelaAloc(ctx.linhasLiquidez,false,"Faixa de liquidez");
+    var gl=graficoAlvoAtual(ctx.linhasLiquidez,false); imgs.push(gl.png);
+    c+=pImagem(imgs.length,6.4,6.4*gl.h/gl.w);
+  }
 
   c+=pTitulo(nx(),"Observações Específicas por Produto",{quebraAntes:true});
   if((enq.observacoes_produto||[]).length){
@@ -1147,6 +1167,34 @@ function docPlano(){
     c+=pPara("Distribuição visual da alocação-alvo",{tamanho:9.5,cor:"5A6472",antes:140,depois:40});
     var r2=graficoRosca(alvoEst); imgs.push(r2.png);
     c+=pImagem(imgs.length,6.0,6.0*r2.h/r2.w);
+  }
+
+  /* Liquidez e a terceira dimensao da politica: responde em quanto tempo
+     o dinheiro vira caixa, coisa que categoria e estrategia nao dizem. */
+  if((ctx.linhasLiquidez||[]).length){
+    c+=sub("Por faixa de liquidez");
+    c+=pPara("A política de liquidez define em quanto tempo cada parcela do patrimônio "+
+      "pode ser convertida em caixa sem venda forçada. É o que permite honrar compromissos "+
+      "e aproveitar oportunidades sem desmontar posições no pior momento.");
+    c+=pTabela([3000,1400,1300,1300,2100],
+      [[{t:"Faixa de liquidez"},{t:"Peso-alvo",alinha:"d"},{t:"Banda mín.",alinha:"d"},
+        {t:"Banda máx.",alinha:"d"},{t:"Valor-alvo (R$)",alinha:"d"}]]
+      .concat(ctx.linhasLiquidez.map(function(l){
+        return [{t:l.nome},{t:pct(l.alvo),alinha:"d"},{t:pct(l.minimo),alinha:"d"},
+                {t:pct(l.maximo),alinha:"d"},{t:moedaCurta(l.valorAlvo),alinha:"d"}];
+      }))
+      .concat([[{t:"TOTAL",negrito:true,fundo:CORES.creme},
+                {t:"100%",alinha:"d",negrito:true,fundo:CORES.creme},
+                {t:"",fundo:CORES.creme},{t:"",fundo:CORES.creme},
+                {t:moedaCurta(ctx.linhasLiquidez.reduce(function(a,l){return a+l.valorAlvo;},0)),
+                 alinha:"d",negrito:true,fundo:CORES.creme}]]));
+    var alvoLiq=ctx.linhasLiquidez.filter(function(l){return l.alvo>0;})
+      .map(function(l){ return {nome:l.nome, valor:l.alvo}; });
+    if(alvoLiq.length){
+      c+=pPara("Distribuição visual da alocação-alvo",{tamanho:9.5,cor:"5A6472",antes:140,depois:40});
+      var rl=graficoRosca(alvoLiq); imgs.push(rl.png);
+      c+=pImagem(imgs.length,6.0,6.0*rl.h/rl.w);
+    }
   }
 
   var temImoveis = (p.imoveis||[]).length>0;
@@ -1366,6 +1414,15 @@ function catRM(i){
 }
 function catADD(){ DADOS.plano.alocacao_categoria.push({nome:"",alvo:0,min:0,max:0}); pintar(); }
 
+function liq(i,c,v){ DADOS.plano.alocacao_liquidez[i][c] = (c==="nome")?v:num(v); atualizar(); }
+function liqRM(i){
+  var n=DADOS.plano.alocacao_liquidez[i].nome;
+  DADOS.plano.alocacao_liquidez.splice(i,1);
+  delete DADOS.enquadramento.atual_liquidez[n];
+  pintar();
+}
+function liqADD(){ DADOS.plano.alocacao_liquidez.push({nome:"",alvo:0,min:0,max:0}); pintar(); }
+function atualLiq(nome,v){ DADOS.enquadramento.atual_liquidez[nome]=num(v); atualizar(); }
 function est(i,c,v){ DADOS.plano.alocacao_estrategia[i][c] = (c==="nome")?v:num(v); atualizar(); }
 function estRM(i){
   var n=DADOS.plano.alocacao_estrategia[i].nome;
@@ -1581,6 +1638,18 @@ function pintar(){
     p.alocacao_estrategia, null, "Acrescentar estratégia")+
     somaAlvo(p.alocacao_estrategia);
 
+  DADOS.plano.alocacao_liquidez = DADOS.plano.alocacao_liquidez || [];
+  DADOS.enquadramento.atual_liquidez = DADOS.enquadramento.atual_liquidez || {};
+  $("fLiquidez").innerHTML=linhasEditaveis("liq",
+    [{rotulo:"Faixa",chave:"nome",exemplo:"Liquidez diária"},
+     {rotulo:"Alvo %",chave:"alvo",num:true,exemplo:"15"},
+     {rotulo:"Mín %",chave:"min",num:true,exemplo:"10"},
+     {rotulo:"Máx %",chave:"max",num:true,exemplo:"30"}],
+    p.alocacao_liquidez, null, "Acrescentar faixa")+
+    somaAlvo(p.alocacao_liquidez)+
+    '<p class="dica">Faixas sugeridas: liquidez diária, até D+60, até 1 ano, acima de 1 ano e acima de 5 anos. '+
+    'Ajuste conforme o perfil de caixa do cliente.</p>';
+
   $("fInstituicoes").innerHTML=linhasEditaveis("inst",
     [{rotulo:"Instituição",chave:"nome",exemplo:"Banco do Brasil"},
      {rotulo:"Valor",chave:"valor",num:true,dinheiro:true,exemplo:"56.564.761"},
@@ -1592,6 +1661,7 @@ function pintar(){
 
   $("fAtualCat").innerHTML=pesosAtuais(p.alocacao_categoria, e.atual_categoria, "atualCat");
   $("fAtualEst").innerHTML=pesosAtuais(p.alocacao_estrategia, e.atual_estrategia, "atualEst");
+  $("fAtualLiq").innerHTML=pesosAtuais(p.alocacao_liquidez, e.atual_liquidez, "atualLiq");
 
   $("fLimites").innerHTML=linhasEditaveis("lim",
     [{rotulo:"Tipo de emissor / contraparte",chave:"tipo",exemplo:"Ações individuais (por emissor)"},
@@ -1740,6 +1810,13 @@ function previa(){
        (l.atual==null?"":(l.dentro?"dentro":"fora"))+'">'+esc(l.status||"—")+"</td></tr>";
   });
   h+="</table>";
+  if((CTX.linhasLiquidez||[]).length && CTX.linhasLiquidez.some(function(l){return l.atual!=null;})){
+    var fora=CTX.linhasLiquidez.filter(function(l){return l.atual!=null && !l.dentro;});
+    h+='<p class="dica" style="margin-top:12px"><b>Liquidez:</b> '+
+      (fora.length
+        ? fora.map(function(l){ return esc(l.nome)+" "+pct(l.atual)+" ("+pp(l.desvio)+")"; }).join(" · ")
+        : '<span style="color:var(--green)">todas as faixas dentro da banda</span>')+'</p>';
+  }
   if((CTX.concentracoes||[]).length){
     h+='<p class="dica" style="margin-top:12px"><b>Concentração relevante:</b> '+
       CTX.concentracoes.map(function(c){return esc(c.emissor)+" "+pct(c.pct);}).join(" · ")+
