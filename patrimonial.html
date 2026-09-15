@@ -53,6 +53,23 @@
   table.prev td{padding:6px 6px 6px 0;border-bottom:1px solid #F2F4F8}
   table.prev .dentro{color:var(--green)} table.prev .fora{color:var(--red)}
 
+  .tab-rolagem{overflow-x:auto;margin-bottom:4px}
+  table.edit.imv{min-width:720px}
+  table.edit.imv th{white-space:nowrap}
+  table.edit.imv td.calc{font-family:var(--serif);color:var(--navy);font-weight:600;
+    white-space:nowrap;padding-right:10px}
+  table.edit.imv td.calc .sub{display:block;font-size:10px;color:var(--muted);font-weight:400}
+  .kpi-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:14px}
+  .kpi{background:linear-gradient(#FBFCFD,#F4F7FA);border:1px solid #E3E7EE;border-radius:11px;
+    padding:13px 15px}
+  .kpi-v{font-family:var(--serif);font-size:21px;font-weight:700;color:var(--navy);line-height:1.15}
+  .kpi-r{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
+    margin-top:5px;font-weight:600}
+  .kpi-e{font-size:11px;color:#7A8698;margin-top:4px}
+  .kpi.alerta{background:linear-gradient(#FDF7F5,#FBEFEB);border-color:#E8CFC6}
+  .kpi.alerta .kpi-v{color:var(--red)}
+  .kpi.bom{background:linear-gradient(#F7FAF7,#EFF4EF);border-color:#CFDCCF}
+  .kpi.bom .kpi-v{color:var(--green)}
   .btn{padding:9px 14px;border:0;border-radius:8px;background:var(--navy);color:#fff;
        font-size:13px;cursor:pointer;font-family:var(--sans)}
   .btn:hover{background:#24365C}
@@ -89,7 +106,7 @@
 <header>
   <span class="mark">ADAMI</span>
   <span class="sub">Gerador de Planos Patrimoniais</span>
-  <span class="sub" style="opacity:.6">versão 2.44</span>
+  <span class="sub" style="opacity:.6">versão 2.45</span>
   <span class="dir">
     <span class="selo bom" id="selo">—</span>
     <button class="btn ghost" onclick="novoDoPadrao()">Novo</button>
@@ -111,6 +128,7 @@
     <a onclick="irPara('s5')">Política — estratégia</a>
     <a onclick="irPara('s6')">Instituições</a>
     <a onclick="irPara('s7')">Posição atual</a>
+    <a onclick="irPara('s7b')">Imobiliário</a>
     <a onclick="irPara('s8')">Observações e passos</a>
   </nav>
 
@@ -152,6 +170,11 @@
       <div class="grid"><div><label>Por categoria</label><div id="fAtualCat"></div></div>
       <div><label>Por estratégia</label><div id="fAtualEst"></div></div></div></div>
 
+    <div class="pane" id="s7b"><h2>Patrimônio imobiliário</h2>
+      <p class="cap">Um imóvel por linha. Informe os valores <b>por metro quadrado</b> — o sistema multiplica pela área e consolida os totais abaixo. O <b>venal</b> é a base do IPTU e do ITBI; o de <b>venda</b> é o preço de mercado. Comparar o aluguel praticado com o de mercado costuma ser a conversa mais rentável da reunião.</p>
+      <div id="fImoveis"></div>
+      <div id="kpiImoveis"></div></div>
+
     <div class="pane" id="s8"><h2>Observações e próximos passos</h2>
       <p class="cap">Texto livre que fecha o Enquadramento. Em <b>observações</b>, aponte riscos concretos da carteira atual: concentração, crédito, liquidez, prazo. Em <b>próximos passos</b>, o que será feito e por quê, com número quando houver — é a parte que o cliente mais lê.</p>
       <div id="fObs"></div><div style="height:16px"></div><div id="fPassos"></div></div>
@@ -182,7 +205,7 @@
   if(!ok){ location.replace("index.html"); }
 })();
 
-var PADRAO_CASA = {"cliente": {"nome": "", "assessoria": "Adami Captal"}, "plano": {"mes_referencia": "", "data_base": "", "versao_politica": "", "patrimonio_liquido": 0, "texto_plataforma": "Importante ressaltar que o BTG Pactual trabalha no modelo de plataforma aberta, na qual instituições financeiras e gestoras distribuem os produtos de investimentos, permitindo a diversificação de emissores (Banco do Brasil, Bradesco, Itaú, Safra, Goldman Sachs entre outros) dentro de uma única conta.", "perfil": {"declarado": "Moderado", "capacidade": "", "disposicao": "", "observacao": ""}, "blocos": [], "restricoes": [{"titulo": "Holding", "texto": "manutenção dos valores alocados na holding; valores destinados à manutenção e custo de padrão de vida serão concentrados na conta da holding."}, {"titulo": "Internacional", "texto": "investimentos internacionais serão concentrados via mutual funds e UCITs, com propósito de evitar estate tax e facilitar sucessão patrimonial."}, {"titulo": "Liquidez", "texto": "manutenção de reserva equivalente a doze meses de custo de vida em ativos de liquidez diária, não sujeitos a marcação a mercado."}, {"titulo": "Crédito privado", "texto": "vedada a aquisição de emissores sem rating público ou com rating inferior a A-, e de ativos cujo prazo de resgate no mercado secundário seja superior a trinta dias."}, {"titulo": "Previdência", "texto": "planos existentes serão mantidos até a análise de portabilidade; novos aportes ficam condicionados à comparação de taxa de administração e histórico de performance contra a carteira sugerida."}, {"titulo": "Sucessão", "texto": "estrutura de investimentos deve considerar o desenho sucessório vigente, evitando ativos que dificultem a transmissão ou gerem custo tributário adicional no inventário."}], "limites_concentracao": [{"tipo": "Bancos / instituições financeiras (exceto Segmento S1)", "limite": 15, "base": "Patrimônio total"}, {"tipo": "Bancos / instituições financeiras (Segmento S1)", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Títulos Públicos", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Fundos de investimento, por gestora", "limite": 20, "base": "Patrimônio total"}, {"tipo": "Ações individuais (por emissor)", "limite": 20, "base": "Bloco Renda Variável BR"}, {"tipo": "Fundo multimercado ou alternativo individual", "limite": 5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Yield)*", "limite": 0.5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Grade)*", "limite": 1, "base": "Patrimônio total"}], "notas_limites": ["*High Yield: emissores com taxas elevadas e maior risco de crédito. *High Grade: emissores com taxas menores comparadas a high yield e menor risco de crédito."], "texto_banda": "Cada categoria possui uma banda de rebalanceamento em torno do peso-alvo; desvios que ultrapassem essa banda disparam a recomendação de rebalanceamento.", "alocacao_categoria": [{"nome": "Renda Fixa", "alvo": 25, "min": 20, "max": 50}, {"nome": "Renda Variável", "alvo": 5, "min": 0, "max": 10}, {"nome": "Fundos", "alvo": 25, "min": 20, "max": 50}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20}, {"nome": "Previdência", "alvo": 30, "min": 25, "max": 50}], "alocacao_estrategia": [{"nome": "Renda Fixa", "alvo": 76.5, "min": 43, "max": 100, "nivel": 1}, {"nome": "Pós-fixado (CDI)", "alvo": 50, "min": 30, "max": 60, "nivel": 2}, {"nome": "Pré-fixado", "alvo": 6.5, "min": 3, "max": 10, "nivel": 2}, {"nome": "IPCA+", "alvo": 20, "min": 10, "max": 30, "nivel": 2}, {"nome": "Renda Variável (Brasil)", "alvo": 5, "min": 0, "max": 10, "nivel": 1}, {"nome": "Multimercado", "alvo": 2.5, "min": 0, "max": 5, "nivel": 1}, {"nome": "Alternativo", "alvo": 1, "min": 0, "max": 2, "nivel": 1}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20, "nivel": 1}, {"nome": "Renda Fixa Internacional", "alvo": 10, "min": 5, "max": 15, "nivel": 2}, {"nome": "Renda Variável Internacional", "alvo": 5, "min": 0, "max": 10, "nivel": 2}], "secoes": {"imobilizado": true}, "imobilizado": [{"titulo": "Imóveis", "texto": "O acompanhamento do patrimônio imobiliário foca no monitoramento analítico das propriedades físicas e na avaliação contínua do retorno de aluguéis frente ao mercado. Essa frente assegura a precificação correta e a atualização do valor venal dos ativos, embasando decisões táticas de manutenção ou desinvestimento."}, {"titulo": "Empresas", "texto": "A frente dedicada às empresas e participações societárias atua na estruturação de valuation e na modelagem financeira das operações do grupo. O objetivo é mensurar o valor corporativo real e monitorar a saúde dos negócios, servindo como base indispensável para estratégias de liquidez e para o planejamento sucessório familiar."}], "diretrizes_produtos": [{"titulo": "Renda Fixa", "texto": "títulos públicos (Tesouro Direto), CDBs, LFs, LCIs/LCAs e crédito privado de emissores com rating mínimo A-."}, {"titulo": "Renda Variável (Brasil)", "texto": "ações individuais, ETFs de índice amplo (Ibovespa, small caps), opções."}, {"titulo": "Multimercado", "texto": "fundos com histórico mínimo de 2 anos e patrimônio líquido superior a R$ 50 milhões."}, {"titulo": "Internacional", "texto": "Mutual Funds e ETFs internacionais, respeitando o limite regulatório e cambial vigente."}], "governanca": {"periodicidade": "semestral", "gatilhos": ["aporte ou resgate", "mudança relevante no regime tributário", "alteração significativa na necessidade de liquidez operacional"]}}, "enquadramento": {"data_posicao": "", "instituicoes": [], "atual_categoria": {}, "atual_estrategia": {}, "observacoes_produto": [], "movimentacoes_extras": [], "nota_assessor": "", "proximos_passos": []}}
+var PADRAO_CASA = {"cliente": {"nome": "", "assessoria": "Adami Captal"}, "plano": {"mes_referencia": "", "data_base": "", "versao_politica": "", "patrimonio_liquido": 0, "texto_plataforma": "Importante ressaltar que o BTG Pactual trabalha no modelo de plataforma aberta, na qual instituições financeiras e gestoras distribuem os produtos de investimentos, permitindo a diversificação de emissores (Banco do Brasil, Bradesco, Itaú, Safra, Goldman Sachs entre outros) dentro de uma única conta.", "perfil": {"declarado": "Moderado", "capacidade": "", "disposicao": "", "observacao": ""}, "blocos": [], "restricoes": [{"titulo": "Holding", "texto": "manutenção dos valores alocados na holding; valores destinados à manutenção e custo de padrão de vida serão concentrados na conta da holding."}, {"titulo": "Internacional", "texto": "investimentos internacionais serão concentrados via mutual funds e UCITs, com propósito de evitar estate tax e facilitar sucessão patrimonial."}, {"titulo": "Liquidez", "texto": "manutenção de reserva equivalente a doze meses de custo de vida em ativos de liquidez diária, não sujeitos a marcação a mercado."}, {"titulo": "Crédito privado", "texto": "vedada a aquisição de emissores sem rating público ou com rating inferior a A-, e de ativos cujo prazo de resgate no mercado secundário seja superior a trinta dias."}, {"titulo": "Previdência", "texto": "planos existentes serão mantidos até a análise de portabilidade; novos aportes ficam condicionados à comparação de taxa de administração e histórico de performance contra a carteira sugerida."}, {"titulo": "Sucessão", "texto": "estrutura de investimentos deve considerar o desenho sucessório vigente, evitando ativos que dificultem a transmissão ou gerem custo tributário adicional no inventário."}], "limites_concentracao": [{"tipo": "Bancos / instituições financeiras (exceto Segmento S1)", "limite": 15, "base": "Patrimônio total"}, {"tipo": "Bancos / instituições financeiras (Segmento S1)", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Títulos Públicos", "limite": 100, "base": "Patrimônio total"}, {"tipo": "Fundos de investimento, por gestora", "limite": 20, "base": "Patrimônio total"}, {"tipo": "Ações individuais (por emissor)", "limite": 20, "base": "Bloco Renda Variável BR"}, {"tipo": "Fundo multimercado ou alternativo individual", "limite": 5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Yield)*", "limite": 0.5, "base": "Patrimônio total"}, {"tipo": "Crédito privado (High Grade)*", "limite": 1, "base": "Patrimônio total"}], "notas_limites": ["*High Yield: emissores com taxas elevadas e maior risco de crédito. *High Grade: emissores com taxas menores comparadas a high yield e menor risco de crédito."], "texto_banda": "Cada categoria possui uma banda de rebalanceamento em torno do peso-alvo; desvios que ultrapassem essa banda disparam a recomendação de rebalanceamento.", "alocacao_categoria": [{"nome": "Renda Fixa", "alvo": 25, "min": 20, "max": 50}, {"nome": "Renda Variável", "alvo": 5, "min": 0, "max": 10}, {"nome": "Fundos", "alvo": 25, "min": 20, "max": 50}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20}, {"nome": "Previdência", "alvo": 30, "min": 25, "max": 50}], "alocacao_estrategia": [{"nome": "Renda Fixa", "alvo": 76.5, "min": 43, "max": 100, "nivel": 1}, {"nome": "Pós-fixado (CDI)", "alvo": 50, "min": 30, "max": 60, "nivel": 2}, {"nome": "Pré-fixado", "alvo": 6.5, "min": 3, "max": 10, "nivel": 2}, {"nome": "IPCA+", "alvo": 20, "min": 10, "max": 30, "nivel": 2}, {"nome": "Renda Variável (Brasil)", "alvo": 5, "min": 0, "max": 10, "nivel": 1}, {"nome": "Multimercado", "alvo": 2.5, "min": 0, "max": 5, "nivel": 1}, {"nome": "Alternativo", "alvo": 1, "min": 0, "max": 2, "nivel": 1}, {"nome": "Internacional", "alvo": 15, "min": 10, "max": 20, "nivel": 1}, {"nome": "Renda Fixa Internacional", "alvo": 10, "min": 5, "max": 15, "nivel": 2}, {"nome": "Renda Variável Internacional", "alvo": 5, "min": 0, "max": 10, "nivel": 2}], "secoes": {"imobilizado": true}, "imoveis": [], "imobilizado": [{"titulo": "Imóveis", "texto": "O acompanhamento do patrimônio imobiliário foca no monitoramento analítico das propriedades físicas e na avaliação contínua do retorno de aluguéis frente ao mercado. Essa frente assegura a precificação correta e a atualização do valor venal dos ativos, embasando decisões táticas de manutenção ou desinvestimento."}, {"titulo": "Empresas", "texto": "A frente dedicada às empresas e participações societárias atua na estruturação de valuation e na modelagem financeira das operações do grupo. O objetivo é mensurar o valor corporativo real e monitorar a saúde dos negócios, servindo como base indispensável para estratégias de liquidez e para o planejamento sucessório familiar."}], "diretrizes_produtos": [{"titulo": "Renda Fixa", "texto": "títulos públicos (Tesouro Direto), CDBs, LFs, LCIs/LCAs e crédito privado de emissores com rating mínimo A-."}, {"titulo": "Renda Variável (Brasil)", "texto": "ações individuais, ETFs de índice amplo (Ibovespa, small caps), opções."}, {"titulo": "Multimercado", "texto": "fundos com histórico mínimo de 2 anos e patrimônio líquido superior a R$ 50 milhões."}, {"titulo": "Internacional", "texto": "Mutual Funds e ETFs internacionais, respeitando o limite regulatório e cambial vigente."}], "governanca": {"periodicidade": "semestral", "gatilhos": ["aporte ou resgate", "mudança relevante no regime tributário", "alteração significativa na necessidade de liquidez operacional"]}}, "enquadramento": {"data_posicao": "", "instituicoes": [], "atual_categoria": {}, "atual_estrategia": {}, "observacoes_produto": [], "movimentacoes_extras": [], "nota_assessor": "", "proximos_passos": []}}
 
 /* ============================================================
    MOTOR DE CALCULO — Plano Patrimonial e Enquadramento
@@ -1088,9 +1111,44 @@ function docPlano(){
     c+=pImagem(imgs.length,6.0,6.0*r2.h/r2.w);
   }
 
-  if(p.secoes && p.secoes.imobilizado && (p.imobilizado||[]).length){
+  var temImoveis = (p.imoveis||[]).length>0;
+  if((p.secoes && p.secoes.imobilizado && (p.imobilizado||[]).length) || temImoveis){
     c+=pTitulo(nx(),"Patrimônio Imobilizado",{quebraAntes:true});
-    p.imobilizado.forEach(function(g){ c+=sub(g.titulo); c+=pPara(g.texto); });
+    if(temImoveis){
+      var t=totalImoveis();
+      c+=pPara("A carteira imobiliária reúne "+t.n+(t.n===1?" imóvel":" imóveis")+
+        ", somando "+Math.round(t.area).toLocaleString("pt-BR")+" m² e "+moedaCurta(t.venda)+
+        " a valor de mercado."+
+        (t.aluguel>0?" A receita de locação é de "+moedaCurta(t.aluguel)+" por mês, "+
+          pct(t.yieldAno,1)+" ao ano sobre o valor de venda.":""));
+      c+=pTabela([2500,1100,1300,1500,1400,1700],
+        [[{t:"Imóvel"},{t:"Área (m²)",alinha:"d"},{t:"Venal /m²",alinha:"d"},
+          {t:"Venda /m²",alinha:"d"},{t:"Aluguel /m²",alinha:"d"},{t:"Valor de venda",alinha:"d"}]]
+        .concat(p.imoveis.map(function(im){
+          var cc=contaImovel(im);
+          return [{t:im.nome||"—"},
+                  {t:Math.round(cc.area).toLocaleString("pt-BR"),alinha:"d"},
+                  {t:moedaCurta(Number(im.venalM2)||0),alinha:"d"},
+                  {t:moedaCurta(Number(im.vendaM2)||0),alinha:"d"},
+                  {t:moedaCurta(Number(im.aluguelM2)||0),alinha:"d"},
+                  {t:moedaCurta(cc.venda),alinha:"d"}];
+        }))
+        .concat([[{t:"TOTAL",negrito:true,fundo:CORES.creme},
+                  {t:Math.round(t.area).toLocaleString("pt-BR"),alinha:"d",negrito:true,fundo:CORES.creme},
+                  {t:"",fundo:CORES.creme},{t:"",fundo:CORES.creme},{t:"",fundo:CORES.creme},
+                  {t:moedaCurta(t.venda),alinha:"d",negrito:true,fundo:CORES.creme}]]));
+      if(t.mercado>0 && t.defasagem>0){
+        c+=pPara("O aluguel praticado está "+pct(t.defasagem/t.aluguel*100,0)+
+          " abaixo do preço de mercado estimado. A diferença equivale a "+
+          moedaCurta(t.defasagem)+" por mês, ou "+moedaCurta(t.defasagem*12)+" ao ano, "+
+          "e deve ser avaliada na renovação dos contratos.",
+          {antes:160,cor:CORES.terracota});
+      } else if(t.mercado>0 && t.defasagem<0){
+        c+=pPara("O aluguel praticado está acima do preço de mercado estimado, o que favorece "+
+          "a receita atual mas merece atenção no risco de renovação.",{antes:160});
+      }
+    }
+    (p.imobilizado||[]).forEach(function(g){ c+=sub(g.titulo); c+=pPara(g.texto); });
   }
 
   c+=pTitulo(nx(),"Diretrizes de Produtos");
@@ -1167,6 +1225,10 @@ function atualizar(){
   recalcular();
   painelConsistencia();
   previa();
+  /* os KPIs sao derivados: acompanham a digitacao sem redesenhar a tabela,
+     senao o cursor sai do campo a cada tecla. */
+  var k=document.getElementById("kpiImoveis");
+  if(k) k.innerHTML=kpisImoveis();
 }
 function recalcular(){
   try{ CTX = processar(DADOS); }
@@ -1286,6 +1348,105 @@ function passo(i,c,v){ DADOS.enquadramento.proximos_passos[i][c]=v; atualizar();
 function passoRM(i){ DADOS.enquadramento.proximos_passos.splice(i,1); pintar(); }
 function passoADD(){ DADOS.enquadramento.proximos_passos.push({titulo:"",texto:""}); pintar(); }
 
+
+/* ============================================================
+   PATRIMÔNIO IMOBILIÁRIO
+   Os valores sao por metro quadrado: multiplicados pela area dao
+   os totais. Pedir o total direto convidava a erro de digitacao
+   e impedia comparar imoveis de tamanhos diferentes.
+   ============================================================ */
+function imoveis(){ return (DADOS.plano.imoveis = DADOS.plano.imoveis || []); }
+function imovel(i,c,v){
+  imoveis()[i][c] = (c==="nome") ? v : num(v);
+  atualizar();
+}
+function imovelRM(i){ imoveis().splice(i,1); pintar(); }
+function imovelADD(){
+  imoveis().push({nome:"", area:0, venalM2:0, vendaM2:0, aluguelM2:0, mercadoM2:0});
+  pintar();
+}
+/* consolida um imovel: area x valor por m2 */
+function contaImovel(im){
+  var a = Number(im.area)||0;
+  var venal   = a * (Number(im.venalM2)||0);
+  var venda   = a * (Number(im.vendaM2)||0);
+  var aluguel = a * (Number(im.aluguelM2)||0);
+  var mercado = a * (Number(im.mercadoM2)||0);
+  return { area:a, venal:venal, venda:venda, aluguel:aluguel, mercado:mercado,
+           defasagem: mercado - aluguel,
+           /* yield sobre o valor de venda, anualizado */
+           yieldAno: venda>0 ? (aluguel*12/venda*100) : 0 };
+}
+function totalImoveis(){
+  var t={n:0, area:0, venal:0, venda:0, aluguel:0, mercado:0, defasagem:0};
+  imoveis().forEach(function(im){
+    var c=contaImovel(im);
+    t.n++; t.area+=c.area; t.venal+=c.venal; t.venda+=c.venda;
+    t.aluguel+=c.aluguel; t.mercado+=c.mercado; t.defasagem+=c.defasagem;
+  });
+  t.yieldAno = t.venda>0 ? (t.aluguel*12/t.venda*100) : 0;
+  t.yieldMercado = t.venda>0 ? (t.mercado*12/t.venda*100) : 0;
+  return t;
+}
+function tabelaImoveis(){
+  var lista=imoveis();
+  var h='<div class="tab-rolagem"><table class="edit imv"><tr>'+
+    '<th>Imóvel</th><th class="n">Área (m²)</th><th class="n">Venal /m²</th>'+
+    '<th class="n">Venda /m²</th><th class="n">Aluguel atual /m²</th>'+
+    '<th class="n">Aluguel mercado /m²</th><th class="n">Venda total</th><th></th></tr>';
+  lista.forEach(function(im,i){
+    var c=contaImovel(im);
+    h+='<tr>'+
+      '<td><input value="'+esc(im.nome||"")+'" placeholder="Galpão Jundiaí" oninput="imovel('+i+',\'nome\',this.value)"></td>'+
+      '<td class="n"><input inputmode="decimal" value="'+esc(im.area||"")+'" placeholder="1.200" oninput="onValor(this);imovel('+i+',\'area\',this.value)"></td>'+
+      '<td class="n"><input inputmode="decimal" value="'+esc(im.venalM2||"")+'" placeholder="1.800" oninput="onValor(this);imovel('+i+',\'venalM2\',this.value)"></td>'+
+      '<td class="n"><input inputmode="decimal" value="'+esc(im.vendaM2||"")+'" placeholder="3.200" oninput="onValor(this);imovel('+i+',\'vendaM2\',this.value)"></td>'+
+      '<td class="n"><input inputmode="decimal" value="'+esc(im.aluguelM2||"")+'" placeholder="18" oninput="onValor(this);imovel('+i+',\'aluguelM2\',this.value)"></td>'+
+      '<td class="n"><input inputmode="decimal" value="'+esc(im.mercadoM2||"")+'" placeholder="24" oninput="onValor(this);imovel('+i+',\'mercadoM2\',this.value)"></td>'+
+      '<td class="n calc">'+(c.venda?moedaCurta(c.venda):"—")+
+        (c.yieldAno?'<span class="sub">'+pct(c.yieldAno,1)+' a.a.</span>':'')+'</td>'+
+      '<td class="x"><button class="rm" onclick="imovelRM('+i+')" title="remover">×</button></td></tr>';
+  });
+  h+='</table></div><button class="btn ghost mini" onclick="imovelADD()">Acrescentar imóvel</button>';
+  return h;
+}
+function kpisImoveis(){
+  var t=totalImoveis();
+  if(!t.n) return '<p class="dica">Nenhum imóvel lançado. O bloco não aparece no documento.</p>';
+  var cx=function(valor,rotulo,extra,cor){
+    return '<div class="kpi'+(cor?" "+cor:"")+'"><div class="kpi-v">'+valor+'</div>'+
+      '<div class="kpi-r">'+esc(rotulo)+'</div>'+
+      (extra?'<div class="kpi-e">'+extra+'</div>':'')+'</div>';
+  };
+  var h='<div class="kpi-grade">'+
+    cx(t.n, t.n===1?"imóvel":"imóveis", Math.round(t.area).toLocaleString("pt-BR")+" m² no total")+
+    cx(moedaCurta(t.venda), "Valor de venda", t.area?moedaCurta(t.venda/t.area)+"/m²":"")+
+    cx(moedaCurta(t.venal), "Valor venal", t.venda?pct(t.venal/t.venda*100,0)+" do valor de venda":"")+
+    cx(moedaCurta(t.aluguel), "Aluguel atual", t.yieldAno?pct(t.yieldAno,1)+" a.a. sobre a venda":"")+
+    '</div>';
+  if(t.mercado>0){
+    var perc = t.aluguel>0 ? (t.defasagem/t.aluguel*100) : 0;
+    /* diferenca de ate 1% e ruido de estimativa, nao defasagem */
+    var alinhado = t.aluguel>0 && Math.abs(perc)<1;
+    h+='<div class="kpi-grade" style="margin-top:10px">'+
+      cx(moedaCurta(t.mercado), "Aluguel a preço de mercado",
+         t.yieldMercado?pct(t.yieldMercado,1)+" a.a. sobre a venda":"");
+    if(alinhado){
+      h+=cx("alinhado", "Contra o mercado", "diferença abaixo de 1%", "bom");
+    } else {
+      h+=cx((t.defasagem>=0?"+":"−")+moedaCurta(Math.abs(t.defasagem)).replace("R$ ",""),
+            t.defasagem>=0?"Defasagem por mês":"Acima do mercado por mês",
+            t.aluguel>0?pct(Math.abs(perc),0)+(t.defasagem>=0?" abaixo do mercado":" acima do mercado"):"",
+            t.defasagem>0?"alerta":"bom")+
+        cx(moedaCurta(Math.abs(t.defasagem)*12), "No ano",
+           t.defasagem>=0?"deixado na mesa":"a mais que o mercado",
+           t.defasagem>0?"alerta":"bom");
+    }
+    h+='</div>';
+  }
+  return h;
+}
+
 /* ---------- render ---------- */
 function pintar(){
   recalcular();
@@ -1364,6 +1525,9 @@ function pintar(){
     p.restricoes, null, "Acrescentar restrição")+
     '<p class="dica">Vêm preenchidas com o padrão da casa. Apague as que não se aplicam '+
     'a este cliente e ajuste o texto das demais — elas saem como estão no documento.</p>';
+
+  $("fImoveis").innerHTML=tabelaImoveis();
+  $("kpiImoveis").innerHTML=kpisImoveis();
 
   $("fObs").innerHTML=linhasEditaveis("obs",
     [{rotulo:"Título",chave:"titulo"},{rotulo:"Texto",chave:"texto"}],
