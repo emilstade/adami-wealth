@@ -6125,230 +6125,56 @@ function NotificacoesModal({ itens, onClose, onAbrir }){
 }
 
 /* ================= Admin: manage team ================= */
-function TeamModal({ onClose, users, leads, onDefinirRole, onDefinirProdutos, onApprove, onRemove, onResetPin, onSetPadrao, currentUser, convites, onConvidar, onCancelarConvite }){
-  useEsc(onClose);
-  const [removendo, setRemovendo] = useState(null);   // id do usuário em remoção
-  const [duplas, setDuplas] = useState(null);         // id do assessor em configuração
-  const [produtosDe, setProdutosDe] = useState(null);
-  const [convidando, setConvidando] = useState(false);
-  const [novo, setNovo] = useState({ nome:'', email:'', role:'vendedor', produtos:[] });
-  const [erroConvite, setErroConvite] = useState('');
-  const especialistas = users.filter(u => u.role === 'especialista' && u.status === 'ativo');
-  const [destino, setDestino] = useState('');
-  const pendentes = users.filter(u => u.status === 'pendente');
-  /* Contas removidas somem da gestão: o acesso já está bloqueado pelo banco. */
-  const liberados = users.filter(u => u.status === 'ativo');
-  const carteiraDe = (id) => ativos(leads).filter(l => l.responsavelId === id).length;
-  const outros = (id) => liberados.filter(u => u.id !== id);
-
-  const confirmarRemocao = (u) => {
-    const qtd = carteiraDe(u.id);
-    if(qtd > 0 && !destino) return;
-    onRemove(u.id, destino || null);
-    setRemovendo(null); setDestino('');
-  };
-
-  const linhaUsuario = (u) => {
-    const qtd = carteiraDe(u.id);
-    const euMesmo = u.id === currentUser.id;
-
-    if(removendo === u.id){
-      return h('div',{key:u.id, className:'team-row danger'},
-        h('div',{className:'team-row-main'},
-          h('div',{className:'team-row-name'}, 'Remover ', u.nome, '?'),
-          h('div',{className:'team-row-note'},
-            qtd === 0
-              ? 'Esta pessoa não tem negócios na carteira.'
-              : qtd + (qtd === 1 ? ' negócio precisa' : ' negócios precisam') + ' de um novo responsável.'
-          ),
-          qtd > 0 ? h('select',{
-            className:'select-sm', style:{marginTop:8,width:'100%'},
-            value:destino, onChange:e=>setDestino(e.target.value),
-          },
-            h('option',{value:''},'Transferir para...'),
-            outros(u.id).map(o => h('option',{key:o.id, value:o.id}, o.nome))
-          ) : null
-        ),
-        h('div',{className:'team-row-actions'},
-          h('button',{className:'btn btn-ghost', onClick:()=>{ setRemovendo(null); setDestino(''); }}, 'Cancelar'),
-          h('button',{className:'btn btn-danger-solid', disabled: qtd > 0 && !destino, onClick:()=>confirmarRemocao(u)}, 'Remover')
-        )
-      );
-    }
-
-    if(produtosDe === u.id){
-      const meus = u.produtos || [];
-      return h('div',{key:u.id, className:'team-row', style:{flexDirection:'column',alignItems:'stretch'}},
-        h('div',{className:'team-row-name', style:{marginBottom:8}},'Produtos de ', u.nome),
-        h('div',{className:'team-row-note', style:{marginBottom:10}},
-          'Define quais indicações ele recebe e em qual CRM de produto entra.'),
-        h('div',{className:'filtro-chips'},
-          PRODUTOS.map(p => h('button',{ key:p, type:'button',
-            className:'filtro-chip' + (meus.indexOf(p) !== -1 ? ' ativo' : ''),
-            onClick:()=>onDefinirProdutos(u.id,
-              meus.indexOf(p) === -1 ? [...meus, p] : meus.filter(x => x !== p)),
-          }, p))
-        ),
-        meus.length === 0
-          ? h('div',{className:'field-error', style:{marginTop:8}},'Sem produto, ele não recebe indicações nem vê nenhum CRM.')
-          : null,
-        h('button',{className:'btn btn-ghost', style:{height:30,fontSize:11.5,marginTop:10,alignSelf:'flex-start'},
-          onClick:()=>setProdutosDe(null)}, 'Concluir')
-      );
-    }
-
-    if(duplas === u.id){
-      const padroes = u.especialistasPadrao || {};
-      return h('div',{key:u.id, className:'team-row', style:{flexDirection:'column',alignItems:'stretch'}},
-        h('div',{className:'team-row-name', style:{marginBottom:8}},'Especialistas padrão de ', u.nome),
-        h('div',{className:'team-row-note', style:{marginBottom:10}},
-          'Quem já vem selecionado quando ', u.nome.split(' ')[0], ' encaminha um negócio na R4.'),
-        PRODUTOS.map(produto => {
-          const opcoes = especialistas.filter(e =>
-            !e.produtos || e.produtos.length === 0 || e.produtos.indexOf(produto) !== -1);
-          return h('div',{key:produto, className:'dupla-row'},
-            h('span',null, produto),
-            h('select',{ className:'select-sm', value: padroes[produto] || '',
-              onChange:e=>onSetPadrao(u.id, produto, e.target.value) },
-              h('option',{value:''}, opcoes.length ? 'Sem padrão' : 'Nenhum especialista'),
-              opcoes.map(e => h('option',{key:e.id, value:e.id}, e.nome)))
-          );
-        }),
-        h('button',{className:'btn btn-ghost', style:{height:30,fontSize:11.5,marginTop:10,alignSelf:'flex-start'},
-          onClick:()=>setDuplas(null)}, 'Concluir')
-      );
-    }
-
-    return h('div',{key:u.id, className:'team-row'},
-      h('span',{className:'avatar'}, initials(u.nome)),
-      h('div',{className:'team-row-main'},
-        h('div',{className:'team-row-name'},
-          u.nome,
-          euMesmo ? h('span',{className:'team-row-you'},' (você)') : null
-        ),
-        h('div',{className:'team-row-note'}, qtd === 0 ? 'Sem negócios na carteira' : qtd + (qtd === 1 ? ' negócio ativo' : ' negócios ativos'))
-      ),
-      h('div',{className:'team-row-actions'},
-        /* Escolha explícita entre os três papéis. O alternador anterior só
-           conhecia admin e vendedor: clicar nele num especialista apagava
-           o papel e os produtos que ele atendia, sem aviso. */
-        h('select',{
-          className:'select-sm', value:u.role, disabled:euMesmo,
-          'aria-label':'Perfil de ' + u.nome,
-          onChange:e=>onDefinirRole(u.id, e.target.value),
-        },
-          h('option',{value:'vendedor'},'Assessor'),
-          h('option',{value:'especialista'},'Especialista'),
-          h('option',{value:'admin'},'Administrador')
-        ),
-        u.role === 'especialista'
-          ? h('button',{className:'btn btn-ghost', onClick:()=>setProdutosDe(u.id)}, 'Produtos')
-          : h('button',{className:'btn btn-ghost', onClick:()=>setDuplas(u.id)}, 'Especialistas'),
-        h('button',{className:'btn btn-ghost', onClick:()=>onResetPin(u.id)}, 'Redefinir senha'),
-        h('button',{className:'btn btn-danger-ghost', onClick:()=>{ setRemovendo(u.id); setDestino(''); }, disabled:euMesmo}, 'Remover')
-      )
-    );
-  };
-
-  const enviarConvite = async () => {
-    if(!novo.nome.trim()){ setErroConvite('Informe o nome da pessoa.'); return; }
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novo.email.trim())){ setErroConvite('Informe um e-mail válido.'); return; }
-    if(novo.role === 'especialista' && novo.produtos.length === 0){
-      setErroConvite('Escolha ao menos um produto para o especialista.'); return;
-    }
-    const ok = await onConvidar(novo);
-    if(ok){ setNovo({ nome:'', email:'', role:'vendedor', produtos:[] }); setErroConvite(''); setConvidando(false); }
-  };
-
-  const alternarProduto = (p) => setNovo(n => ({ ...n,
-    produtos: n.produtos.indexOf(p) === -1 ? [...n.produtos, p] : n.produtos.filter(x => x !== p) }));
-
+/* A gestão de usuários passou a ser feita num lugar só, na Equipe do
+   hub. Duas telas significavam dois lugares para errar: alguém vira
+   admin no CRM e continua sem acesso no portal, ou o contrário.
+   Aqui fica só a leitura de quem é quem. */
+function TeamModal({ onClose, users, currentUser, convites }){
+  const pendentes = (users || []).filter(u => u.status === 'pendente');
+  const papel = { admin:'Admin do CRM', vendedor:'Assessor', especialista:'Especialista' };
   return h('div',{className:'overlay', onClick:(e)=>{ if(e.target===e.currentTarget) onClose(); }},
     h('div',{className:'modal', style:{maxWidth:620}},
       h('div',{className:'modal-head'},
         h('h2',null,'Equipe'),
-        h('div',{style:{display:'flex',alignItems:'center',gap:10}},
-          h('button',{className:'btn btn-primary', style:{height:32,padding:'0 12px',fontSize:12},
-            onClick:()=>setConvidando(v => !v)},
-            h(IconPlus,{size:13}), convidando ? 'Cancelar' : 'Criar perfil'),
-          h('button',{className:'modal-close', onClick:onClose}, h(IconX,{size:18}))
-        )
+        h('button',{className:'modal-close', onClick:onClose}, h(IconX,{size:18}))
       ),
       h('div',{className:'modal-body'},
-
-        convidando ? h('div',{className:'convite-form'},
-          h('div',{className:'field-row'},
-            h('div',{className:'field'},
-              h('label',null,'Nome'),
-              h('input',{ value:novo.nome, placeholder:'Ex: Marina Cardoso', autoFocus:true,
-                onChange:e=>{ setNovo({ ...novo, nome:e.target.value }); setErroConvite(''); } })
-            ),
-            h('div',{className:'field'},
-              h('label',null,'E-mail'),
-              h('input',{ type:'email', value:novo.email, placeholder:'nome@empresa.com',
-                onChange:e=>{ setNovo({ ...novo, email:e.target.value }); setErroConvite(''); } })
-            )
-          ),
-          h('div',{className:'field'},
-            h('label',null,'Perfil'),
-            h('div',{className:'filtro-chips'},
-              [{k:'vendedor',r:'Assessor'},{k:'especialista',r:'Especialista'},{k:'admin',r:'Administrador'}]
-                .map(o => h('button',{ key:o.k, type:'button',
-                  className:'filtro-chip' + (novo.role === o.k ? ' ativo' : ''),
-                  onClick:()=>{ setNovo({ ...novo, role:o.k }); setErroConvite(''); } }, o.r))
-            )
-          ),
-          novo.role === 'especialista' ? h('div',{className:'field'},
-            h('label',null,'Produtos que atende'),
-            h('div',{className:'filtro-chips'},
-              PRODUTOS.map(p => h('button',{ key:p, type:'button',
-                className:'filtro-chip' + (novo.produtos.indexOf(p) !== -1 ? ' ativo' : ''),
-                onClick:()=>{ alternarProduto(p); setErroConvite(''); } }, p))
-            )
-          ) : null,
-          erroConvite ? h('div',{className:'field-error'}, erroConvite) : null,
-          h('div',{className:'field-hint'},
-            'A pessoa define a própria senha ao se cadastrar com este e-mail. Ninguém, nem o admin, vê a senha dela.'),
-          h('button',{className:'btn btn-primary', style:{alignSelf:'flex-start',marginTop:10},
-            onClick:enviarConvite}, 'Criar perfil')
-        ) : null,
-
-        (convites && convites.length > 0) ? h('div',{className:'team-section'},
-          h('h3',null,'Convites aguardando primeiro acesso'),
-          convites.map(c => h('div',{key:c.email, className:'team-row pending'},
-            h('span',{className:'avatar'}, initials(c.nome)),
-            h('div',{className:'team-row-main'},
-              h('div',{className:'team-row-name'}, c.nome),
-              h('div',{className:'team-row-note'}, c.email, ' · ',
-                c.role === 'admin' ? 'Administrador' : c.role === 'especialista'
-                  ? 'Especialista' + (c.produtos.length ? ' · ' + c.produtos.join(', ') : '')
-                  : 'Assessor')
-            ),
-            h('div',{className:'team-row-actions'},
-              h('button',{className:'btn btn-danger-ghost', onClick:()=>onCancelarConvite(c.email)}, 'Cancelar')
+        h('div',{style:{background:'#F7F4EE',border:'1px solid #E3DCCB',borderRadius:10,padding:'14px 16px'}},
+          h('p',{style:{margin:'0 0 10px',lineHeight:1.55}},
+            h('strong',null,'A equipe é gerenciada no hub.'),
+            ' Papel no CRM, acesso ao portal, produtos do especialista e convite de pessoa nova ficam todos na tela de Equipe do hub, no menu de três traços. Um lugar só, para ninguém acabar com acesso num sistema e sem acesso no outro.'),
+          h('button',{className:'btn btn-primary',
+            onClick:()=>{ window.location.href='index.html'; }}, 'Abrir a Equipe no hub')
+        ),
+        pendentes.length
+          ? h('p',{style:{marginTop:14,fontSize:13,color:'#8A6D2F'}},
+              pendentes.length + (pendentes.length === 1
+                ? ' pessoa aguarda liberação: já criou o acesso, mas só entra no CRM depois que um master ativar no hub.'
+                : ' pessoas aguardam liberação: já criaram o acesso, mas só entram no CRM depois que um master ativar no hub.'))
+          : null,
+        h('table',{style:{width:'100%',borderCollapse:'collapse',marginTop:14,fontSize:13}},
+          h('thead',null, h('tr',null,
+            h('th',{style:{textAlign:'left',padding:'6px 0',borderBottom:'1px solid #E3E7EE'}},'Pessoa'),
+            h('th',{style:{textAlign:'left',padding:'6px 0',borderBottom:'1px solid #E3E7EE'}},'Papel'),
+            h('th',{style:{textAlign:'left',padding:'6px 0',borderBottom:'1px solid #E3E7EE'}},'Situação'))),
+          h('tbody',null, (users || []).map(u =>
+            h('tr',{key:u.id},
+              h('td',{style:{padding:'8px 0',borderBottom:'1px solid #F2F4F8'}},
+                u.nome,
+                u.id === (currentUser && currentUser.id)
+                  ? h('span',{style:{marginLeft:6,fontSize:10,color:'#3D5178'}},'(você)') : null,
+                (u.produtos && u.produtos.length)
+                  ? h('div',{style:{fontSize:11,color:'#8A93A6'}}, u.produtos.join(' · ')) : null),
+              h('td',{style:{padding:'8px 0',borderBottom:'1px solid #F2F4F8'}}, papel[u.role] || u.role),
+              h('td',{style:{padding:'8px 0',borderBottom:'1px solid #F2F4F8',
+                color: u.status === 'ativo' ? '#5C7A5C' : '#B5563A'}}, u.status)
             )
           ))
-        ) : null,
-
-        pendentes.length > 0 ? h('div',{className:'team-section'},
-          h('h3',null,'Aguardando aprovação'),
-          pendentes.map(u => h('div',{key:u.id, className:'team-row pending'},
-            h('span',{className:'avatar'}, initials(u.nome)),
-            h('div',{className:'team-row-main'},
-              h('div',{className:'team-row-name'}, u.nome),
-              h('div',{className:'team-row-note'},'Pediu acesso e ainda não consegue entrar.')
-            ),
-            h('div',{className:'team-row-actions'},
-              h('button',{className:'btn btn-danger-ghost', onClick:()=>onRemove(u.id, null)}, 'Recusar'),
-              h('button',{className:'btn btn-success-solid', onClick:()=>onApprove(u.id)}, 'Aprovar')
-            )
-          ))
-        ) : null,
-
-        h('div',{className:'team-section'},
-          h('h3',null,'Com acesso liberado'),
-          liberados.map(linhaUsuario)
-        )
+        ),
+        (convites && convites.length)
+          ? h('p',{style:{marginTop:12,fontSize:12,color:'#8A93A6'}},
+              convites.length + ' convite(s) aguardando primeiro acesso. Acompanhe no hub.')
+          : null
       )
     )
   );
@@ -9062,6 +8888,7 @@ function Board({ leads, onOpen, users, showOwner, onQuickAdd, onLose, onWin, onR
 
 /* ================= App ================= */
 function App(){
+  const [motivoBloqueio, setMotivoBloqueio] = useState('');
   const [phase, setPhase] = useState('loading'); // loading | login | app
   const [users, setUsers] = useState([]);
   const [convites, setConvites] = useState([]);
@@ -9129,6 +8956,12 @@ function App(){
     if(!configurado){ setPhase('config'); return; }
     if(invertido || chaveSecreta || !sb){ setPhase('chaves'); return; }
     (async () => {
+      /* Login único. O portal guarda a sessão em aw_sessao, com chave
+         própria; o supabase-js guarda na dele. Mesmo projeto, mesmos
+         tokens — só não se enxergavam, e por isso o assessor logava
+         duas vezes. Aqui a sessão do portal é adotada antes de o CRM
+         procurar a sua.                                             */
+      await adotarSessaoDoPortal();
       const { data } = await sb.auth.getSession();
       if(data && data.session){
         const entrou = await abrirSessao(data.session.user);
@@ -9139,17 +8972,56 @@ function App(){
       loadedOnce.current = true;
     })();
     /* Sessão expirada ou logout em outra aba derruba esta também. */
-    const { data: sub } = sb.auth.onAuthStateChange((evento) => {
-      if(evento === 'SIGNED_OUT'){ setCurrentUser(null); setPhase('login'); }
+    const { data: sub } = sb.auth.onAuthStateChange((evento, sessao) => {
+      if(evento === 'SIGNED_OUT'){
+        setCurrentUser(null); setPhase('login');
+        try { localStorage.removeItem('aw_sessao'); } catch(e){}
+      } else if(evento === 'TOKEN_REFRESHED' || evento === 'SIGNED_IN'){
+        devolverSessaoAoPortal(sessao);
+      }
     });
     return () => { if(sub && sub.subscription) sub.subscription.unsubscribe(); };
   }, []);
 
+  /* ---------- Login único com o portal ---------- */
+  async function adotarSessaoDoPortal(){
+    let portal = null;
+    try { portal = JSON.parse(localStorage.getItem('aw_sessao') || 'null'); } catch(e){}
+    if(!portal || !portal.access_token || !portal.refresh_token) return false;
+    const { data } = await sb.auth.getSession();
+    if(data && data.session && data.session.access_token === portal.access_token) return true;
+    const { error } = await sb.auth.setSession({
+      access_token: portal.access_token,
+      refresh_token: portal.refresh_token
+    });
+    if(error){
+      try { localStorage.removeItem('aw_sessao'); } catch(e){}
+      return false;
+    }
+    return true;
+  }
+  /* Quando o supabase-js renova o token, o portal precisa saber — senão
+     fica com o token velho e cai no login na próxima visita. */
+  function devolverSessaoAoPortal(sessao){
+    if(!sessao || !sessao.access_token) return;
+    try {
+      const atual = JSON.parse(localStorage.getItem('aw_sessao') || 'null') || {};
+      atual.access_token  = sessao.access_token;
+      atual.refresh_token = sessao.refresh_token;
+      if(sessao.expires_at) atual.expires_at = sessao.expires_at;
+      if(sessao.user){ atual.id = sessao.user.id; atual.email = sessao.user.email; }
+      localStorage.setItem('aw_sessao', JSON.stringify(atual));
+    } catch(e){}
+  }
+
   /* Carrega o perfil do usuário autenticado e decide se ele pode entrar. */
   const abrirSessao = async (authUser) => {
     const { data, error } = await sb.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
-    if(error || !data){ await sb.auth.signOut(); return false; }
-    if(data.status !== 'ativo'){ await sb.auth.signOut(); return false; }
+    /* Recusar acesso ao CRM NAO e logout. Com o login unico, derrubar a
+       sessao aqui expulsaria a pessoa do portal inteiro — bastaria abrir
+       o card do CRM sem ter perfil ativo para perder tudo.            */
+    if(error || !data){ setMotivoBloqueio('sem-perfil'); setPhase('bloqueado'); return true; }
+    if(data.status !== 'ativo'){ setMotivoBloqueio(data.status); setPhase('bloqueado'); return true; }
     setCurrentUser({ id:data.id, nome:data.nome, role:data.role, status:data.status,
       produtos:data.produtos || [], especialistasPadrao:data.especialistas_padrao || {} });
     if(data.role === 'especialista'){
@@ -10044,6 +9916,22 @@ function App(){
     );
   }
 
+  if(phase === 'bloqueado'){
+    const pendente = motivoBloqueio === 'pendente';
+    return h('div',{className:'tela-aviso', style:{maxWidth:520,margin:'80px auto',padding:'0 24px',textAlign:'center'}},
+      h('h1',{style:{fontFamily:"'Fraunces',Georgia,serif",color:'#1B2A4A',fontSize:24,marginBottom:12}},
+        pendente ? 'Acesso aguardando liberação' : 'Sem acesso ao CRM'),
+      h('p',{style:{lineHeight:1.6,color:'#4A5568',marginBottom:10}},
+        pendente
+          ? 'A sua conta existe e você continua logado no portal. Falta um master liberar o seu acesso ao CRM na tela de Equipe.'
+          : 'A sua conta não tem perfil no CRM. Peça a um master para definir o seu papel na tela de Equipe do hub.'),
+      h('p',{style:{fontSize:13,color:'#8A93A6',marginBottom:22}},
+        'Os outros módulos do portal continuam funcionando normalmente.'),
+      h('button',{className:'btn btn-primary',
+        onClick:()=>{ window.location.href='index.html'; }}, 'Voltar ao portal')
+    );
+  }
+
   if(phase === 'login'){
     return h(LoginScreen,{ onLogin:handleLogin, onRegister:handleRegister, onReset:handleReset,
       demo: MODO_DEMO ? demoStore.profiles.filter(p => p.status === 'ativo') : null, onEntrarDemo:entrarDemo });
@@ -10357,7 +10245,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.49";
+var VERSAO_CRM="versão 2.50";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
