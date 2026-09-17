@@ -8,6 +8,9 @@
 --  Aqui cada objeto aparece uma vez, na forma final.
 --
 --  Rodar inteiro no SQL Editor. Pode rodar de novo sem quebrar.
+--  Se voce ja rodou uma versao anterior destes scripts, rode assim
+--  mesmo: as funcoes que mudaram de formato sao derrubadas e
+--  recriadas automaticamente no item 5.
 --  Se aparecer "Potential issues detected", use Run without RLS.
 --
 --  ORDEM INTERNA (não reordene):
@@ -30,6 +33,30 @@ create table if not exists public.perfis (
 );
 -- para bancos criados antes de o master existir
 alter table public.perfis add column if not exists super boolean not null default false;
+
+/* CÓDIGO DO ASSESSOR
+   É por ele que a planilha de clientes diz de quem é cada conta. O nome não
+   serve para isso: "RAFAEL", "Rafael Souza" e "R. SOUZA" são a mesma pessoa
+   para quem lê e três strings diferentes para o computador — e um vínculo
+   errado de carteira mexe em comissão.
+
+   Nasce automático e sequencial (A001, A002…) para que ninguém fique sem,
+   mas é editável pelo master na tela de Equipe: o valor útil é o que a
+   planilha já usa, e esse quem conhece é quem monta a planilha. */
+create sequence if not exists public.perfis_codigo_seq;
+alter table public.perfis add column if not exists codigo text;
+
+update public.perfis
+   set codigo = 'A' || lpad(nextval('public.perfis_codigo_seq')::text, 3, '0')
+ where codigo is null;
+
+alter table public.perfis alter column codigo
+  set default 'A' || lpad(nextval('public.perfis_codigo_seq')::text, 3, '0');
+
+/* Único sem diferenciar maiúscula de minúscula, porque a comparação com a
+   planilha também não diferencia: deixar 'a001' e 'A001' conviverem seria
+   guardar a ambiguidade que este campo existe para eliminar. */
+create unique index if not exists perfis_codigo_idx on public.perfis (upper(codigo));
 
 -- ------------------------------------------------------------
 --  1. Clientes
@@ -553,6 +580,33 @@ create trigger perfis_nascimento before insert on public.perfis
 revoke update on public.perfis from authenticated;
 grant  update (nome) on public.perfis to authenticated;
 
+/* As funcoes abaixo mudaram de formato desde a primeira versao (a
+   listar_equipe, por exemplo, ganhou as colunas do CRM). O comando
+   create or replace nao consegue alterar o tipo de retorno de uma
+   funcao que ja existe: sem derrubar antes, o Postgres recusa com
+   "cannot change return type of existing function".
+
+   Derrubamos TODAS as versoes de cada nome, inclusive assinaturas
+   antigas com outros parametros -- se sobrasse uma, a chamada pela
+   API ficaria ambigua. Nenhuma delas e usada por politica ou gatilho,
+   entao derrubar nao arrasta mais nada junto. Sem cascade de proposito:
+   se um dia alguma passar a ter dependente, queremos o erro na cara. */
+do $$
+declare r record;
+begin
+  for r in
+    select p.oid::regprocedure::text as assinatura
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname in ('convidar','revogar_convite','listar_convites',
+                        'listar_equipe','definir_papel_crm','definir_privilegio',
+                        'definir_codigo','codigos_assessores')
+  loop
+    execute 'drop function if exists ' || r.assinatura;
+  end loop;
+end $$;
+
 create or replace function public.convidar(
   p_email text, p_nome text, p_role text,
   p_master boolean default false, p_admin boolean default false,
@@ -606,17 +660,58 @@ $$;
 
 create or replace function public.listar_equipe()
 returns table (
-  user_id uuid, email text, nome text,
+  user_id uuid, email text, nome text, codigo text,
   admin boolean, mesa_rv boolean, super boolean,
   crm_role text, crm_status text, crm_produtos text[], criado_em timestamptz)
 language sql stable security definer set search_path = public as $$
-  select p.user_id, u.email::text, p.nome, p.admin, p.mesa_rv, p.super,
+  select p.user_id, u.email::text, p.nome, p.codigo, p.admin, p.mesa_rv, p.super,
          pr.role, pr.status, pr.produtos, u.created_at
   from public.perfis p
   join auth.users u on u.id = p.user_id
   left join public.profiles pr on pr.id = p.user_id
   where public.eh_admin()
   order by p.super desc, p.admin desc, p.mesa_rv desc, u.email;
+$$;
+
+/* Quem pode alterar o código: só o master, e por aqui — a escrita direta em
+   perfis está limitada à coluna "nome" (item 3 acima), de propósito. */
+create or replace function public.definir_codigo(p_user_id uuid, p_codigo text)
+returns void language plpgsql security definer set search_path = public as $$
+declare v_novo text;
+begin
+  if not public.eh_super() then
+    raise exception 'Apenas o master pode alterar o codigo do assessor.';
+  end if;
+
+  v_novo := upper(btrim(coalesce(p_codigo, '')));
+  if v_novo = '' then
+    raise exception 'O codigo nao pode ficar em branco: e ele que liga a planilha ao assessor.';
+  end if;
+  if v_novo !~ '^[A-Z0-9._-]{2,16}$' then
+    raise exception 'Codigo invalido: use de 2 a 16 letras, numeros, ponto, hifen ou sublinhado.';
+  end if;
+  if exists (select 1 from public.perfis
+              where upper(codigo) = v_novo and user_id <> p_user_id) then
+    raise exception 'Ja existe outro assessor com o codigo %.', v_novo;
+  end if;
+
+  update public.perfis set codigo = v_novo where user_id = p_user_id;
+  if not found then
+    raise exception 'Perfil nao encontrado.';
+  end if;
+
+  insert into public.auditoria(usuario, acao, alvo, detalhe)
+  values (coalesce(auth.jwt() ->> 'email','?'), 'codigo',
+          (select email from auth.users where id = p_user_id), v_novo);
+end $$;
+
+/* O CRM precisa traduzir código em pessoa na hora de ler a planilha, e ele
+   não enxerga perfis (tabela do portal). Só o par id/código sai daqui: nem
+   e-mail, nem privilégio — é o mínimo para fazer o vínculo. */
+create or replace function public.codigos_assessores()
+returns table (user_id uuid, codigo text)
+language sql stable security definer set search_path = public as $$
+  select p.user_id, p.codigo from public.perfis p where p.codigo is not null;
 $$;
 
 /* Papel no CRM, alterado pela tela de Equipe. A escrita direta em
@@ -690,6 +785,10 @@ begin
           p_campo || ' = ' || p_valor);
 end $$;
 
+
+revoke all on function public.definir_codigo(uuid,text), public.codigos_assessores() from public;
+grant execute on function public.definir_codigo(uuid,text) to authenticated;
+grant execute on function public.codigos_assessores() to authenticated;
 
 revoke all on function public.listar_equipe(), public.definir_privilegio(uuid,text,boolean),
                       public.definir_papel_crm(uuid,text,text,text[]),
@@ -990,8 +1089,10 @@ where u.id = pr.id and lower(split_part(u.email,'@',1)) = 'thiago.miranda';
 -- ============================================================
 --  9. CONFERÊNCIA — é esta tabela que importa
 --     Os três masters saem com master, administrador e admin no CRM.
+--     A coluna "codigo" é a que vai para a planilha de clientes; se
+--     preferir outro valor, troque na tela de Equipe do hub.
 -- ============================================================
-select u.email, p.nome,
+select u.email, p.nome, p.codigo,
        p.super as master, p.admin as administrador, p.mesa_rv as edita_rv,
        pr.role as papel_crm, pr.status as status_crm
 from public.perfis p

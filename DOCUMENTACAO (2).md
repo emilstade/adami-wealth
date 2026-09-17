@@ -1,0 +1,428 @@
+# Adami Captal — documentação técnica do portal
+
+Documento de contexto para o projeto **Adami Captal**. Existe um portal irmão, da
+**Alom Capital**, com codebase quase idêntico e projeto separado. Nada deste documento
+se aplica à outra empresa sem verificação explícita.
+
+Última atualização: 17 de setembro de 2026 · versão do portal: **2.51**
+
+> O nome da firma se escreve **Adami Captal**, sem "i" no final. Aparece assim em toda
+> a interface e em todo o código. "Adami Wealth" é grafia antiga e só sobrevive em
+> textos herdados.
+
+---
+
+## 1. Contexto
+
+A Adami Captal é uma gestora de patrimônio. O portal é a **plataforma administrativa
+interna da firma**, o lugar onde a operação vai reunindo todas as suas ferramentas.
+Não é um sistema de relatório com acessórios em volta: é um admin da empresa, e o
+consolidado de carteiras é hoje o módulo mais desenvolvido dentro dele, não o propósito
+único.
+
+Isso tem consequência prática: quando surgir uma demanda nova da operação, um controle,
+um cálculo, um cadastro, o caminho natural é virar **mais um módulo no portal**, e não
+um sistema à parte. Trate pedidos futuros com essa premissa.
+
+O módulo Carteiras, o mais maduro, é onde os assessores lançam mês a mês a posição das
+carteiras dos clientes e geram o relatório consolidado de performance em PDF, enviado ao
+cliente por e-mail.
+
+**Emil Stade** é o fundador e é quem conduz o desenvolvimento. Ele não é técnico: não
+roda comandos, não edita código. Ele descreve o problema em linguagem comum, revisa o
+resultado visual e aponta o que está errado. Todo trabalho de código e publicação é
+feito pelo assistente. Instruções para ele devem ser sempre clique a clique.
+
+---
+
+## 2. Arquitetura
+
+**Frontend:** HTML puro, sem build, sem framework. Os arquivos ficam na raiz do
+repositório e precisam permanecer lado a lado porque se referenciam por caminho
+relativo:
+
+| Arquivo | Módulo |
+|---|---|
+| `index.html` | **Hub de entrada** + módulo Carteiras + tela de Equipe |
+| `crm.html` | CRM: jornada do cliente, negócios, carteira, Net New Money |
+| `rv.html` | Mesa RV: operações de renda variável e alocações |
+| `diagnostico.html` | Ferramenta Wealth Planning |
+| `patrimonial.html` | Gerador de Planos Patrimoniais |
+| `imobiliario.html` | Relatório Imobiliário |
+| `simulador.html` | Simulador de receita RV |
+| `adami_completo.sql` | Banco inteiro, portal + CRM, num arquivo só |
+| `vendor/` | React, ReactDOM, jsPDF e supabase-js, servidos localmente |
+
+**O hub é a porta da plataforma.** Depois do login, o usuário vê os cards dos módulos
+agrupados em Ferramentas e Simuladores, e escolhe onde entrar. O hub existe justamente
+porque a plataforma é feita para crescer em módulos.
+
+**Como nasce um módulo novo:** um arquivo HTML próprio na raiz, no mesmo padrão visual,
+mais um card no hub apontando para ele por caminho relativo. Módulos que precisarem de
+dados usam o mesmo Supabase e as mesmas tabelas de identidade, para não criar uma
+segunda noção de usuário dentro da mesma casa.
+
+**Hospedagem:** Vercel, publicação automática a cada commit na branch `main` do GitHub
+`emilstade/adami-wealth`.
+
+**Backend:** Supabase (PostgreSQL + PostgREST + Auth + Row Level Security).
+Projeto ativo: `ghxjqmjtmbqzvogwzylo.supabase.co`. A chave *publishable* vive no código
+do navegador, o que é correto: a proteção real está na RLS. A chave *service_role* nunca
+deve aparecer em arquivo servido pelo navegador.
+
+**Por que HTML puro:** o projeto nasceu em React + Vite e passou os primeiros dias
+quebrando no build da Vercel. Em 13/08 foi reescrito como HTML estático e nunca mais
+houve falha de deploy. **Esta decisão é definitiva.** Não proponha reintroduzir
+framework ou etapa de build.
+
+O `crm.html` é a exceção aparente: ele é React, porque veio pronto de um sócio. Mas
+continua sendo um arquivo HTML sem build, com as bibliotecas servidas de `vendor/` em
+vez de CDN. Nenhuma etapa de compilação foi introduzida.
+
+**Bloco `EMPRESA`:** no topo do `<script>` existe um objeto com nome da empresa,
+domínio de e-mail, texto de apresentação e as chaves do Supabase. É o único trecho que
+difere entre este portal e o da Alom. Logos ficam em `LOGO_AZUL` (fundo claro) e
+`LOGO_BRANCO` (fundo escuro), como data URI. Portar uma melhoria de um portal para o
+outro significa copiar tudo menos esse bloco e os dois logos.
+
+---
+
+## 3. Modelo de dados
+
+### Portal
+
+| Tabela | Conteúdo |
+|---|---|
+| `perfis` | `user_id`, `nome`, `codigo`, `admin`, `mesa_rv`, `super` |
+| `clientes` | `id`, `nome`, `assessor_id` (→ auth.users), `criado_em` |
+| `lancamentos` | `cliente_id`, `mes`, `ano`, `contas` (jsonb), `indicadores` (jsonb) |
+| `cartas` | `mes`, `ano`, `conteudo`. O comentário é **da casa**, não do cliente |
+| `auditoria` | `quando`, `usuario`, `acao`, `alvo`, `detalhe` |
+| `backups` | dump completo em jsonb, **exclusivo do admin** |
+| `rv_operacoes` | operações da Mesa RV, com status e desfecho |
+| `rv_alocacoes` | alocação de cada cliente numa operação |
+| `convites` | e-mail liberado para primeiro acesso, com os papéis já definidos |
+
+### CRM
+
+| Tabela | Conteúdo |
+|---|---|
+| `profiles` | `id`, `nome`, `role`, `status`, `produtos` |
+| `leads` | jornada do cliente, contas BTG, movimentações, histórico |
+| `configuracoes` | pares chave/valor, hoje a cotação do dólar |
+
+`perfis` e `profiles` são a mesma pessoa vista de dois ângulos: `perfis.user_id` e
+`profiles.id` apontam para o mesmo `auth.users`. Não existe colisão de nome entre os
+dois esquemas, o que foi verificado objeto a objeto antes de juntar os dois no mesmo
+projeto Supabase.
+
+**`contas`** é um array. Cada conta: `nome`, `inst`, `saldo`, `apl`, `res`, `rendRs`,
+`rendPct`, `moeda` (`"BRL"` ou `"USD"`; ausente significa BRL, por compatibilidade).
+
+**`indicadores`** é um objeto com `cdi`, `ipca`, `ibov`, `sp500`, `poup`, `dolar`,
+`ouro`, `ifix`, `ptax`, `vencimentos`, `estrategias` e `secoes`.
+
+Gravação usa upsert com `?on_conflict=cliente_id,mes,ano` na URL. Sem isso a gravação
+falha silenciosamente. Foi bug real.
+
+---
+
+## 4. Regras de negócio, não quebrar
+
+**Rentabilidade % e rentabilidade R$ são campos independentes.** Aportes no meio do mês
+rompem a relação matemática entre os dois, então a instituição informa o percentual e o
+resultado em reais separadamente. O percentual da **carteira** é média ponderada pelo
+saldo de abertura de cada conta, nunca derivado do valor em reais.
+
+**Saldo de abertura** = saldo final − rendimento − aplicações + resgates. Quando o
+resultado dá zero ou negativo, o sistema usa o saldo final como fallback e a conferência
+aponta a inconsistência.
+
+**Aplicações e resgates são movimentos, sempre positivos.** O sinal já está na fórmula
+da abertura. Um resgate digitado com menos inverte a soma e erra a abertura em **duas
+vezes** o valor. Os campos bloqueiam o sinal negativo de propósito.
+
+**Onshore (R$) e offshore (US$) nunca são somados.** São dois blocos independentes, cada
+um com seu total e sua ponderação. A PTAX aparece apenas como referência de conversão,
+nunca para consolidar. A rentabilidade offshore é medida em dólar e portanto **não
+incorpora variação cambial**, o que está escrito no rodapé do relatório e não deve ser
+removido.
+
+**Rentabilidades compostas**, nunca somadas: `comp()` multiplica `(1+p/100)`.
+
+**Numeração de seções é dinâmica** (`nx()`), para não abrir buraco quando uma seção é
+desligada.
+
+**Indicadores de mercado são globais por mês**: ao salvar, são replicados para todos os
+outros clientes com lançamento naquele mês. Apenas campos **preenchidos** sobrescrevem:
+um campo em branco nunca zera o do vizinho. Vencimentos, estratégias e contas nunca são
+replicados.
+
+**Herança de contas entre meses.** Offshore e onshore são herdados do mês anterior, mas
+conta que fechou o mês com saldo zero ou negativo não ressuscita. A chave de comparação
+é nome + instituição, normalizada.
+
+**Rótulos dos indicadores** refletem o benchmark realmente usado: "Inflação (IMA-B)",
+"Ouro (USD)", "S&P 500 (USD)". Meses históricos ainda guardam valores antigos sob os
+rótulos novos, e isso está pendente de decisão.
+
+---
+
+## 5. Controle de acesso
+
+Três níveis no portal, guardados em `perfis`:
+
+| Coluna | Na tela | O que dá |
+|---|---|---|
+| `super` | **master** | concede e revoga privilégio, convida, gere a equipe |
+| `admin` | administrador | enxerga todos os clientes e os backups |
+| `mesa_rv` | Mesa RV | escreve nas operações de renda variável |
+
+Master manda em tudo que admin manda, e admin manda em tudo que mesa_rv manda. Hoje são
+master: Emil, Bibiana e Rafael.
+
+**A escrita direta em privilégio está fechada em três camadas**, e isso é deliberado.
+Já houve a falha oposta: uma política permitia que qualquer assessor fizesse `PATCH` em
+`admin = true` na própria linha e virasse administrador sozinho.
+
+1. Permissão de coluna: pela API o autenticado só escreve em `nome`.
+2. Gatilho `proteger_privilegios` em `perfis`, que recusa alteração de `admin`,
+   `mesa_rv` e `super` por quem não é master. `auth.uid()` nulo, que é o caso do SQL
+   Editor, continua passando: é a saída de emergência.
+3. Política de RLS.
+
+Toda mudança de permissão passa por função `security definer` (`definir_privilegio`,
+`definir_papel_crm`, `definir_codigo`), que confere quem está chamando antes de gravar
+e registra em `auditoria`.
+
+**Filtrar no navegador não é segurança.** Se surgir demanda de restrição de acesso, ela
+tem que ser resolvida no banco, com política, nunca escondendo elemento na tela.
+
+### Convite e primeiro acesso
+
+Não existe criação de conta pelo administrador, porque isso exigiria a chave
+`service_role` no navegador. O fluxo é:
+
+1. O master convida pelo hub, em Equipe → Convidar pessoa. O convite já carrega os
+   papéis do portal e do CRM.
+2. A pessoa entra pelo "Primeiro acesso" na tela de login e escolhe a própria senha.
+3. Um gatilho em `auth.users` recusa cadastro de e-mail sem convite, cria o perfil do
+   portal e o do CRM com os papéis do convite, e marca o convite como consumido.
+
+O convite é marcado como consumido em vez de apagado, para não depender da ordem em que
+os gatilhos rodam.
+
+**Recuperação de senha** está construída na tela, mas só funciona depois de configurar
+SMTP próprio no Supabase. O serviço embutido entrega 2 e-mails por hora, somente para
+endereços pré-autorizados, e falha em silêncio.
+
+### Login único entre portal e CRM
+
+O portal guarda a sessão em `localStorage` sob a chave `aw_sessao`. O `crm.html` lê essa
+chave e adota a sessão com `setSession`, então o login é um só. Quando o token é
+renovado dentro do CRM, ele devolve a sessão atualizada ao portal.
+
+**Recusar acesso ao CRM não é logout.** Com login único, chamar `signOut()` ali
+derrubaria a pessoa do portal inteiro. Quem não tem perfil ativo no CRM vê uma tela de
+bloqueio com botão para voltar ao hub, e a sessão continua de pé. Isso já foi bug.
+
+A gestão de usuários acontece **só no hub**. A tela de equipe do CRM é somente leitura,
+com um botão que leva ao hub.
+
+---
+
+## 6. Código do assessor
+
+Cada pessoa em `perfis` tem um `codigo`, gerado sozinho e sequencial (A001, A002…) e
+editável pelo master na tela de Equipe. Ele existe para uma coisa: **ligar a planilha de
+clientes ao assessor na importação do CRM**.
+
+O nome não serve para isso. "RAFAEL", "Rafael Souza" e "R. SOUZA" são a mesma pessoa
+para quem lê e três strings diferentes para o computador, e um vínculo errado de
+carteira mexe em comissão.
+
+Na importação da base BTG, se a planilha trouxer uma coluna de código (aceita em várias
+grafias: `Código do assessor`, `Cód. Assessor`, `ID Assessor`, `Codigo Assessor`), o
+vínculo é **aplicado** e fica no histórico do cliente. Sem a coluna, vale a regra antiga:
+o assessor que vem no arquivo do BTG gera apenas um aviso, nunca uma transferência.
+
+A diferença é intencional. O código foi digitado por quem monta a planilha olhando a
+tela de Equipe, então é instrução. O nome vindo do BTG é palpite.
+
+Códigos que não pertencem a ninguém aparecem numa seção própria da prévia e não alteram
+nada.
+
+O índice de unicidade é sobre `upper(codigo)`, porque a comparação com a planilha também
+ignora maiúscula.
+
+---
+
+## 7. Importação da base BTG (CRM)
+
+Toda semana chega um export do BTG com a carteira inteira. A reconciliação é **por
+conta**, nunca por nome: o export traz só o primeiro nome e há 84 primeiros nomes
+cobrindo 273 contas. Nome é rótulo, conta é identidade.
+
+A conta é normalizada antes de comparar, porque abrir o `.xlsx` no Excel e salvar come
+os zeros à esquerda, e "9990002" deixaria de casar com "009990002" em silêncio.
+
+**O que a importação não faz, por decisão:** não cria cliente que ainda não existe, não
+exclui quem sumiu do arquivo, e não transfere carteira pelo nome. Os casos são
+sinalizados para alguém decidir. Um export incompleto não pode derrubar a carteira do
+escritório em silêncio.
+
+**O BTG manda o saldo, nunca o movimento.** Não há como distinguir aporte novo de
+valorização olhando dois arquivos. Por isso a diferença nunca vira movimentação, que
+viraria captação líquida inflada pela alta da bolsa. Ela sobrescreve o saldo e, quando
+não se explica pelo que o assessor lançou, gera alerta no card do cliente. A faixa é de
+0,5% por importação semanal.
+
+O que se grava é o valor **inicial**, não o saldo do arquivo: as movimentações lançadas
+somam por cima e seriam contadas duas vezes.
+
+Nada é gravado antes da prévia. A prévia não é cortesia, é o único ponto em que alguém
+confere centenas de linhas antes de elas mexerem na carteira.
+
+---
+
+## 8. Impressão
+
+Todos os relatórios são impressos pelo navegador, sem biblioteca de PDF.
+
+**A armadilha central:** margem de página não se falsifica com `padding`. Padding de um
+elemento que atravessa várias folhas aparece **uma vez**, no topo da primeira e no pé da
+última. Da segunda folha em diante o conteúdo encosta na borda do papel e a impressora
+come o que não cabe. Use `@page { margin: … }` de verdade.
+
+Quando a capa precisa sangrar até a borda, ela ganha **página nomeada** com margem zero
+(`@page capa { margin: 0 }` e `page: capa` no elemento). Margem negativa não resolve: o
+navegador recorta o que passa da área útil.
+
+**`break-inside: avoid` só vale para o que cabe numa folha.** Pedir isso a um bloco mais
+alto que a página não impede a quebra, só faz o navegador quebrar onde ele quiser, em
+geral no meio de um cartão. Trave a peça pequena (cartão, tabela, gráfico), deixe a
+seção fluir. Antes de travar um bloco, meça a altura dele contra a área útil.
+
+`!important` na folha de impressão sobrescreve mudança feita no CSS de tela. A capa já
+ficou branca na tela e azul no PDF por isso.
+
+---
+
+## 9. Como o Emil trabalha
+
+- Descreve o problema visualmente ("ficou cagado", "não tá indo"). Espera diagnóstico de
+  causa raiz, não perguntas de esclarecimento técnico.
+- Escreve curto, misturando português e inglês.
+- Prefere receber um arquivo para baixar ou um passo para clicar.
+- Cada conjunto de mudanças ganha um número de versão, visível no rodapé. O selo existe
+  para ele perceber quando está vendo cache ou arquivo local.
+- Scripts SQL são rodados por ele no SQL Editor do Supabase, colando o arquivo inteiro.
+  O aviso "Potential issues detected" é falso positivo: a orientação é **Run without RLS**.
+
+---
+
+## 10. Publicação
+
+A Vercel republica sozinha a cada commit na `main`. O commit é feito pelo assistente.
+
+**Para o assistente conseguir commitar**, duas condições:
+
+1. O Claude GitHub App precisa estar instalado em `emilstade/adami-wealth`
+   (`github.com/apps/claude`).
+2. A sessão precisa ter nascido com esse repositório selecionado, em `claude.ai/code`.
+
+A autorização é por sessão e vale a partir do nascimento dela. Uma sessão que começou sem
+o repositório não ganha acesso depois, nem com token: as credenciais ficam fora do
+ambiente e um proxy autentica por fora, então **chave de API colada na conversa não
+funciona** e não deve ser pedida nem enviada.
+
+Sem isso, o caminho é o assistente entregar os arquivos e o Emil subir em
+**Add file → Upload files** na raiz do repositório, com os mesmos nomes.
+
+**Nunca usar `raw.githubusercontent.com` para conferir se um commit subiu.** O CDN serve
+conteúdo velho e já causou duas reversões silenciosas de trabalho publicado. Conferir
+sempre pela API, decodificando o campo `content`.
+
+---
+
+## 11. Armadilhas já encontradas
+
+- **Padding no lugar de margem de página.** Ver seção 8.
+- **`create or replace function` não muda o tipo de retorno.** Quando uma função ganha
+  coluna, é preciso `drop` antes. O `adami_completo.sql` já derruba todas as versões dos
+  nomes afetados, inclusive assinaturas antigas que sobrariam como overload e deixariam
+  a chamada RPC ambígua.
+- **PostgREST devolve corpo vazio em 201.** Chamar `res.json()` direto estoura com
+  "Unexpected end of JSON input", e a gravação parece ter falhado quando na verdade
+  funcionou. Ler com `res.text()` e só então tentar `JSON.parse`.
+- **Variável usada sem declaração** passa na checagem de sintaxe e só quebra em execução.
+  Rodar análise de escopo (acorn + eslint-scope) antes de publicar, e **não publicar
+  quando ela acusa**.
+- **Bug de DOM não aparece em checagem estática.** Renomear uma classe sem atualizar quem
+  a lê deixa o formulário lendo o vazio, e nenhum analisador percebe. Testar com jsdom,
+  e para impressão gerar o PDF de verdade e medir.
+- **Handlers inline em HTML gerado por string** são avaliados no escopo global. Índices
+  de laço precisam ser interpolados (`'+i+'`), não referenciados por nome.
+- **CORS pode bloquear a API de PTAX do Banco Central.** O campo é sempre editável à mão
+  e mostra mensagem de falha em vez de travar.
+- **Cache do navegador** engana com frequência. Sempre pedir Cmd+Shift+R e conferir o
+  selo de versão antes de investigar qualquer coisa.
+- **O wi-fi do escritório bloqueia `.vercel.app`** por DNS, o que aparece como
+  `DNS_PROBE_FINISHED_NXDOMAIN`. Pelo 4G funciona. A solução definitiva é apontar o
+  domínio próprio.
+
+---
+
+## 12. Histórico de versões
+
+**12/08** tentativa em React + Vite; sucessão de falhas de build.
+**13/08** reescrita em HTML estático; Supabase; relatório com capa, carta, cinco seções
+e disclaimer; login com sessão persistente.
+**14/08** logo, numeração real de páginas, backup diário; hub de sistemas; adição do
+Diagnóstico Patrimonial e do Relatório Imobiliário.
+**16/08** renomeações e adoção da numeração 1.9.
+**18/08** 1.9.x correções de gravação, offshore com PTAX, indicadores compartilhados,
+benchmarks · **2.0 acesso por assessor com RLS** · 2.1 a 2.3 seções habilitáveis e sumário.
+**19/08** 2.4 a 2.7 conferência de consistência, capa clara, auditoria geral ·
+**2.8 nome padronizado dos arquivos baixados**.
+**Setembro** correção da escalada de privilégio em `perfis`; nível master e tela de
+Equipe; Mesa RV com exportação nativa em `.xlsx`; renomeação para Adami Captal;
+Gerador de Planos Patrimoniais com aba imobiliária e liquidez; Ferramenta Wealth Planning
+reescrita com motor de linha do tempo, objetivos recorrentes, grade de sensibilidade e
+planejamento sucessório; integração do CRM com login único; consolidação de cinco
+scripts SQL num só · **2.51 código do assessor e correção da impressão do Wealth Planning**.
+
+---
+
+## 13. Conferência de consistência
+
+O botão **Conferir dados**, na aba Relatório, varre todo o histórico do cliente e aponta,
+agrupado por mês: saldo de abertura negativo ou zerado, percentual fora de escala,
+divergência entre resultado em reais e percentual informado, campo faltando de um lado
+só, abertura que não fecha com o fechamento do mês anterior, conta nova sem aplicação,
+conta que sumiu sem resgate, e resultado fora do padrão histórico da própria conta.
+
+São regras **determinísticas**, não modelo de linguagem. A decisão foi consciente: num
+relatório que vai para cliente, um alerta que mostra a conta ("R$ 9.000 sobre abertura
+de R$ 91.000 dá 9,89%, mas foi informado 0,50%") vale mais que um texto que às vezes
+inventa. Além disso, chamar um modelo do navegador exigiria expor a chave da API.
+
+---
+
+## 14. Pendências
+
+- **SMTP próprio no Supabase.** Sem ele o botão de recuperação de senha existe mas não
+  entrega.
+- **Domínio `portal.adamicaptal.com.br`** apontado para a Vercel, para contornar o
+  bloqueio do wi-fi do escritório.
+- **Decidir se a importação passa a criar clientes novos** já vinculados ao assessor pelo
+  código. Hoje ela apenas lista.
+- **Importador de extrato BTG** no Gerador de Planos Patrimoniais nunca foi calibrado
+  contra um arquivo real. Sem ele não há enquadramento por produto.
+- **IPCA contra IMA-B nos meses históricos.** Os rótulos mudaram, os valores antigos não.
+- A suíte de testes usada nas auditorias não está versionada no repositório.
+- Migrar a hospedagem dos HTML para infraestrutura própria, eliminando a Vercel e
+  mantendo apenas o Supabase.
+- **Segurança:** tokens do GitHub e chaves do Supabase já foram expostos em conversa mais
+  de uma vez e precisam de revogação confirmada. Não pedir nem aceitar credencial por
+  chat: ela não funciona no ambiente de execução e fica registrada no histórico.
