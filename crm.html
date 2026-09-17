@@ -3749,10 +3749,16 @@ function reconciliarOffshoreBTG(linhas, leads){
 function reconciliarPershing(linhas, leads){
   const norm = (s) => String(s == null ? '' : s).trim();
   const r2 = (n) => Math.round(n * 100) / 100;
-  const porConta = mapaPorConta(leads);
 
+  /* Direto de leads, não de mapaPorConta: aquele mapa só indexa quem tem
+     conta onshore, porque é o que a reconciliação do BTG precisa. Cliente só
+     de Pershing — sem conta no Brasil, como o Daleo — nunca teria conta
+     onshore, e ficaria de fora do vínculo pra sempre. Aqui o que localiza é
+     só a conta offshore. */
   const donoOffshore = new Map();
-  for(const l of porConta.values()){
+  for(const l of (leads || [])){
+    if(l.excluido) continue;
+    if((l.funil || 'assessor') !== 'assessor') continue;
     const k = norm(l.contaOffshore).toUpperCase();
     if(k) donoOffshore.set(k, l);
   }
@@ -8054,7 +8060,9 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
        faria o olho procurar uma diferença que não existe: quando o saldo não
        se moveu, a linha fala só do que mudou. */
     const moveu = Math.abs(a.delta) >= 0.01;
-    return h('div',{className:'imp-linha clicavel', key:a.conta,
+    /* Cliente só de Pershing não tem conta onshore — a.conta vem vazia, e
+       duas linhas vazias como key confundiriam o React. */
+    return h('div',{className:'imp-linha clicavel', key: a.conta || a.contaOffshore,
         onClick: a.lead ? () => onOpen(a.lead) : null},
       /* O nome que o CRM conhece, não o do arquivo. O export traz só o
          primeiro nome, e depois que alguém digita o sobrenome os dois
@@ -8164,7 +8172,7 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
         'grave'),
 
       secao('ausentes', 'Sumiram do arquivo', r.ausentes,
-        (a) => h('div',{className:'imp-linha', key:a.conta, onClick:()=>onOpen(a.lead)},
+        (a) => h('div',{className:'imp-linha', key: a.conta || (a.lead && a.lead.contaOffshore) || a.lead.id, onClick:()=>onOpen(a.lead)},
           h('span',{className:'imp-nome'}, nomeSemConta(a.lead.cliente, a.conta),
             h('span',{className:'imp-conta'}, dolar ? a.lead.contaOffshore : a.conta)),
           h('span',{className:'imp-de'}, fmt(a.saldo)),
@@ -10594,7 +10602,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.57";
+var VERSAO_CRM="versão 2.58";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
