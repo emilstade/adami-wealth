@@ -3729,6 +3729,100 @@ function reconciliarOffshoreBTG(linhas, leads){
   };
 }
 
+/* ---- Pershing (offshore sem ponte pela conta onshore) ----
+   Outro custodiante, outro relatório: só a conta de lá, o nome e o total —
+   sem a conta onshore que o BTG manda junto. Sem essa ponte, a importação
+   não tem como descobrir sozinha de quem é a conta. O vínculo passa a ser
+   manual, uma vez por cliente: alguém abre a ficha e cola o número da conta
+   Pershing no campo "Conta offshore". Dali em diante, esta importação
+   reconhece pela mesma conta — igual ao AuC do BTG reconhece pela dele.
+
+   Por isso "vínculo" aqui não é "conta que a importação ligou agora": é o
+   campo de saldo que nunca foi escrito. Sair de vazio para o valor do
+   arquivo é o começo do registro, não divergência — mesma regra do AuC. */
+function reconciliarPershing(linhas, leads){
+  const norm = (s) => String(s == null ? '' : s).trim();
+  const r2 = (n) => Math.round(n * 100) / 100;
+  const porConta = mapaPorConta(leads);
+
+  const donoOffshore = new Map();
+  for(const l of porConta.values()){
+    const k = norm(l.contaOffshore).toUpperCase();
+    if(k) donoOffshore.set(k, l);
+  }
+
+  const atualizacoes = [], novas = [];
+  const vistos = new Set();
+  let lidas = 0;
+
+  for(const d of (linhas || [])){
+    const contaOff = norm(d['Conta Offshore']).toUpperCase();
+    const nome = norm(d['Cliente']);
+    /* O relatório termina com uma linha de rodapé ("Filtros aplicados: …")
+       que, nesta planilha, cai justamente na coluna Conta Offshore — não dá
+       para filtrar só por conta vazia, como nos outros dois exports do BTG.
+       Sem nome de cliente, não é linha de cliente. */
+    if(!contaOff || !nome) continue;
+    lidas++;
+    const saldoBTG = r2(parseFloat(d['Total AuC']) || 0);
+    const lead = donoOffshore.get(contaOff);
+
+    /* Conta Pershing que ninguém ligou ainda. Não dá para adivinhar de quem
+       é: fica numa lista para alguém abrir o cliente certo e colar o
+       número, uma vez. Nome e código do assessor entram só como pista. */
+    if(!lead){
+      novas.push({ contaOffshore: contaOff, nome, saldo: saldoBTG,
+        assessor: norm(d['Assessor']), codigo: norm(d['CGE Assessor']) });
+      continue;
+    }
+
+    vistos.add(lead.id);
+    const campoValor = btgCampoValorOffshore(lead);
+    const vinculo = parseValor(lead[campoValor]) === null;
+    const saldoAtual = btgSaldoOffshoreAtual(lead);
+    const delta = r2(saldoBTG - saldoAtual);
+    const base = Math.max(saldoAtual, saldoBTG);
+    const limiar = base * BTG_FAIXA_RENDIMENTO;
+    const dentroDaFaixa = Math.abs(delta) <= limiar;
+    const mudouSaldo = Math.abs(delta) >= 0.01;
+
+    if(mudouSaldo){
+      atualizacoes.push({
+        conta: (lead.conta || '').trim(), contaOffshore: contaOff, nome, lead,
+        saldoAtual, saldoBTG, delta, limiar, vinculo,
+        alerta: !vinculo && mudouSaldo && !dentroDaFaixa && base >= OFFSHORE_PISO_USD,
+        campoValor, valorAlvo: btgValorAlvoOffshore(lead, saldoBTG),
+        campos: [], patch: {},
+      });
+    }
+  }
+
+  /* Quem já tinha conta Pershing ligada e não veio nesta semana. Mesmo
+     motivo dos outros dois: um export truncado não pode apagar carteira. */
+  const ausentes = [];
+  for(const lead of donoOffshore.values()){
+    if(!vistos.has(lead.id)) ausentes.push({ conta: (lead.conta || '').trim(), lead, saldo: btgSaldoOffshoreAtual(lead) });
+  }
+
+  return {
+    tipo: 'pershing',
+    atualizacoes, novas, ausentes, trocaAssessor: [], conflitos: [], semConta: [],
+    resumo: {
+      linhas: lidas,
+      conciliadas: vistos.size,
+      alteradas: atualizacoes.length,
+      alertas: atualizacoes.filter(a => a.alerta).length,
+      vinculos: atualizacoes.filter(a => a.vinculo).length,
+      novas: novas.length,
+      novasComCodigo: 0,
+      ausentes: ausentes.length,
+      trocas: 0,
+      conflitos: 0,
+      deltaTotal: atualizacoes.reduce((a, x) => a + x.delta, 0),
+    },
+  };
+}
+
 /* Leitor de xlsx no navegador — mesma lógica do gera-import.js, que lê o zip
    e o XML à mão em vez de trazer uma biblioteca. Aqui o motivo é outro e mais
    forte: o app é um arquivo só, sem build, e cada CDN a mais é uma dependência
@@ -3824,12 +3918,17 @@ function montarLinhas(arqs, td){
   }).filter(o => Object.values(o).some(v => v !== ''));
 }
 
-/* Dois exports passam pela mesma tela, e ela reconhece qual é pelas colunas:
+/* Três exports passam pela mesma tela, e ela reconhece qual é pelas colunas:
    quem sobe o arquivo não precisa dizer. Conferir na entrada evita a falha
-   silenciosa clássica: planilha errada, tudo "sem alteração", ninguém nota. */
+   silenciosa clássica: planilha errada, tudo "sem alteração", ninguém nota.
+
+   BTG e Pershing têm as duas uma coluna "Conta Offshore" — a diferença é que
+   só o BTG manda "Conta Onshore" junto, a ponte que liga sozinho. Sem essa
+   ponte, é Pershing: outro custodiante, outro relatório, vínculo manual. */
 const BTG_COLUNAS = {
   onshore:  ['Conta', 'Nome'],
   offshore: ['Conta Onshore', 'Conta Offshore', 'Total AuC (USD)'],
+  pershing: ['Conta Offshore', 'Cliente', 'Total AuC'],
 };
 /* O BTG já trocou o nome dessa coluna uma vez (Sob Gestão -> PL Total).
    Aceitar as duas grafias evita quebrar de novo se um export antigo voltar
@@ -3839,7 +3938,8 @@ const COL_SALDO_ONSHORE = ['Sob Gestão', 'PL Total'];
    exigi-la quebraria o export do BTG como ele vem. */
 function identificarExport(linhas){
   const cols = Object.keys((linhas && linhas[0]) || {});
-  const tipo = cols.includes('Conta Offshore') ? 'offshore' : 'onshore';
+  const tipo = !cols.includes('Conta Offshore') ? 'onshore'
+    : cols.includes('Conta Onshore') ? 'offshore' : 'pershing';
   const faltando = BTG_COLUNAS[tipo].filter(c => !cols.includes(c));
   if(tipo === 'onshore' && !COL_SALDO_ONSHORE.some(c => cols.includes(c))){
     faltando.push(COL_SALDO_ONSHORE.join(' ou '));
@@ -4950,16 +5050,17 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
             + ': ele muda por movimentação offshore ou pela importação do AuC.')
     ) : null,
 
-    /* Só aparece para quem tem offshore: para a maioria da base seria um
-       campo vazio a mais. Quem preenche é a importação do AuC, pela conta
-       onshore; aqui é para conferir e, se preciso, corrigir. */
-    jornada && (initial.contaOffshore || parseValor(initial.valorOffshore) !== null) ? h('div',{className:'field'},
+    /* Sempre visível para quem está na Jornada — não só para quem já tem
+       offshore. A importação do AuC do BTG preenche sozinha, pela conta
+       onshore; a da Pershing não tem essa ponte e depende de alguém colar o
+       número aqui uma vez, para a importação seguinte reconhecer sozinha. */
+    jornada ? h('div',{className:'field'},
       h('label',null,'Conta offshore'),
       h('input',{ value:initial.contaOffshore || '', onChange:set('contaOffshore'),
-        placeholder:'Ex: BPXX000123' }),
+        placeholder:'Ex: BPXX000123 (BTG) ou TL7032231 (Pershing)' }),
       h('div',{className:'field-hint'}, initial.contaOffshore
-        ? 'Ligada pela importação do AuC offshore. Só altere para corrigir um vínculo errado.'
-        : 'Em branco até a importação do AuC offshore encontrar este cliente pela conta BTG.')
+        ? 'Se veio da importação do AuC do BTG, só altere para corrigir um vínculo errado. Se foi colada à mão para a Pershing, mantenha exatamente igual ao arquivo.'
+        : 'Em branco até a importação do AuC do BTG encontrar este cliente pela conta onshore, ou até alguém colar aqui a conta da Pershing.')
     ) : null,
 
     jornada ? h('div',{className:'field-row'},
@@ -7849,8 +7950,9 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
     setEstado('lendo'); setErro(''); setRes(null); setArquivo(file.name);
     try {
       const linhas = await lerXlsx(await file.arrayBuffer());
-      const r = identificarExport(linhas) === 'offshore'
-        ? reconciliarOffshoreBTG(linhas, leads)
+      const tipoArquivo = identificarExport(linhas);
+      const r = tipoArquivo === 'offshore' ? reconciliarOffshoreBTG(linhas, leads)
+        : tipoArquivo === 'pershing' ? reconciliarPershing(linhas, leads)
         : reconciliarBaseBTG(linhas, leads, users);
       setRes(r); setEstado('previa');
     } catch(e){
@@ -7879,9 +7981,10 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
   const seletor = h('div',{className:'imp-drop'},
     h('span',{className:'imp-drop-mark'}),
     h('h2',null,'Atualização semanal da base'),
-    h('p',null,'Envie o export do BTG em .xlsx — o da carteira ou o ',
-      h('strong',null,'AuC offshore'),'. A tela reconhece qual é pelas colunas, lê o arquivo aqui no navegador e o compara com a base pela ',
-      h('strong',null,'conta onshore'),'. Nada é gravado antes de você conferir a prévia.'),
+    h('p',null,'Envie o export em .xlsx — o da carteira do BTG, o AuC offshore do BTG ou o relatório da ',
+      h('strong',null,'Pershing'),'. A tela reconhece qual é pelas colunas, lê o arquivo aqui no navegador e compara com a base. '
+      + 'O BTG liga sozinho pela conta onshore; a Pershing, sem essa ponte, precisa do vínculo manual na primeira vez '
+      + '(cole o número da conta Pershing na ficha do cliente). Nada é gravado antes de você conferir a prévia.'),
     h('p',null,'Se a planilha tiver uma coluna ', h('strong',null,'Código do assessor'),
       ' — o código que aparece na tela de Equipe do hub —, a importação usa ela para vincular '
       + 'cada conta ao assessor certo, inclusive cadastrando sozinha quem ainda não tem conta na '
@@ -7899,12 +8002,14 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
       h('p',null,'São algumas centenas de linhas; leva um instante.'))));
 
   const r = res, R = r.resumo;
-  /* Os dois exports passam pela mesma prévia; muda a moeda e o vocabulário.
-     Offshore é dólar do começo ao fim — converter aqui faria a prévia
-     depender de uma cotação que o arquivo não traz. */
+  /* Os três exports passam pela mesma prévia; muda a moeda e o vocabulário.
+     Offshore e Pershing são dólar do começo ao fim — converter aqui faria a
+     prévia depender de uma cotação que o arquivo não traz. */
   const off = r.tipo === 'offshore';
-  const fmt = off ? fmtUSD : fmtBRL;
-  const fmtC = off ? fmtUSDCompact : fmtBRLCompact;
+  const pershing = r.tipo === 'pershing';
+  const dolar = off || pershing;
+  const fmt = dolar ? fmtUSD : fmtBRL;
+  const fmtC = dolar ? fmtUSDCompact : fmtBRLCompact;
   const conflitos = r.conflitos || [];
   const comAlerta = r.atualizacoes.filter(a => a.alerta);
   const vinculos = r.atualizacoes.filter(a => a.vinculo && !a.alerta);
@@ -7916,9 +8021,11 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
   /* Conta nova entra em duas listas: a que a importação cadastra sozinha
      (código bateu com um assessor) e a que continua exigindo alguém abrir
      a tela e cadastrar — só o nome do BTG não é instrução suficiente.
-     Offshore nunca cria, então as duas ficam vazias lá. */
-  const novasCriar = off ? [] : r.novas.filter(n => n.donoPorCodigo);
-  const novasManual = off ? r.novas : r.novas.filter(n => !n.donoPorCodigo);
+     Offshore e Pershing nunca criam, então as duas ficam vazias lá; a
+     Pershing tem lista própria (novasPershing, mais abaixo). */
+  const novasCriar = r.tipo === 'onshore' ? r.novas.filter(n => n.donoPorCodigo) : [];
+  const novasManual = r.tipo === 'onshore' ? r.novas.filter(n => !n.donoPorCodigo) : off ? r.novas : [];
+  const novasPershing = pershing ? r.novas : [];
   const totalAplicar = r.atualizacoes.length + novasCriar.length;
 
   /* Um bloco por natureza de divergência. Todos recolhíveis e nenhum
@@ -7948,7 +8055,7 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
          divergem — mostrar o do arquivo faria o admin não reconhecer o
          cliente que ele está prestes a atualizar. */
       h('span',{className:'imp-nome'}, nomeSemConta(a.lead && a.lead.cliente, a.conta) || a.nome || a.conta,
-        h('span',{className:'imp-conta'}, off ? a.contaOffshore : a.conta)),
+        h('span',{className:'imp-conta'}, dolar ? a.contaOffshore : a.conta)),
       /* No vínculo não há "de": o zero anterior não é saldo, é ausência de
          registro, e "US$ 0 → US$ 257 mil" leria como aporte. */
       moveu && !a.vinculo ? h('span',{className:'imp-de'}, fmt(a.saldoAtual)) : null,
@@ -7970,9 +8077,9 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
 
       h('div',{className:'imp-cabecalho'},
         h('div',{className:'imp-cabecalho-texto'},
-          h('h2',null, off ? 'Prévia da atualização offshore' : 'Prévia da atualização'),
+          h('h2',null, off ? 'Prévia da atualização offshore' : pershing ? 'Prévia da atualização Pershing' : 'Prévia da atualização'),
           h('p',{className:'sub'}, arquivo, ' · ', R.linhas, ' linhas lidas · ',
-            R.conciliadas, off ? ' ligadas pela conta onshore' : ' conciliadas pela conta',
+            R.conciliadas, off ? ' ligadas pela conta onshore' : pershing ? ' ligadas pela conta Pershing' : ' conciliadas pela conta',
             R.dataPosicao ? ' · posição de ' + R.dataPosicao.split('-').reverse().join('/') : '')),
         h('div',{className:'imp-acoes'},
           h('button',{className:'btn', onClick:descartar}, 'Descartar'),
@@ -7990,14 +8097,14 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
           contexto: R.vinculosAssessor
             ? 'inclui ' + R.vinculosAssessor + (R.vinculosAssessor === 1 ? ' troca de assessor' : ' trocas de assessor')
             : R.alteradas ? 'saldo ou cadastro' : 'nada mudou nesta semana' }),
-        h(Indicador,{ rotulo: off ? 'Variação offshore' : 'Variação da carteira', tom:'ouro', valor: R.deltaTotal,
+        h(Indicador,{ rotulo: off ? 'Variação offshore' : pershing ? 'Variação Pershing' : 'Variação da carteira', tom:'ouro', valor: R.deltaTotal,
           formato:(n)=>(n >= 0 ? '+' : '−') + fmtC(Math.abs(n)),
           contexto: R.vinculos ? 'inclui ' + R.vinculos + (R.vinculos === 1 ? ' vínculo inicial' : ' vínculos iniciais')
             : 'soma das diferenças do arquivo' }),
         h(Indicador,{ rotulo:'Cadastros novos', valor: R.novasComCodigo || 0, formato:(n)=>String(n),
-          contexto: off ? 'offshore nunca cadastra' : (R.novasComCodigo ? 'contas novas com código reconhecido' : 'nenhuma conta nova com código') }),
+          contexto: dolar ? (off ? 'offshore nunca cadastra' : 'Pershing nunca cadastra') : (R.novasComCodigo ? 'contas novas com código reconhecido' : 'nenhuma conta nova com código') }),
         h(Indicador,{ rotulo:'Não tocados', valor: R.novas - (R.novasComCodigo || 0) + R.ausentes + R.trocas + (R.conflitos || 0), formato:(n)=>String(n),
-          contexto: off ? 'fora da base, ausentes e conflitos' : 'contas novas sem código, ausentes e trocas' })
+          contexto: off ? 'fora da base, ausentes e conflitos' : pershing ? 'contas Pershing sem vínculo e ausentes' : 'contas novas sem código, ausentes e trocas' })
       ),
 
       (!r.atualizacoes.length && !r.novas.length && !r.ausentes.length && !r.trocaAssessor.length && !conflitos.length)
@@ -8011,12 +8118,14 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
         'Variação acima de 0,5% sem movimentação lançada que a explique. O saldo é atualizado assim mesmo, e cada um destes ganha um alerta no card do cliente para o assessor responder.',
         'grave'),
 
-      secao('vinculos', 'Contas offshore vinculadas agora', vinculos, linhaSaldo,
-        'Primeira vez que estas contas aparecem ligadas ao cliente, pela conta onshore. O saldo entra como ponto de partida, sem alerta — sair do zero não é divergência, é o começo do registro. Cada vínculo fica no histórico do cliente.'),
+      secao('vinculos', off ? 'Contas offshore vinculadas agora' : 'Contas Pershing vinculadas agora', vinculos, linhaSaldo,
+        off
+          ? 'Primeira vez que estas contas aparecem ligadas ao cliente, pela conta onshore. O saldo entra como ponto de partida, sem alerta — sair do zero não é divergência, é o começo do registro. Cada vínculo fica no histórico do cliente.'
+          : 'Primeira vez que o saldo destas contas é gravado, depois de alguém ligar o número na ficha do cliente. O saldo entra como ponto de partida, sem alerta — sair do zero não é divergência, é o começo do registro. Cada vínculo fica no histórico do cliente.'),
 
       secao('ok', 'Atualizações dentro do esperado', semAlerta, linhaSaldo,
         'Rendimento dentro da faixa de 0,5%, ou variação já explicada por movimentação lançada na semana. Atualiza o saldo em silêncio: sem alerta e sem entrada no histórico, que senão viraria extrato de rendimento semanal. Mudança de cadastro, essa sim, fica registrada.'
-          + (off ? ' Saldos abaixo de US$ ' + OFFSHORE_PISO_USD + ' são resíduo e nunca geram alerta.' : '')),
+          + (dolar ? ' Saldos abaixo de US$ ' + OFFSHORE_PISO_USD + ' são resíduo e nunca geram alerta.' : '')),
 
       secao('novascriar', 'Contas novas — card automático', novasCriar,
         (n) => h('div',{className:'imp-linha', key:n.conta},
@@ -8038,14 +8147,26 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
           ? 'A conta onshore destes clientes não está na nossa base — em geral, conta zerada no Brasil que ficou fora da carga. A importação NÃO cria cliente: cadastrado com essa conta, a importação seguinte faz o vínculo sozinha.'
           : 'Estão no BTG e não na nossa base, mas a planilha não trouxe um código de assessor que bata com ninguém — o nome sozinho não autoriza cadastro. Cadastre pela tela normal, com esteira e etapa conferidas por quem conhece o caso.'),
 
+      secao('novaspershing', 'Contas Pershing sem vínculo', novasPershing,
+        (n) => h('div',{className:'imp-linha', key:n.contaOffshore},
+          h('span',{className:'imp-nome'}, n.nome, h('span',{className:'imp-conta'}, n.contaOffshore)),
+          h('span',{className:'imp-para'}, fmt(n.saldo)),
+          h('span',{className:'imp-campos'}, [n.assessor, n.codigo ? 'código ' + n.codigo : ''].filter(Boolean).join(' · '))),
+        'A conta Pershing não bate com nenhum cliente da base — porque ainda ninguém ligou o número. '
+        + 'A importação NÃO cria cliente e não adivinha pelo nome: abra a ficha do cliente certo e cole '
+        + 'esse número no campo "Conta offshore". Na próxima importação, esta lista reconhece sozinha.',
+        'grave'),
+
       secao('ausentes', 'Sumiram do arquivo', r.ausentes,
         (a) => h('div',{className:'imp-linha', key:a.conta, onClick:()=>onOpen(a.lead)},
           h('span',{className:'imp-nome'}, nomeSemConta(a.lead.cliente, a.conta),
-            h('span',{className:'imp-conta'}, off ? a.lead.contaOffshore : a.conta)),
+            h('span',{className:'imp-conta'}, dolar ? a.lead.contaOffshore : a.conta)),
           h('span',{className:'imp-de'}, fmt(a.saldo)),
           h('span',{className:'imp-campos'}, 'mantido como está')),
         off
           ? 'Têm conta offshore ligada e não vieram no arquivo desta semana. Nada é alterado: pode ser encerramento, mas pode ser export incompleto — e um arquivo truncado não pode apagar carteira.'
+          : pershing
+          ? 'Têm conta Pershing ligada e não vieram no arquivo desta semana. Nada é alterado: pode ser encerramento, mas pode ser export incompleto — e um arquivo truncado não pode apagar carteira.'
           : 'Estão na nossa base e não vieram no arquivo desta semana. Nada é alterado: pode ser encerramento de conta, mas pode ser export incompleto — e um arquivo truncado não pode apagar carteira.'),
 
       secao('conflitos', 'Não aplicados', conflitos,
@@ -9683,9 +9804,10 @@ function App(){
      no meio. */
   const aplicarImportacaoBase = async (res) => {
     const agora = Date.now(), hoje = todayISO();
-    /* Offshore grava e escreve em dólar: é a moeda de valorOffshore. */
+    /* Offshore e Pershing gravam e escrevem em dólar: é a moeda de valorOffshore. */
     const off = res.tipo === 'offshore';
-    const fmt = off ? fmtUSD : fmtBRL;
+    const dolar = off || res.tipo === 'pershing';
+    const fmt = dolar ? fmtUSD : fmtBRL;
     const novos = res.atualizacoes.map((a) => {
       const l = leads.find(x => x.id === a.lead.id) || a.lead;
       const novo = { ...l, ...a.patch };
@@ -9743,9 +9865,10 @@ function App(){
        assessor já vinculado pelo código — é a mesma autorização que já
        valia para transferir carteira existente. Sem código, a conta
        continua só listada; cadastro manual, como sempre foi.
-       Offshore nunca cria: a conta lá fora só existe depois que a onshore
-       existe, pela conta onshore. */
-    const criados = off ? [] : (res.novas || []).filter(n => n.donoPorCodigo).map((n) => {
+       Só o onshore cria: offshore e Pershing nunca criam cliente — a conta
+       lá fora só existe depois que a onshore existe (ou, na Pershing, depois
+       que alguém liga o número na ficha manualmente). */
+    const criados = res.tipo !== 'onshore' ? [] : (res.novas || []).filter(n => n.donoPorCodigo).map((n) => {
       const historico = [{ id: uid('h'), de: null, para: 'Cliente Novo', data: agora,
         resumo: 'Cadastrado pela importação da base BTG · vínculo pelo código ' + n.codigo,
         autor: currentUser.nome }];
@@ -10453,7 +10576,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.53";
+var VERSAO_CRM="versão 2.54";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
