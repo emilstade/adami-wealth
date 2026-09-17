@@ -8133,8 +8133,8 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
           h('span',{className:'imp-para'}, fmt(n.saldo)),
           h('span',{className:'imp-campos'}, n.assessor + ' · código ' + n.codigo)),
         'Estão no BTG, não estão na nossa base, e a coluna de código diz de quem são. Ao aplicar, '
-        + 'a importação cadastra o cliente sozinha — esteira da base, etapa Cliente Novo, saldo '
-        + 'inicial igual ao do arquivo — já com o assessor vinculado pelo código.',
+        + 'a importação cadastra o cliente sozinha — esteira da base, direto na R2 (apresentação da '
+        + 'proposta), saldo inicial igual ao do arquivo — já com o assessor vinculado pelo código.',
         'grave'),
 
       secao('novasmanual', off ? 'Conta onshore fora da base' : 'Contas novas sem código', novasManual,
@@ -9869,13 +9869,18 @@ function App(){
        lá fora só existe depois que a onshore existe (ou, na Pershing, depois
        que alguém liga o número na ficha manualmente). */
     const criados = res.tipo !== 'onshore' ? [] : (res.novas || []).filter(n => n.donoPorCodigo).map((n) => {
-      const historico = [{ id: uid('h'), de: null, para: 'Cliente Novo', data: agora,
+      /* Cliente da base já é carteira de verdade — veio com saldo do BTG,
+         não é prospect a triar. Por isso entra direto na R2, apresentação
+         da proposta, pulando o Cliente Novo: esteira 'base' já autoriza esse
+         pulo (ver TRAJETOS — de Cliente Novo só se vai para R2 quando a
+         esteira é 'base'). */
+      const historico = [{ id: uid('h'), de: null, para: 'R2', data: agora,
         resumo: 'Cadastrado pela importação da base BTG · vínculo pelo código ' + n.codigo,
         autor: currentUser.nome }];
       return stampLead(congelarSaldoInicialOffshore(null, congelarSaldoInicial(null, {
         ...emptyLead(n.donoPorCodigo.id),
         cliente: n.nome, conta: n.conta,
-        etapa: 'Cliente Novo', funil: 'assessor', esteira: 'base',
+        etapa: 'R2', funil: 'assessor', esteira: 'base',
         segmento: segmentoPorPatrimonio(n.saldo) || 'Advisory',
         saldoInicial: fmtBRL(n.saldo),
         origem: 'Base BTG', criadoEm: agora, etapaDesde: agora,
@@ -10576,7 +10581,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.54";
+var VERSAO_CRM="versão 2.55";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
