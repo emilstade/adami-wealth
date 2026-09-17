@@ -2470,6 +2470,12 @@ const SITUACOES = [
     testa:(l) => valorCaptacaoNaMoeda(l) > 0 },
   { key:'offshore',   label:'Com offshore',       funis:['assessor'],
     testa:(l) => temOffshore(l) },
+  /* "Zerado" é conta que veio da importação sem saldo nenhum em nenhuma das
+     duas custódias — não é sinônimo de perdido ou de prospect: um cliente da
+     base pode estar com as duas em zero e continuar carteira ativa no
+     cadastro, só sem dinheiro sob gestão registrado ainda. */
+  { key:'ativo',      label:'Cliente ativo (não zerado)', funis:['assessor'],
+    testa:(l) => valorEmCarteira(l) > 0 || valorEmCarteiraOffshore(l) > 0 },
 ];
 
 const FILTROS_VAZIOS = { periodo:'all', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
@@ -10588,7 +10594,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.56";
+var VERSAO_CRM="versão 2.57";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
