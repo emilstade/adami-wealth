@@ -3431,9 +3431,13 @@ function reconciliarBaseBTG(linhas, leads, users){
     const lead = porConta.get(chaveConta(conta));
 
     if(!lead){
+      /* Com código reconhecido, a conta nova ganha card sozinha — é o mesmo
+         código que autoriza transferência, agora autorizando também quem
+         recebe a carteira que ainda não tinha registro nenhum. Sem código,
+         segue a regra antiga: só a lista, cadastro é manual. */
       novas.push({ conta, nome, saldo: saldoBTG,
         assessor: (donoPorCodigo && donoPorCodigo.nome) || assessorBTG,
-        codigo });
+        codigo, donoPorCodigo });
       continue;
     }
 
@@ -3557,6 +3561,7 @@ function reconciliarBaseBTG(linhas, leads, users){
       alteradas: atualizacoes.length,
       alertas: comAlerta.length,
       novas: novas.length,
+      novasComCodigo: novas.filter(n => n.donoPorCodigo).length,
       ausentes: ausentes.length,
       trocas: trocaAssessor.length,
       vinculosAssessor: atualizacoes.filter(a => a.vinculoAssessor).length,
@@ -7879,8 +7884,9 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
       h('strong',null,'conta onshore'),'. Nada é gravado antes de você conferir a prévia.'),
     h('p',null,'Se a planilha tiver uma coluna ', h('strong',null,'Código do assessor'),
       ' — o código que aparece na tela de Equipe do hub —, a importação usa ela para vincular '
-      + 'cada conta ao assessor certo. Sem a coluna, o assessor fica como está e a diferença '
-      + 'vira apenas um aviso.'),
+      + 'cada conta ao assessor certo, inclusive cadastrando sozinha quem ainda não tem conta na '
+      + 'base. Sem código que bata com ninguém, o assessor fica como está e a diferença vira só um '
+      + 'aviso; e cadastro, nesse caso, é manual.'),
     h('input',{ ref:inputRef, type:'file', accept:'.xlsx', id:'imp-file', className:'imp-file',
       onChange:(e)=>receber(e.target.files && e.target.files[0]) }),
     h('label',{htmlFor:'imp-file', className:'btn btn-primary imp-botao'}, 'Escolher arquivo'),
@@ -7907,6 +7913,13 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
      rendimento. Alerta de saldo continua vindo primeiro — é o mais grave. */
   const trocasPorCodigo = r.atualizacoes.filter(a => a.vinculoAssessor && !a.alerta && !a.vinculo);
   const semAlerta = r.atualizacoes.filter(a => !a.alerta && !a.vinculo && !a.vinculoAssessor);
+  /* Conta nova entra em duas listas: a que a importação cadastra sozinha
+     (código bateu com um assessor) e a que continua exigindo alguém abrir
+     a tela e cadastrar — só o nome do BTG não é instrução suficiente.
+     Offshore nunca cria, então as duas ficam vazias lá. */
+  const novasCriar = off ? [] : r.novas.filter(n => n.donoPorCodigo);
+  const novasManual = off ? r.novas : r.novas.filter(n => !n.donoPorCodigo);
+  const totalAplicar = r.atualizacoes.length + novasCriar.length;
 
   /* Um bloco por natureza de divergência. Todos recolhíveis e nenhum
      escondido: mesmo o que a importação não vai tocar precisa ser visto. */
@@ -7963,10 +7976,10 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
             R.dataPosicao ? ' · posição de ' + R.dataPosicao.split('-').reverse().join('/') : '')),
         h('div',{className:'imp-acoes'},
           h('button',{className:'btn', onClick:descartar}, 'Descartar'),
-          h('button',{className:'btn btn-primary', disabled: estado==='aplicando' || !r.atualizacoes.length,
+          h('button',{className:'btn btn-primary', disabled: estado==='aplicando' || !totalAplicar,
             onClick:aplicar},
             estado === 'aplicando' ? 'Gravando…'
-              : r.atualizacoes.length ? 'Aplicar ' + r.atualizacoes.length + (r.atualizacoes.length === 1 ? ' alteração' : ' alterações')
+              : totalAplicar ? 'Aplicar ' + totalAplicar + (totalAplicar === 1 ? ' alteração' : ' alterações')
               : 'Nada a aplicar'))
       ),
 
@@ -7981,10 +7994,10 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
           formato:(n)=>(n >= 0 ? '+' : '−') + fmtC(Math.abs(n)),
           contexto: R.vinculos ? 'inclui ' + R.vinculos + (R.vinculos === 1 ? ' vínculo inicial' : ' vínculos iniciais')
             : 'soma das diferenças do arquivo' }),
-        h(Indicador,{ rotulo:'Divergências', valor: R.alertas, formato:(n)=>String(n),
-          contexto: R.alertas ? 'acima de 0,5% e sem lançamento' : 'tudo dentro do rendimento' }),
-        h(Indicador,{ rotulo:'Não tocados', valor: R.novas + R.ausentes + R.trocas + (R.conflitos || 0), formato:(n)=>String(n),
-          contexto: off ? 'fora da base, ausentes e conflitos' : 'contas novas, ausentes e trocas' })
+        h(Indicador,{ rotulo:'Cadastros novos', valor: R.novasComCodigo || 0, formato:(n)=>String(n),
+          contexto: off ? 'offshore nunca cadastra' : (R.novasComCodigo ? 'contas novas com código reconhecido' : 'nenhuma conta nova com código') }),
+        h(Indicador,{ rotulo:'Não tocados', valor: R.novas - (R.novasComCodigo || 0) + R.ausentes + R.trocas + (R.conflitos || 0), formato:(n)=>String(n),
+          contexto: off ? 'fora da base, ausentes e conflitos' : 'contas novas sem código, ausentes e trocas' })
       ),
 
       (!r.atualizacoes.length && !r.novas.length && !r.ausentes.length && !r.trocaAssessor.length && !conflitos.length)
@@ -8005,7 +8018,17 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
         'Rendimento dentro da faixa de 0,5%, ou variação já explicada por movimentação lançada na semana. Atualiza o saldo em silêncio: sem alerta e sem entrada no histórico, que senão viraria extrato de rendimento semanal. Mudança de cadastro, essa sim, fica registrada.'
           + (off ? ' Saldos abaixo de US$ ' + OFFSHORE_PISO_USD + ' são resíduo e nunca geram alerta.' : '')),
 
-      secao('novas', off ? 'Conta onshore fora da base' : 'Contas novas no arquivo', r.novas,
+      secao('novascriar', 'Contas novas — card automático', novasCriar,
+        (n) => h('div',{className:'imp-linha', key:n.conta},
+          h('span',{className:'imp-nome'}, n.nome, h('span',{className:'imp-conta'}, n.conta)),
+          h('span',{className:'imp-para'}, fmt(n.saldo)),
+          h('span',{className:'imp-campos'}, n.assessor + ' · código ' + n.codigo)),
+        'Estão no BTG, não estão na nossa base, e a coluna de código diz de quem são. Ao aplicar, '
+        + 'a importação cadastra o cliente sozinha — esteira da base, etapa Cliente Novo, saldo '
+        + 'inicial igual ao do arquivo — já com o assessor vinculado pelo código.',
+        'grave'),
+
+      secao('novasmanual', off ? 'Conta onshore fora da base' : 'Contas novas sem código', novasManual,
         (n) => h('div',{className:'imp-linha', key:n.conta},
           h('span',{className:'imp-nome'}, n.nome, h('span',{className:'imp-conta'}, n.conta)),
           h('span',{className:'imp-para'}, fmt(n.saldo)),
@@ -8013,7 +8036,7 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
             : n.assessor ? h('span',{className:'imp-campos'}, n.assessor) : null),
         off
           ? 'A conta onshore destes clientes não está na nossa base — em geral, conta zerada no Brasil que ficou fora da carga. A importação NÃO cria cliente: cadastrado com essa conta, a importação seguinte faz o vínculo sozinha.'
-          : 'Estão no BTG e não na nossa base. A importação NÃO cria cliente: cadastre pela tela normal, com esteira e etapa conferidas por quem conhece o caso.'),
+          : 'Estão no BTG e não na nossa base, mas a planilha não trouxe um código de assessor que bata com ninguém — o nome sozinho não autoriza cadastro. Cadastre pela tela normal, com esteira e etapa conferidas por quem conhece o caso.'),
 
       secao('ausentes', 'Sumiram do arquivo', r.ausentes,
         (a) => h('div',{className:'imp-linha', key:a.conta, onClick:()=>onOpen(a.lead)},
@@ -9716,12 +9739,33 @@ function App(){
       return stampLead(novo);
     });
 
-    if(!novos.length) return;
+    /* Conta nova com código reconhecido: nasce card, na hora, com o
+       assessor já vinculado pelo código — é a mesma autorização que já
+       valia para transferir carteira existente. Sem código, a conta
+       continua só listada; cadastro manual, como sempre foi.
+       Offshore nunca cria: a conta lá fora só existe depois que a onshore
+       existe, pela conta onshore. */
+    const criados = off ? [] : (res.novas || []).filter(n => n.donoPorCodigo).map((n) => {
+      const historico = [{ id: uid('h'), de: null, para: 'Cliente Novo', data: agora,
+        resumo: 'Cadastrado pela importação da base BTG · vínculo pelo código ' + n.codigo,
+        autor: currentUser.nome }];
+      return stampLead(congelarSaldoInicialOffshore(null, congelarSaldoInicial(null, {
+        ...emptyLead(n.donoPorCodigo.id),
+        cliente: n.nome, conta: n.conta,
+        etapa: 'Cliente Novo', funil: 'assessor', esteira: 'base',
+        segmento: segmentoPorPatrimonio(n.saldo) || 'Advisory',
+        saldoInicial: fmtBRL(n.saldo),
+        origem: 'Base BTG', criadoEm: agora, etapaDesde: agora,
+        historico, atividades: [],
+      })));
+    });
+
+    if(!novos.length && !criados.length) return;
     const porId = new Map(novos.map(l => [l.id, l]));
-    setLeads(prev => prev.map(l => porId.has(l.id) ? porId.get(l.id) : l));
+    setLeads(prev => [...prev.map(l => porId.has(l.id) ? porId.get(l.id) : l), ...criados]);
     setSaveStatus('saving');
     try {
-      await upsertLeads(novos);
+      await upsertLeads([...novos, ...criados]);
       setSaveStatus(pendentesSalvar.current.size ? 'error' : 'idle');
     } catch(e){
       console.error('Falha ao gravar a atualização da base', e);
@@ -9729,9 +9773,11 @@ function App(){
       throw e;
     }
     const qtdAlertas = res.resumo.alertas;
-    pushToast(novos.length + (novos.length === 1 ? ' cliente atualizado' : ' clientes atualizados')
-      + (qtdAlertas ? ' · ' + qtdAlertas + (qtdAlertas === 1 ? ' divergência sinalizada' : ' divergências sinalizadas') : ''),
-      qtdAlertas ? 'warn' : 'success');
+    const partes = [];
+    if(novos.length) partes.push(novos.length + (novos.length === 1 ? ' cliente atualizado' : ' clientes atualizados'));
+    if(criados.length) partes.push(criados.length + (criados.length === 1 ? ' cliente cadastrado' : ' clientes cadastrados'));
+    if(qtdAlertas) partes.push(qtdAlertas + (qtdAlertas === 1 ? ' divergência sinalizada' : ' divergências sinalizadas'));
+    pushToast(partes.join(' · '), qtdAlertas ? 'warn' : 'success');
   };
 
   const createLead = (lead) => {
@@ -10407,7 +10453,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.52";
+var VERSAO_CRM="versão 2.53";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
