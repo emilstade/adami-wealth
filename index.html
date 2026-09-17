@@ -422,19 +422,34 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .rt.compact tr.ano td:first-child{font-family:var(--display);font-size:13px;color:var(--navy)}
 .rt.compact tr.sep td{border-bottom:1px solid var(--line)}
 .rt.compact td:first-child,.rt.compact th:first-child{white-space:nowrap}
-/* Lista de ativos: 10 colunas não cabem com largura automática — o
+/* Lista de ativos, uma tabela por categoria: renda fixa tem taxa e
+   vencimento, as outras não. Colunas não cabem com largura automática — o
    navegador afunilava Ativo e Taxa até quebrar palavra por letra. Largura
    fixa por coluna, só aqui, para não mexer nas outras tabelas .rt. */
-.rt.ativos{table-layout:fixed}
-.rt.ativos th:nth-child(1),.rt.ativos td:nth-child(1){width:20%}
-.rt.ativos th:nth-child(2),.rt.ativos td:nth-child(2){width:13%}
-.rt.ativos th:nth-child(3),.rt.ativos td:nth-child(3){width:11%}
-.rt.ativos th:nth-child(4),.rt.ativos td:nth-child(4){width:13%}
-.rt.ativos th:nth-child(n+5),.rt.ativos td:nth-child(n+5){width:7%}
+.rt.ativos-rf{table-layout:fixed}
+.rt.ativos-rf th:nth-child(1),.rt.ativos-rf td:nth-child(1){width:11%}
+.rt.ativos-rf th:nth-child(2),.rt.ativos-rf td:nth-child(2){width:10%}
+.rt.ativos-rf th:nth-child(3),.rt.ativos-rf td:nth-child(3){width:9%}
+/* Vencimento e Posição são células numéricas (.rt td.n), que nunca quebram
+   linha — precisam de largura que caiba "15/03/2027" e "R$ 1.230.450"
+   inteiros numa linha só, senão uma estoura por cima da outra. */
+.rt.ativos-rf th:nth-child(4),.rt.ativos-rf td:nth-child(4){width:12%}
+.rt.ativos-rf th:nth-child(5),.rt.ativos-rf td:nth-child(5){width:14%}
+.rt.ativos-rf th:nth-child(6),.rt.ativos-rf td:nth-child(6),
+.rt.ativos-rf th:nth-child(7),.rt.ativos-rf td:nth-child(7),
+.rt.ativos-rf th:nth-child(8),.rt.ativos-rf td:nth-child(8),
+.rt.ativos-rf th:nth-child(9),.rt.ativos-rf td:nth-child(9),
+.rt.ativos-rf th:nth-child(10),.rt.ativos-rf td:nth-child(10){width:7%}
+.rt.ativos-rf th:nth-child(11),.rt.ativos-rf td:nth-child(11){width:9%}
+.rt.ativos-out{table-layout:fixed}
+.rt.ativos-out th:nth-child(1),.rt.ativos-out td:nth-child(1){width:22%}
+.rt.ativos-out th:nth-child(2),.rt.ativos-out td:nth-child(2){width:15%}
+.rt.ativos-out th:nth-child(3),.rt.ativos-out td:nth-child(3){width:13%}
+.rt.ativos-out th:nth-child(n+4),.rt.ativos-out td:nth-child(n+4){width:8.33%}
 /* Cabeçalho numérico normalmente não quebra linha (.rt th.n); nesta tabela,
-   com coluna estreita, isso fazia "Vencimento (RF)" atropelar o cabeçalho
+   com coluna estreita, isso fazia um cabeçalho comprido atropelar o
    vizinho em vez de simplesmente quebrar. */
-.rt.ativos th.n{white-space:normal}
+.rt.ativos-rf th.n,.rt.ativos-out th.n{white-space:normal}
 .dn-leg{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 22px;margin:18px 0 6px;font-size:11.5px;color:var(--ink-2)}
 .dn-leg span{display:inline-flex;align-items:center;gap:6px}
 .dn-leg i{width:9px;height:9px;border-radius:2px;display:inline-block}
@@ -472,7 +487,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
          background:#fff!important;border:0;display:flex;flex-direction:column}
   .cover h1{font-size:30pt}
   /* manter título junto do bloco e evitar sobras */
-  .shead,.dash{break-after:avoid;page-break-after:avoid;margin:16px 0 11px}
+  .shead,.dash,.venc-tit{break-after:avoid;page-break-after:avoid;margin:16px 0 11px}
   .panel,.carta,.rt,.kgrid,.pat{break-inside:avoid}
   .panel{padding:14px}
   .panel svg{max-height:46mm;width:auto;max-width:100%}
@@ -915,7 +930,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.53";
+var VERSAO="versão 2.54";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -988,7 +1003,8 @@ function listaEstrat(ind){
   return ESTRAT.map(function(x){ return {nome:x[1],pc:n(e[x[0]])}; }).filter(function(x){ return x.pc>0; });
 }
 function vencVazio(){ return {ativo:"",inst:"",taxa:"",data:"",valor:0}; }
-function ativoVazio(){ return {nome:"",taxa:"",vencimento:"",posicao:0,rentMes:0,rent3m:0,rent6m:0,rentAno:0,rent12m:0,rentInicio:0}; }
+var CATEGORIAS_ATIVO=["Renda Fixa","Fundos","Previdência","Renda Variável"];
+function ativoVazio(){ return {nome:"",categoria:CATEGORIAS_ATIVO[0],inst:"",taxa:"",vencimento:"",posicao:0,rentMes:0,rent3m:0,rent6m:0,rentAno:0,rent12m:0,rentInicio:0}; }
 /* separa o que vence DENTRO do mes de referencia do que ainda esta por vir.
    O relatorio de agosto sai em setembro: um vencimento de 15/08 nao e
    "proximo", ja aconteceu, e o cliente quer saber o que foi feito com ele. */
@@ -1681,15 +1697,20 @@ function viewPreencher(){
 
   var ativos=S.rasc.ind.ativos||[];
   h+='<div class="card"><div class="sec-title">Lista de ativos</div>'+
-     '<div class="sec-sub">Opcional. Se ficar em branco, a seção não aparece no relatório. Taxa e vencimento só fazem sentido para renda fixa — deixe em branco nos demais.</div>'+
+     '<div class="sec-sub">Opcional. Se ficar em branco, a seção não aparece no relatório. Taxa e vencimento só fazem sentido para renda fixa — deixe em branco nos demais. O relatório separa por categoria.</div>'+
      '<div style="overflow-x:auto"><table class="form"><thead><tr>'+
-     '<th style="min-width:170px">Ativo</th><th style="min-width:110px">Taxa (RF)</th>'+
+     '<th style="min-width:130px">Categoria</th><th style="min-width:170px">Ativo</th>'+
+     '<th style="min-width:130px">Instituição</th><th style="min-width:110px">Taxa (RF)</th>'+
      '<th style="min-width:140px">Vencimento (RF)</th><th class="num" style="min-width:130px">Posição (R$)</th>'+
      '<th class="num">Mês</th><th class="num">3 meses</th><th class="num">6 meses</th>'+
      '<th class="num">Ano</th><th class="num">12 meses</th><th class="num">Desde o início</th><th></th></tr></thead><tbody>'+
      (ativos.length?ativos.map(function(x,i){
        return '<tr>'+
+       '<td><select class="inp" onchange="setAtivo('+i+',\'categoria\',this.value)">'+
+         CATEGORIAS_ATIVO.map(function(c){ return '<option value="'+esc(c)+'"'+(x.categoria===c?" selected":"")+'>'+esc(c)+'</option>'; }).join("")+
+         '</select></td>'+
        '<td><input class="inp" value="'+esc(x.nome)+'" oninput="setAtivo('+i+',\'nome\',this.value)" placeholder="Ex.: CDB Banco XYZ"></td>'+
+       '<td><input class="inp" value="'+esc(x.inst)+'" oninput="setAtivo('+i+',\'inst\',this.value)" placeholder="Ex.: XP"></td>'+
        '<td><input class="inp" value="'+esc(x.taxa)+'" oninput="setAtivo('+i+',\'taxa\',this.value)" placeholder="Ex.: 112% do CDI"></td>'+
        '<td><input class="inp" type="date" value="'+esc(x.vencimento)+'" oninput="setAtivo('+i+',\'vencimento\',this.value)"></td>'+
        '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.posicao)+'" oninput="onMoeda(this,function(v){setAtivo('+i+',\'posicao\',v);})"></td>'+
@@ -1700,7 +1721,7 @@ function viewPreencher(){
        '<td><input class="inp num" type="number" step="0.01" value="'+(x.rent12m||"")+'" oninput="setAtivo('+i+',\'rent12m\',this.value)"></td>'+
        '<td><input class="inp num" type="number" step="0.01" value="'+(x.rentInicio||"")+'" oninput="setAtivo('+i+',\'rentInicio\',this.value)"></td>'+
        '<td><button class="xbtn" onclick="delAtivo('+i+')" title="Remover">&times;</button></td></tr>';
-     }).join(""):'<tr><td colspan="11" style="color:var(--muted);font-size:12.5px">Nenhum ativo informado.</td></tr>')+
+     }).join(""):'<tr><td colspan="13" style="color:var(--muted);font-size:12.5px">Nenhum ativo informado.</td></tr>')+
      '</tbody></table></div>'+
      '<button class="btn" style="margin-top:14px" onclick="addAtivo()">+ Adicionar ativo</button></div>';
 
@@ -2395,27 +2416,41 @@ function viewRelatorio(){
     pag(shead(nx(),titulo,"valores aproximados")+corpo);
   }
 
-  /* --- lista de ativos --- */
+  /* --- lista de ativos, por categoria --- */
   var ativosRel=listaAtivos(r.ind);
   if(ativosRel.length && secOn(r.ind,"ativos")){
-    var totalAtivos=ativosRel.reduce(function(a,x){return a+n(x.posicao);},0);
-    var corpoAt='<div class="panel"><table class="rt ativos"><thead><tr>'+
-      '<th>Ativo</th><th>Taxa (RF)</th><th class="n">Venc. (RF)</th><th class="n">Posição</th>'+
-      '<th class="n">Mês</th><th class="n">3m</th><th class="n">6m</th><th class="n">Ano</th>'+
-      '<th class="n">12m</th><th class="n">Iníc.</th></tr></thead><tbody>'+
-      ativosRel.map(function(x){
-        var rp=function(v){ return v||v===0?'<span class="'+sinal(n(v))+'">'+pct(n(v))+'</span>':"—"; };
-        return '<tr><td>'+esc(x.nome||"—")+'</td><td>'+esc(x.taxa||"—")+'</td>'+
-        '<td class="n">'+(x.vencimento?dataBR(x.vencimento):"—")+'</td>'+
-        '<td class="n">'+(n(x.posicao)?brl(n(x.posicao)):"—")+'</td>'+
-        '<td class="n">'+rp(x.rentMes)+'</td><td class="n">'+rp(x.rent3m)+'</td>'+
-        '<td class="n">'+rp(x.rent6m)+'</td><td class="n">'+rp(x.rentAno)+'</td>'+
-        '<td class="n">'+rp(x.rent12m)+'</td><td class="n">'+rp(x.rentInicio)+'</td></tr>';
-      }).join("")+
-      '<tr class="tot"><td colspan="3">Total</td><td class="n">'+brl(totalAtivos)+'</td>'+
-      '<td colspan="6"></td></tr>'+
-      '</tbody></table>'+
-      '<p class="foot-note">Taxa e vencimento se aplicam apenas a ativos de renda fixa. Rentabilidades informadas pela instituição custodiante, líquidas de taxas quando aplicável, brutas de imposto de renda.</p></div>';
+    var rp=function(v){ return v||v===0?'<span class="'+sinal(n(v))+'">'+pct(n(v))+'</span>':"—"; };
+    var tabelaAtivos=function(lista,comRF){
+      var sub=lista.reduce(function(a,x){return a+n(x.posicao);},0);
+      return '<table class="rt '+(comRF?"ativos-rf":"ativos-out")+'"><thead><tr>'+
+        '<th>Ativo</th><th>Instit.</th>'+
+        (comRF?'<th>Taxa</th><th class="n">Venc.</th>':'')+
+        '<th class="n">Posição</th>'+
+        '<th class="n">Mês</th><th class="n">3m</th><th class="n">6m</th><th class="n">Ano</th>'+
+        '<th class="n">12m</th><th class="n">Iníc.</th></tr></thead><tbody>'+
+        lista.map(function(x){
+          return '<tr><td>'+esc(x.nome||"—")+'</td><td>'+esc(x.inst||"—")+'</td>'+
+          (comRF?'<td>'+esc(x.taxa||"—")+'</td><td class="n">'+(x.vencimento?dataBR(x.vencimento):"—")+'</td>':'')+
+          '<td class="n">'+(n(x.posicao)?brl(n(x.posicao)):"—")+'</td>'+
+          '<td class="n">'+rp(x.rentMes)+'</td><td class="n">'+rp(x.rent3m)+'</td>'+
+          '<td class="n">'+rp(x.rent6m)+'</td><td class="n">'+rp(x.rentAno)+'</td>'+
+          '<td class="n">'+rp(x.rent12m)+'</td><td class="n">'+rp(x.rentInicio)+'</td></tr>';
+        }).join("")+
+        '<tr class="tot"><td colspan="'+(comRF?4:2)+'">Subtotal</td><td class="n">'+brl(sub)+'</td>'+
+        '<td colspan="6"></td></tr>'+
+        '</tbody></table>';
+    };
+    var totalGeral=ativosRel.reduce(function(a,x){return a+n(x.posicao);},0);
+    var corpoAt='<div class="panel">';
+    CATEGORIAS_ATIVO.forEach(function(cat,idx){
+      var doGrupo=ativosRel.filter(function(x){ return (x.categoria||CATEGORIAS_ATIVO[0])===cat; });
+      if(!doGrupo.length) return;
+      corpoAt+='<h3 class="venc-tit"'+(idx>0?' style="margin-top:26px"':'')+'>'+esc(cat)+'</h3>'+
+        tabelaAtivos(doGrupo,cat==="Renda Fixa");
+    });
+    corpoAt+='<p class="foot-note" style="margin-top:16px"><b>Total geral: '+brl(totalGeral)+'.</b> '+
+      'Taxa e vencimento se aplicam apenas a ativos de renda fixa. Rentabilidades informadas pela instituição '+
+      'custodiante, líquidas de taxas quando aplicável, brutas de imposto de renda.</p></div>';
     pag(shead(nx(),"Lista de ativos","posição em "+dataBase(S.mes,S.ano))+corpoAt);
   }
 
