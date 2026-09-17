@@ -3454,6 +3454,15 @@ function mapaPorConta(leads){
   return porConta;
 }
 
+/* "18/10/1985", como a planilha do BTG grava aniversário, vira "1985-10-18",
+   o formato que o resto do sistema usa. Formato que não bate com o esperado
+   não gera patch — melhor manter em branco do que gravar lixo. */
+function dataBrParaISO(s){
+  const m = String(s || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(!m) return '';
+  return m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0');
+}
+
 /* Compara o arquivo com a base e devolve o que mudou, sem gravar nada.
    Pura de propósito: a prévia mostra exatamente o que a aplicação vai fazer,
    porque é o mesmo resultado. */
@@ -3510,7 +3519,9 @@ function reconciliarBaseBTG(linhas, leads, users){
          segue a regra antiga: só a lista, cadastro é manual. */
       novas.push({ conta, nome, saldo: saldoBTG,
         assessor: (donoPorCodigo && donoPorCodigo.nome) || assessorBTG,
-        codigo, donoPorCodigo });
+        codigo, donoPorCodigo,
+        tipoPessoa: norm(d['Tipo']) === 'PJ' ? 'PJ' : 'PF',
+        nascimento: dataBrParaISO(d['Aniversário']) });
       continue;
     }
 
@@ -3539,6 +3550,8 @@ function reconciliarBaseBTG(linhas, leads, users){
     };
     cmp('email', 'E-mail', lead.email, d['E-Mail Comunicação']);
     cmp('profissao', 'Profissão', lead.profissao, d['Profissão / Setor']);
+    cmp('tipoPessoa', 'Tipo', lead.tipoPessoa, d['Tipo']);
+    cmp('nascimento', 'Nascimento', lead.nascimento, dataBrParaISO(d['Aniversário']));
 
     /* O padrão do nome, garantido a cada importação.
 
@@ -10014,6 +10027,7 @@ function App(){
         etapa: 'R2', funil: 'assessor', esteira: 'base',
         segmento: segmentoPorPatrimonio(n.saldo) || 'Advisory',
         saldoInicial: fmtBRL(n.saldo),
+        tipoPessoa: n.tipoPessoa || 'PF', nascimento: n.nascimento || '',
         origem: 'Base BTG', criadoEm: agora, etapaDesde: agora,
         historico, atividades: [],
       })));
@@ -10712,7 +10726,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.59";
+var VERSAO_CRM="versão 2.60";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
