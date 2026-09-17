@@ -175,13 +175,57 @@
     .layout { grid-template-columns: 1fr; display: block; }
     .report-pane { max-height: none; overflow: visible; padding: 0; }
     body { background: white; }
-    .trigger-card, .section-block { break-inside: avoid; border: 1px solid #E3E7EE; }
+    /* MARGEM DE PAGINA
+       Antes a margem era falsificada com padding no .report-pane, com
+       @page { margin: 0 }. Padding de um elemento que atravessa varias
+       folhas so aparece UMA vez: no topo da primeira e no pe da ultima.
+       Da segunda folha em diante o texto encostava na borda do papel e a
+       impressora comia o que nao cabia -- era isso que cortava os cartoes
+       de instrumentos. Margem de verdade se repete em toda folha.        */
+
+    /* Quebrar so o que cabe inteiro numa folha. O .section-block do
+       planejamento sucessorio tem quase duas paginas de altura: pedir
+       break-inside: avoid num bloco que nao cabe nao impede a quebra,
+       so faz o navegador quebrar onde ele quiser -- em geral no meio de
+       um cartao. Quem precisa ficar inteiro e a peca pequena.            */
+    .trigger-card, .section-block { border: 1px solid #E3E7EE; }
+    /* .insight-box fica de fora: e paragrafo, as vezes de cinco linhas.
+       Proibir a quebra jogava a caixa inteira para a folha seguinte e
+       deixava um paragrafo solitario ocupando 7% de uma pagina.        */
+    /* O trigger-card fica de fora: o de Protecao Patrimonial ja mede 223mm
+       num caso comum, contra 263mm de folha util. Proibir a quebra deixa
+       40mm de folga, e um cliente com mais objetivos estoura -- e bloco
+       que nao cabe e bloco que o navegador corta onde quiser. Ele quebra
+       numa boa desde que as pecas de dentro fiquem inteiras.            */
+    .suc-item, .stat-box, .mini-table, .kpi-row,
+    .summary-strip, .chart-wrap, .card-head { break-inside: avoid; }
+    .card-head { break-after: avoid; }
+    /* Cada grupo de instrumentos (quatro cartoes, duas linhas) cabe folgado
+       numa folha. Mantendo o grupo inteiro, o grupo financeiro desce junto
+       em vez de deixar um cartao solitario abrindo pagina. */
+    .suc-grade { break-inside: avoid; }
     .section-block { padding: 16px 18px; margin-bottom: 16px; }
+
+    /* Titulo nao fica sozinho no rodape, e nao leva a folha inteira so
+       para ele: fica colado no que apresenta.                            */
+    h2, h3, .suc-grupo, .head-row, .report-header { break-after: avoid; }
+    /* Titulo de secao mais a frase que o apresenta: um par que nunca se
+       separa, e que puxa junto o primeiro bloco depois dele.            */
+    .abre-secao { break-inside: avoid; break-after: avoid; }
+    p.subtext, p.narrative { orphans: 3; widows: 3; }
+    /* Nota de rodape nao se separa da tabela que ela explica, nem fecha
+       um cartao sozinha numa folha nova. */
+    .mini-table + p.narrative, .card-body > p:last-child { break-before: avoid; }
 
     .print-cover {
       display: flex; flex-direction: column; align-items: flex-start;
       background: var(--navy) !important; color: #fff;
-      height: 297mm; width: auto; margin: -18mm -16mm -8mm; padding: 46mm 22mm 26mm;
+      /* Sangra ate a borda: a capa tem pagina propria, sem margem (ver
+         @page capa, abaixo). Margem negativa nao serve aqui -- o
+         navegador recorta o que passa da area util da folha, e o azul
+         terminaria numa moldura branca. */
+      height: 297mm; width: 210mm; margin: 0; padding: 46mm 22mm 26mm;
+      page: capa;
       overflow: hidden; box-sizing: border-box;
       page-break-after: always; break-after: page;
       -webkit-print-color-adjust: exact; print-color-adjust: exact;
@@ -206,8 +250,8 @@
     .report-header { page-break-before: auto; }
     .page-break { page-break-before: always; }
     .disclaimer-page { page-break-before: always; padding-top: 40px; }
-    @page { size: A4; margin: 0; }
-    .report-pane { padding: 18mm 16mm 15mm; }
+    @page { size: A4; margin: 18mm 16mm 16mm; }
+    @page capa { margin: 0; }
   }
   /* --- linhas de objetivo e receita: grade com rótulo, em vez de campos
          espremidos numa linha só --- */
@@ -1552,12 +1596,17 @@ function render() {
     </div>`;
   }
 
-  html += `<h2 style="font-family:var(--serif);color:var(--navy);font-size:17px;margin:0 0 4px;" class="page-break">Estruturação Patrimonial</h2>
-  <p class="narrative" style="margin-bottom:20px;">Um plano patrimonial completo vai além da carteira de investimentos. As frentes abaixo fazem parte da estruturação patrimonial da família e valem ser discutidas nesta reunião:</p>`;
+  html += `<div class="abre-secao page-break">
+    <h2 style="font-family:var(--serif);color:var(--navy);font-size:17px;margin:0 0 4px;">Estruturação Patrimonial</h2>
+    <p class="narrative" style="margin-bottom:20px;">Um plano patrimonial completo vai além da carteira de investimentos. As frentes abaixo fazem parte da estruturação patrimonial da família e valem ser discutidas nesta reunião:</p>
+  </div>`;
 
   // ---- PROTEÇÃO PATRIMONIAL ----
   const seguroActive = patrimonioTotal > 0 && gapSeguro > 0;
-  html += `<div class="trigger-card ${seguroActive ? '' : 'inactive'} page-break">
+  /* Sem page-break aqui: o titulo "Estruturacao Patrimonial" logo acima ja
+     abre pagina nova. Com os dois, o titulo e a linha de apresentacao
+     ficavam sozinhos numa folha e o primeiro cartao ia para a seguinte. */
+  html += `<div class="trigger-card ${seguroActive ? '' : 'inactive'}">
     <div class="card-head"><div class="icon-badge">${ICONS.shield}</div><h2>Proteção Patrimonial</h2>
       <span class="tag ${seguroActive ? 'hot' : 'cold'}">${jaSeguro ? 'Já possui cobertura' : 'Avaliar nesta reunião'}</span></div>
     <div class="card-body">`;
@@ -1624,8 +1673,6 @@ function render() {
   }
   html += `</div></div>`;
 
-  html += `<div class="disclaimer disclaimer-page">Ferramenta de apoio à reunião de planejamento — estimativas ilustrativas para orientar a conversa com o cliente, não constituem aconselhamento tributário, atuarial ou de investimento. A projeção patrimonial assume rentabilidade real constante e não elimina o risco de mercado, de crédito ou de liquidez. Validar percentuais de ITCMD, custas e cobertura recomendada com as áreas jurídica, contábil e de produtos antes de formalizar qualquer proposta. Ferramenta Wealth Planning · Adami Wealth.</div>`;
-
   // ---- ALAVANCAGEM PATRIMONIAL ----
   const alavancagemActive = patrimonioTotal > 0 && rendaMensalGerada > 0 && !jaConsorcio;
   html += `<div class="trigger-card ${alavancagemActive ? '' : 'inactive'}">
@@ -1656,6 +1703,10 @@ function render() {
   }
   html += `</div></div>`;
 
+  /* O aviso legal fecha o documento. Estava sendo escrito antes da
+     alavancagem, entao na impressao ele abria pagina propria e a
+     alavancagem vinha DEPOIS dele -- um capitulo atras da assinatura. */
+  html += `<div class="disclaimer disclaimer-page">Ferramenta de apoio à reunião de planejamento — estimativas ilustrativas para orientar a conversa com o cliente, não constituem aconselhamento tributário, atuarial ou de investimento. A projeção patrimonial assume rentabilidade real constante e não elimina o risco de mercado, de crédito ou de liquidez. Validar percentuais de ITCMD, custas e cobertura recomendada com as áreas jurídica, contábil e de produtos antes de formalizar qualquer proposta. Ferramenta Wealth Planning · Adami Wealth.</div>`;
 
   pane.innerHTML = html;
 }
@@ -1665,7 +1716,7 @@ toggleSeguro();
 toggleSimConsorcio();
 render();
 /* selo de versao — serve para identificar cache antes de investigar bug */
-var VERSAO_DIAG = "versão 2.50";
+var VERSAO_DIAG = "versão 2.51";
 document.getElementById('selo').textContent = VERSAO_DIAG;
 </script>
 

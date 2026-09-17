@@ -3333,6 +3333,35 @@ function btgValorAlvo(lead, saldoBTG){
   return Math.max(0, saldoBTG - saldoMovimentacoes(lead));
 }
 
+/* ---- A coluna do código do assessor ----
+   Opcional: sem ela, tudo segue como antes — o assessor do arquivo vira
+   aviso e ninguém troca de carteira. Com ela, o vínculo é aplicado, porque
+   um código é intenção explícita, não um nome parecido.
+
+   O cabeçalho é aceito em várias grafias porque quem monta a planilha
+   escreve como lhe parece natural, e recusar o arquivo por causa de um
+   acento seria a pior forma de ensinar o formato. */
+const CHAVE_COL = (s) => String(s == null ? '' : s)
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const COL_CODIGO = new Set([
+  'codigoassessor','codigodoassessor','codassessor','coddoassessor',
+  'idassessor','iddoassessor','assessorid','assessorcodigo','codigoaai',
+]);
+
+/* Devolve o nome EXATO do cabeçalho no arquivo, para poder ler a célula. */
+function acharColunaCodigo(linhas){
+  for(const c of Object.keys((linhas && linhas[0]) || {})){
+    if(COL_CODIGO.has(CHAVE_COL(c))) return c;
+  }
+  return '';
+}
+
+/* Código como chave, não como texto: comparação sem maiúscula e sem espaço
+   à toa, igual ao índice único do banco. */
+const chaveCodigo = (s) => String(s == null ? '' : s).trim().toUpperCase();
+
 /* A conta como chave de comparação, não como texto. Os dois exports do BTG
    trazem 9 dígitos com zeros à esquerda (009990002), mas basta alguém abrir o
    .xlsx no Excel e salvar para eles sumirem — e "9990002" deixaria de casar
@@ -3363,7 +3392,23 @@ function reconciliarBaseBTG(linhas, leads, users){
     return u ? u.nome : '';
   };
 
+  /* Quem é cada código. Só entra quem tem código cadastrado; duas pessoas
+     com o mesmo código não acontecem, porque o banco tem índice único —
+     mas se um dia acontecer, a primeira ganha e a segunda vira desconhecida,
+     o que é melhor do que sortear a carteira. */
+  const porCodigo = new Map();
+  for(const u of (users || [])){
+    const k = chaveCodigo(u.codigo);
+    if(k && !porCodigo.has(k)) porCodigo.set(k, u);
+  }
+  const colCodigo = acharColunaCodigo(linhas);
+  /* Coluna presente mas ninguém cadastrado: ler o código não levaria a
+     lugar nenhum, e cada linha viraria "código desconhecido". Melhor
+     ignorar a coluna e dizer isso uma vez só, no rodapé da prévia. */
+  const usaCodigo = !!colCodigo && porCodigo.size > 0;
+
   const atualizacoes = [], novas = [], trocaAssessor = [], semConta = [];
+  const codigosDesconhecidos = new Map();
   const vistas = new Set();
 
   for(const d of (linhas || [])){
@@ -3373,9 +3418,24 @@ function reconciliarBaseBTG(linhas, leads, users){
     const nome = norm(d['Nome']);
     const saldoBTG = Math.round((parseFloat(d['Sob Gestão']) || 0) * 100) / 100;
     const assessorBTG = norm(d['Assessor']);
+
+    /* O código, quando a planilha traz. Célula vazia não é erro: é linha que
+       não quis dizer nada sobre assessor, e o vínculo atual fica de pé. */
+    const codigo = usaCodigo ? chaveCodigo(d[colCodigo]) : '';
+    const donoPorCodigo = codigo ? porCodigo.get(codigo) : null;
+    if(codigo && !donoPorCodigo){
+      if(!codigosDesconhecidos.has(codigo)) codigosDesconhecidos.set(codigo, []);
+      codigosDesconhecidos.get(codigo).push({ conta, nome });
+    }
+
     const lead = porConta.get(chaveConta(conta));
 
-    if(!lead){ novas.push({ conta, nome, saldo: saldoBTG, assessor: assessorBTG }); continue; }
+    if(!lead){
+      novas.push({ conta, nome, saldo: saldoBTG,
+        assessor: (donoPorCodigo && donoPorCodigo.nome) || assessorBTG,
+        codigo });
+      continue;
+    }
 
     const saldoAtual = btgSaldoAtual(lead);
     const delta = Math.round((saldoBTG - saldoAtual) * 100) / 100;
@@ -3436,7 +3496,26 @@ function reconciliarBaseBTG(linhas, leads, users){
     }
 
     const respAtual = nomeDoUsuario(lead.responsavelId);
-    const divergeAssessor = !!assessorBTG && !!respAtual
+
+    /* CÓDIGO x NOME — a diferença é o que se faz com a divergência.
+
+       O código foi digitado por quem monta a planilha, olhando a tela de
+       Equipe: é uma instrução, e a importação a cumpre — grava o vínculo e
+       registra no histórico do cliente.
+
+       O nome vem do export do BTG, e continua valendo a regra antiga: vira
+       aviso, nunca transferência. "RAFAEL" pode ser dois Rafaéis, e mover
+       carteira mexe em comissão e em relacionamento. */
+    let vinculoAssessor = null;
+    if(donoPorCodigo && donoPorCodigo.id !== lead.responsavelId){
+      vinculoAssessor = { de: respAtual || '—', para: donoPorCodigo.nome, id: donoPorCodigo.id, codigo };
+      campos.push({ rotulo:'Assessor', de: respAtual || '—', para: donoPorCodigo.nome });
+      patch.responsavelId = donoPorCodigo.id;
+    }
+
+    /* Só reclama do nome quando não houve código mandando: com código, o
+       nome do BTG já foi respondido, e o aviso seria ruído. */
+    const divergeAssessor = !donoPorCodigo && !!assessorBTG && !!respAtual
       && assessorBTG.toUpperCase() !== respAtual.toUpperCase();
     if(divergeAssessor) trocaAssessor.push({ conta, nome, lead, de: respAtual, para: assessorBTG });
 
@@ -3450,6 +3529,7 @@ function reconciliarBaseBTG(linhas, leads, users){
         segmento: segmentoNovo,
         campoValor: btgCampoValor(lead),
         valorAlvo: btgValorAlvo(lead, saldoBTG),
+        vinculoAssessor,
         campos, patch,
       });
     }
@@ -3463,9 +3543,14 @@ function reconciliarBaseBTG(linhas, leads, users){
   }
 
   const comAlerta = atualizacoes.filter(a => a.alerta);
+  const desconhecidos = [...codigosDesconhecidos.entries()]
+    .map(([codigo, contas]) => ({ codigo, contas }));
   return {
     tipo: 'onshore',
     atualizacoes, novas, ausentes, trocaAssessor, conflitos: [], semConta,
+    /* A prévia precisa saber por que a coluna não foi usada: "tem coluna e
+       não fez nada" é exatamente o tipo de silêncio que esconde erro. */
+    colunaCodigo: colCodigo, usaCodigo, codigosDesconhecidos: desconhecidos,
     resumo: {
       linhas: (linhas || []).length,
       conciliadas: vistas.size - novas.length,
@@ -3474,6 +3559,7 @@ function reconciliarBaseBTG(linhas, leads, users){
       novas: novas.length,
       ausentes: ausentes.length,
       trocas: trocaAssessor.length,
+      vinculosAssessor: atualizacoes.filter(a => a.vinculoAssessor).length,
       deltaTotal: atualizacoes.reduce((a, x) => a + x.delta, 0),
     },
   };
@@ -3740,6 +3826,8 @@ const BTG_COLUNAS = {
   onshore:  ['Conta', 'Nome', 'Sob Gestão'],
   offshore: ['Conta Onshore', 'Conta Offshore', 'Total AuC (USD)'],
 };
+/* A coluna de código do assessor NÃO entra nesta lista: ela é opcional, e
+   exigi-la quebraria o export do BTG como ele vem. */
 function identificarExport(linhas){
   const cols = Object.keys((linhas && linhas[0]) || {});
   const tipo = cols.includes('Conta Offshore') ? 'offshore' : 'onshore';
@@ -4282,11 +4370,34 @@ async function upsertConfig(chave, valor){
   if(error) throw error;
 }
 
+/* O codigo do assessor mora em perfis, tabela do portal, que o CRM nao
+   enxerga. A funcao codigos_assessores devolve so o par id/codigo -- o
+   suficiente para a importacao traduzir a planilha, sem abrir o resto.
+
+   Tolerante de proposito: num banco onde o SQL do codigo ainda nao rodou a
+   funcao nao existe, e a importacao volta a casar pelo nome, como antes. */
+async function fetchCodigos(){
+  if(MODO_DEMO) return {};
+  try{
+    const { data, error } = await sb.rpc('codigos_assessores');
+    if(error) throw error;
+    const m = {};
+    for(const r of (data || [])) if(r && r.codigo) m[r.user_id] = String(r.codigo);
+    return m;
+  }catch(e){
+    console.warn('Sem codigos de assessor; a importacao vai casar pelo nome.', e);
+    return {};
+  }
+}
+
 async function fetchProfiles(){
   if(MODO_DEMO) return demoStore.profiles.map(p => ({ ...p }));
-  const { data, error } = await sb.from('profiles').select('*').order('nome');
+  const [{ data, error }, codigos] = await Promise.all([
+    sb.from('profiles').select('*').order('nome'),
+    fetchCodigos(),
+  ]);
   if(error) throw error;
-  return (data || []).map(p => ({ id:p.id, nome:p.nome, role:p.role, status:p.status, produtos:p.produtos || [], especialistasPadrao:p.especialistas_padrao || {} }));
+  return (data || []).map(p => ({ id:p.id, nome:p.nome, role:p.role, status:p.status, produtos:p.produtos || [], especialistasPadrao:p.especialistas_padrao || {}, codigo: codigos[p.id] || '' }));
 }
 
 function emptyLead(ownerId){
@@ -7759,6 +7870,10 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
     h('p',null,'Envie o export do BTG em .xlsx — o da carteira ou o ',
       h('strong',null,'AuC offshore'),'. A tela reconhece qual é pelas colunas, lê o arquivo aqui no navegador e o compara com a base pela ',
       h('strong',null,'conta onshore'),'. Nada é gravado antes de você conferir a prévia.'),
+    h('p',null,'Se a planilha tiver uma coluna ', h('strong',null,'Código do assessor'),
+      ' — o código que aparece na tela de Equipe do hub —, a importação usa ela para vincular '
+      + 'cada conta ao assessor certo. Sem a coluna, o assessor fica como está e a diferença '
+      + 'vira apenas um aviso.'),
     h('input',{ ref:inputRef, type:'file', accept:'.xlsx', id:'imp-file', className:'imp-file',
       onChange:(e)=>receber(e.target.files && e.target.files[0]) }),
     h('label',{htmlFor:'imp-file', className:'btn btn-primary imp-botao'}, 'Escolher arquivo'),
@@ -7780,7 +7895,11 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
   const conflitos = r.conflitos || [];
   const comAlerta = r.atualizacoes.filter(a => a.alerta);
   const vinculos = r.atualizacoes.filter(a => a.vinculo && !a.alerta);
-  const semAlerta = r.atualizacoes.filter(a => !a.alerta && !a.vinculo);
+  /* Troca de assessor sai da lista comum: quem confere a prévia precisa ver
+     as transferências juntas, não espalhadas entre trezentas linhas de
+     rendimento. Alerta de saldo continua vindo primeiro — é o mais grave. */
+  const trocasPorCodigo = r.atualizacoes.filter(a => a.vinculoAssessor && !a.alerta && !a.vinculo);
+  const semAlerta = r.atualizacoes.filter(a => !a.alerta && !a.vinculo && !a.vinculoAssessor);
 
   /* Um bloco por natureza de divergência. Todos recolhíveis e nenhum
      escondido: mesmo o que a importação não vai tocar precisa ser visto. */
@@ -7848,7 +7967,9 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
 
       h('div',{className:'painel-linha linha-4'},
         h(Indicador,{ rotulo:'Clientes alterados', valor: R.alteradas, formato:(n)=>String(n),
-          contexto: R.alteradas ? 'saldo ou cadastro' : 'nada mudou nesta semana' }),
+          contexto: R.vinculosAssessor
+            ? 'inclui ' + R.vinculosAssessor + (R.vinculosAssessor === 1 ? ' troca de assessor' : ' trocas de assessor')
+            : R.alteradas ? 'saldo ou cadastro' : 'nada mudou nesta semana' }),
         h(Indicador,{ rotulo: off ? 'Variação offshore' : 'Variação da carteira', tom:'ouro', valor: R.deltaTotal,
           formato:(n)=>(n >= 0 ? '+' : '−') + fmtC(Math.abs(n)),
           contexto: R.vinculos ? 'inclui ' + R.vinculos + (R.vinculos === 1 ? ' vínculo inicial' : ' vínculos iniciais')
@@ -7905,6 +8026,32 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
         'A mesma conta offshore não pode estar em dois clientes, e duas contas offshore sob a mesma onshore não cabem num saldo só sem uma apagar a outra. Ficam como estão até alguém conferir.',
         'grave'),
 
+      secao('vincassessor', 'Assessor definido pela planilha', trocasPorCodigo,
+        (a) => h('div',{className:'imp-linha clicavel', key:'va-' + a.conta,
+            onClick: a.lead ? () => onOpen(a.lead) : null},
+          h('span',{className:'imp-nome'}, nomeSemConta(a.lead && a.lead.cliente, a.conta) || a.nome || a.conta,
+            h('span',{className:'imp-conta'}, a.conta)),
+          h('span',{className:'imp-de'}, a.vinculoAssessor.de),
+          h('span',{className:'imp-seta'}, '→'),
+          h('span',{className:'imp-para'}, a.vinculoAssessor.para),
+          h('span',{className:'imp-campos'}, 'código ' + a.vinculoAssessor.codigo)),
+        'A coluna de código diz de quem é cada conta, e aqui a importação obedece: o vínculo é '
+        + 'gravado e fica no histórico do cliente. É a única forma de transferir carteira pelo '
+        + 'arquivo — pelo nome do BTG, nunca. Confira antes de aplicar: transferência mexe em '
+        + 'comissão.',
+        'grave'),
+
+      secao('codigosruins', 'Código que não é de ninguém', r.codigosDesconhecidos || [],
+        (c) => h('div',{className:'imp-linha', key:'cd-' + c.codigo},
+          h('span',{className:'imp-nome'}, c.codigo,
+            h('span',{className:'imp-conta'}, c.contas.length + (c.contas.length === 1 ? ' conta' : ' contas'))),
+          h('span',{className:'imp-campos'}, c.contas.slice(0, 6).map(x => x.conta).join(', ')
+            + (c.contas.length > 6 ? ' e mais ' + (c.contas.length - 6) : ''))),
+        'A planilha traz estes códigos e nenhum assessor tem. Nada é alterado nessas contas: o '
+        + 'assessor atual continua. Confira a grafia na tela de Equipe do hub — é lá que o código '
+        + 'de cada pessoa aparece, e é lá que se troca.',
+        'grave'),
+
       secao('trocas', 'Assessor diferente do nosso', r.trocaAssessor,
         (t) => h('div',{className:'imp-linha', key:t.conta, onClick:()=>onOpen(t.lead)},
           h('span',{className:'imp-nome'}, nomeSemConta(t.lead.cliente, t.conta) || t.nome,
@@ -7917,6 +8064,14 @@ function ImportacaoBaseView({ leads, users, currentUser, onAplicar, onOpen }){
       r.semConta.length
         ? h('p',{className:'imp-rodape'}, r.semConta.length,
             ' linha(s) do arquivo sem número de conta foram ignoradas — sem conta não há como saber de quem é.')
+        : null,
+
+      r.tipo === 'onshore' && !r.usaCodigo
+        ? h('p',{className:'imp-rodape'}, r.colunaCodigo
+            ? 'A coluna “' + r.colunaCodigo + '” foi ignorada: nenhum assessor tem código cadastrado ainda. '
+              + 'Defina os códigos na tela de Equipe do hub e importe de novo.'
+            : 'Sem coluna de código nesta planilha — o assessor de cada conta ficou como está. '
+              + 'Para vincular pelo arquivo, acrescente uma coluna “Código do assessor”.')
         : null
     )
   );
@@ -10245,7 +10400,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.50";
+var VERSAO_CRM="versão 2.51";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
