@@ -2476,6 +2476,8 @@ const SITUACOES = [
      cadastro, só sem dinheiro sob gestão registrado ainda. */
   { key:'ativo',      label:'Cliente ativo (não zerado)', funis:['assessor'],
     testa:(l) => valorEmCarteira(l) > 0 || valorEmCarteiraOffshore(l) > 0 },
+  { key:'regua',      label:'Régua de relacionamento atrasada', funis:['assessor'],
+    testa:(l) => reguaPendencias(l).length > 0 },
 ];
 
 const FILTROS_VAZIOS = { periodo:'all', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
@@ -2618,6 +2620,15 @@ function notificacoesDe(leads, hoje){
         urgencia: lead.proximoContato < hoje ? 'late' : 'today',
       });
     }
+    /* Sempre atrasada quando aparece — reguaPendencias já filtra por isso —,
+       então entra direto como "late". Resolve registrando a atividade, não
+       tem "marcar como visto" à parte. */
+    reguaPendencias(lead, hoje).forEach(r => itens.push({
+      id: lead.id + ':regua:' + r.tipo, leadId: lead.id, lead,
+      classe: 'regua', rotulo: 'Régua · ' + r.label,
+      texto: r.label + ' atrasada há ' + r.diasAtraso + (r.diasAtraso === 1 ? ' dia' : ' dias'),
+      data: r.prevista, urgencia: 'late',
+    }));
   });
   /* Vencidos primeiro, e dentro deles o mais antigo no topo. */
   const peso = { late:0, today:1 };
@@ -2812,6 +2823,62 @@ function congelarSaldoInicialOffshore(atual, editado){
 function naCarteira(lead){
   return valorInicialEmCarteira(lead) !== null || valorInicialOffshore(lead) !== null;
 }
+
+/* ================= Régua de relacionamento =================
+   Padrão Supernova: cadência de contato por segmento, espaçada ao longo do
+   ano. Advisory não tem régua — só Private e Exclusive.
+
+   Não é alerta gravado, de propósito: um alerta gravado precisaria que
+   alguém marcasse "resolvido" à parte, e o registro já é a prova de que
+   o contato aconteceu. Recalcular sempre a partir de `atividades` evita
+   os dois discordarem entre si. */
+const REGUA_RELACIONAMENTO = {
+  Private: [
+    { tipo:'relacionamento', qtdAno:8 },
+    { tipo:'performance',    qtdAno:3 },
+    { tipo:'revisao',        qtdAno:1 },
+  ],
+  Exclusive: [
+    { tipo:'relacionamento', qtdAno:4 },
+    { tipo:'performance',    qtdAno:1 },
+    { tipo:'revisao',        qtdAno:1 },
+  ],
+};
+const DIA_MS = 86400000;
+
+/* Data (YYYY-MM-DD) da atividade mais recente deste tipo, ou nulo se nunca
+   houve nenhuma. */
+function ultimaAtividade(lead, tipo){
+  const datas = ((lead && lead.atividades) || [])
+    .filter(a => a.tipo === tipo && a.data)
+    .map(a => a.data)
+    .sort();
+  return datas.length ? datas[datas.length - 1] : null;
+}
+
+/* Um item por linha da régua deste segmento, com a próxima data prevista e
+   o atraso em dias. Sem contato anterior daquele tipo, a contagem começa na
+   criação do card — é a data que a casa tem certeza de que o relacionamento
+   já existia, e não deixa todo mundo nascendo "em dia" por falta de
+   histórico. Só se aplica a quem já é carteira: régua é relacionamento com
+   quem já é cliente, não cadência de prospecção. */
+function reguaStatus(lead, hoje){
+  const regra = REGUA_RELACIONAMENTO[lead && lead.segmento];
+  if(!regra || !naCarteira(lead)) return [];
+  hoje = hoje || todayISO();
+  return regra.map(item => {
+    const intervaloDias = Math.round(365 / item.qtdAno);
+    const ultima = ultimaAtividade(lead, item.tipo);
+    const base = ultima || (lead.criadoEm ? tsToISODate(lead.criadoEm) : hoje);
+    const prevista = toISODate(new Date(new Date(base + 'T00:00:00').getTime() + intervaloDias * DIA_MS));
+    const diasAtraso = Math.round((new Date(hoje + 'T00:00:00') - new Date(prevista + 'T00:00:00')) / DIA_MS);
+    return {
+      tipo: item.tipo, label: tipoAtividadeLabel(item.tipo), qtdAno: item.qtdAno,
+      intervaloDias, ultima, prevista, atrasado: diasAtraso > 0, diasAtraso,
+    };
+  });
+}
+const reguaPendencias = (lead, hoje) => reguaStatus(lead, hoje).filter(r => r.atrasado);
 
 /* ---- A mesma carteira, do lado de fora ----
    A regra de entrada é a de sempre, de propósito: enquanto a captação não se
@@ -4548,6 +4615,13 @@ const TIPOS_ATIVIDADE = [
   { key:'reuniao',  label:'Reunião'  },
   { key:'proposta', label:'Proposta' },
   { key:'nota',     label:'Nota'     },
+  /* Os três de baixo alimentam a régua de relacionamento (ver
+     REGUA_RELACIONAMENTO): registrar aqui é o que quita a pendência,
+     porque a régua é sempre recalculada a partir do histórico, nunca
+     marcada como resolvida à parte. */
+  { key:'relacionamento', label:'Relacionamento'       },
+  { key:'performance',    label:'Acompanhamento'       },
+  { key:'revisao',        label:'Revisão de carteira'  },
 ];
 const tipoAtividadeLabel = (k) => (TIPOS_ATIVIDADE.find(t => t.key === k) || { label:'Nota' }).label;
 
@@ -5828,6 +5902,42 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
                 (pauta.length - feitas.length) + ' pendente(s). Não impede o avanço da jornada.')
             : null
         ) : null,
+
+        /* Régua de relacionamento (padrão Supernova): só existe para quem já
+           é carteira e tem segmento Private ou Exclusive — reguaStatus
+           devolve lista vazia para todo o resto, e o painel some sozinho.
+           Sem botão de "resolver": o que quita a pendência é registrar a
+           atividade correspondente ali em cima, em Atividades. */
+        jornadaLead ? (() => {
+          const regua = reguaStatus(draft, todayISO());
+          if(!regua.length) return null;
+          const atrasados = regua.filter(r => r.atrasado).length;
+          return h('div',{className:'pauta'},
+            h('div',{className:'pauta-head'},
+              h('div',{className:'bento-eyebrow'},'Régua de relacionamento'),
+              h('span',{className:'pauta-contador' + (atrasados === 0 ? ' completa' : '')},
+                atrasados === 0 ? 'em dia' : atrasados + (atrasados === 1 ? ' atrasada' : ' atrasadas'))
+            ),
+            h('div',{className:'alerta-lista'},
+              regua.map(r => {
+                const st = r.atrasado ? 'late' : 'ok';
+                return h('div',{key:r.tipo, className:'alerta-item ' + st},
+                  h('span',{className:'task-dot ' + st}),
+                  h('div',{className:'alerta-corpo'},
+                    h('div',{className:'alerta-linha'},
+                      h('span',{className:'alerta-tipo'}, r.label + ' · ' + r.qtdAno + 'x/ano'),
+                      h('span',{className:'alerta-data ' + st},
+                        r.atrasado
+                          ? 'atrasada há ' + r.diasAtraso + (r.diasAtraso === 1 ? ' dia' : ' dias')
+                          : 'próxima ' + fmtDate(r.prevista))
+                    ),
+                    r.ultima ? h('div',{className:'alerta-texto-ver'}, 'Último contato: ' + fmtDate(r.ultima)) : null
+                  )
+                );
+              })
+            )
+          );
+        })() : null,
 
         /* Consolidado da família: o motivo de existir o grupo. */
         (jornadaLead && grupo && grupo.membros.length > 1) ? h('div',{className:'grupo-box'},
@@ -10602,7 +10712,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.58";
+var VERSAO_CRM="versão 2.59";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
