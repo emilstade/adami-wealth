@@ -9702,17 +9702,24 @@ function App(){
   const podeEditar = (lead) => !!lead && !!currentUser && (isAdmin || lead.responsavelId === currentUser.id);
 
   /* Busca agora cobre também a oportunidade e o produto — antes um negócio só
-     era encontrável pelo nome, telefone ou e-mail do cliente. */
+     era encontrável pelo nome, telefone ou e-mail do cliente.
+
+     E ignora acento dos dois lados: "joao" precisa achar "João", porque quem
+     digita rápido não para para acentuar, e um nome maior que veio completo
+     do cadastro não pode ficar mais difícil de achar do que um digitado sem
+     capricho. */
+  const semAcento = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const buscar = (lista, q) => {
     if(!q) return lista;
+    const alvo = semAcento(q);
     return lista.filter(l =>
-      (l.cliente||'').toLowerCase().includes(q) ||
-      (l.conta||'').toLowerCase().includes(q) ||
-      (l.contaOffshore||'').toLowerCase().includes(q) ||
-      (l.telefone||'').toLowerCase().includes(q) ||
-      (l.email||'').toLowerCase().includes(q) ||
-      (l.oportunidade||'').toLowerCase().includes(q) ||
-      (l.produtoServico||'').toLowerCase().includes(q)
+      semAcento(l.cliente).includes(alvo) ||
+      semAcento(l.conta).includes(alvo) ||
+      semAcento(l.contaOffshore).includes(alvo) ||
+      semAcento(l.telefone).includes(alvo) ||
+      semAcento(l.email).includes(alvo) ||
+      semAcento(l.oportunidade).includes(alvo) ||
+      semAcento(l.produtoServico).includes(alvo)
     );
   };
 
@@ -10361,7 +10368,7 @@ function App(){
            desliza ao trocar de tela. */
         h('div',{className:'busca-slot' + (view === 'kpis' || view === 'offshore' ? ' oculta' : '')},
           h('div',{className:'search-wrap'}, h(IconSearch,{size:15}),
-            h('input',{ placeholder:'Buscar por nome, telefone ou e-mail', value:query,
+            h('input',{ placeholder:'Buscar por nome, conta, telefone ou e-mail', value:query,
               onChange:e=>setQuery(e.target.value), tabIndex: (view === 'kpis' || view === 'offshore') ? -1 : 0 }))
         ),
         isAdmin ? h('select',{ className:'select-sm', value:vendorFilter, onChange:e=>setVendorFilter(e.target.value) },
@@ -10581,7 +10588,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.55";
+var VERSAO_CRM="versão 2.56";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
