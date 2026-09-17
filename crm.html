@@ -3416,7 +3416,7 @@ function reconciliarBaseBTG(linhas, leads, users){
     if(!conta){ semConta.push(d); continue; }
     vistas.add(chaveConta(conta));
     const nome = norm(d['Nome']);
-    const saldoBTG = Math.round((parseFloat(d['Sob Gestão']) || 0) * 100) / 100;
+    const saldoBTG = Math.round((parseFloat(d['Sob Gestão'] ?? d['PL Total']) || 0) * 100) / 100;
     const assessorBTG = norm(d['Assessor']);
 
     /* O código, quando a planilha traz. Célula vazia não é erro: é linha que
@@ -3823,15 +3823,22 @@ function montarLinhas(arqs, td){
    quem sobe o arquivo não precisa dizer. Conferir na entrada evita a falha
    silenciosa clássica: planilha errada, tudo "sem alteração", ninguém nota. */
 const BTG_COLUNAS = {
-  onshore:  ['Conta', 'Nome', 'Sob Gestão'],
+  onshore:  ['Conta', 'Nome'],
   offshore: ['Conta Onshore', 'Conta Offshore', 'Total AuC (USD)'],
 };
+/* O BTG já trocou o nome dessa coluna uma vez (Sob Gestão -> PL Total).
+   Aceitar as duas grafias evita quebrar de novo se um export antigo voltar
+   a circular, e cobre a planilha atual sem exigir edição manual. */
+const COL_SALDO_ONSHORE = ['Sob Gestão', 'PL Total'];
 /* A coluna de código do assessor NÃO entra nesta lista: ela é opcional, e
    exigi-la quebraria o export do BTG como ele vem. */
 function identificarExport(linhas){
   const cols = Object.keys((linhas && linhas[0]) || {});
   const tipo = cols.includes('Conta Offshore') ? 'offshore' : 'onshore';
   const faltando = BTG_COLUNAS[tipo].filter(c => !cols.includes(c));
+  if(tipo === 'onshore' && !COL_SALDO_ONSHORE.some(c => cols.includes(c))){
+    faltando.push(COL_SALDO_ONSHORE.join(' ou '));
+  }
   if(faltando.length){
     throw new Error('A planilha não tem ' + faltando.join(', ')
       + '. Colunas encontradas: ' + (cols.join(', ') || 'nenhuma') + '.');
@@ -10400,7 +10407,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.51";
+var VERSAO_CRM="versão 2.52";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
