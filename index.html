@@ -422,6 +422,19 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 .rt.compact tr.ano td:first-child{font-family:var(--display);font-size:13px;color:var(--navy)}
 .rt.compact tr.sep td{border-bottom:1px solid var(--line)}
 .rt.compact td:first-child,.rt.compact th:first-child{white-space:nowrap}
+/* Lista de ativos: 10 colunas não cabem com largura automática — o
+   navegador afunilava Ativo e Taxa até quebrar palavra por letra. Largura
+   fixa por coluna, só aqui, para não mexer nas outras tabelas .rt. */
+.rt.ativos{table-layout:fixed}
+.rt.ativos th:nth-child(1),.rt.ativos td:nth-child(1){width:20%}
+.rt.ativos th:nth-child(2),.rt.ativos td:nth-child(2){width:13%}
+.rt.ativos th:nth-child(3),.rt.ativos td:nth-child(3){width:11%}
+.rt.ativos th:nth-child(4),.rt.ativos td:nth-child(4){width:13%}
+.rt.ativos th:nth-child(n+5),.rt.ativos td:nth-child(n+5){width:7%}
+/* Cabeçalho numérico normalmente não quebra linha (.rt th.n); nesta tabela,
+   com coluna estreita, isso fazia "Vencimento (RF)" atropelar o cabeçalho
+   vizinho em vez de simplesmente quebrar. */
+.rt.ativos th.n{white-space:normal}
 .dn-leg{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 22px;margin:18px 0 6px;font-size:11.5px;color:var(--ink-2)}
 .dn-leg span{display:inline-flex;align-items:center;gap:6px}
 .dn-leg i{width:9px;height:9px;border-radius:2px;display:inline-block}
@@ -902,7 +915,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.52";
+var VERSAO="versão 2.53";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -969,12 +982,13 @@ function onMoeda(el,cb){
 function contaVazia(cur){ return {nome:"",inst:"",saldo:0,apl:0,res:0,rendPct:0,rendRs:0,moeda:(cur==="USD"?"USD":"BRL")}; }
 function curDe(c){ return (c&&c.moeda==="USD")?"USD":"BRL"; }
 function contasDe(r,cur){ cur=(cur==="USD")?"USD":"BRL"; return ((r&&r.contas)?r.contas:[]).filter(function(c){ return curDe(c)===cur; }); }
-function indVazio(){ var o={}; IND.forEach(function(p){o[p[0]]=0;}); o.carta=""; o.vencimentos=[]; o.estrategias={}; ESTRAT.forEach(function(e){o.estrategias[e[0]]=0;}); return o; }
+function indVazio(){ var o={}; IND.forEach(function(p){o[p[0]]=0;}); o.carta=""; o.vencimentos=[]; o.ativos=[]; o.estrategias={}; ESTRAT.forEach(function(e){o.estrategias[e[0]]=0;}); return o; }
 function listaEstrat(ind){
   var e=(ind&&ind.estrategias)||{};
   return ESTRAT.map(function(x){ return {nome:x[1],pc:n(e[x[0]])}; }).filter(function(x){ return x.pc>0; });
 }
 function vencVazio(){ return {ativo:"",inst:"",taxa:"",data:"",valor:0}; }
+function ativoVazio(){ return {nome:"",taxa:"",vencimento:"",posicao:0,rentMes:0,rent3m:0,rent6m:0,rentAno:0,rent12m:0,rentInicio:0}; }
 /* separa o que vence DENTRO do mes de referencia do que ainda esta por vir.
    O relatorio de agosto sai em setembro: um vencimento de 15/08 nao e
    "proximo", ja aconteceu, e o cliente quer saber o que foi feito com ele. */
@@ -993,6 +1007,10 @@ function listaVenc(ind){
   var v=(ind&&ind.vencimentos)||[];
   return v.filter(function(x){ return (x.ativo||"").trim()||n(x.valor)||x.data; })
           .sort(function(a,b){ return (a.data||"9999").localeCompare(b.data||"9999"); });
+}
+function listaAtivos(ind){
+  var v=(ind&&ind.ativos)||[];
+  return v.filter(function(x){ return (x.nome||"").trim()||n(x.posicao); });
 }
 function dataBR(d){
   if(!d) return "—";
@@ -1130,7 +1148,7 @@ var SECOES=[["comentarios","Coment\u00e1rios do m\u00eas"],["estrategia","Aloca\
   ["instituicao","Distribui\u00e7\u00e3o por institui\u00e7\u00e3o"],["retornos","Retornos mensais"],
   ["benchmarks","Carteira contra os indicadores"],["contas","Desempenho por conta"],
   ["evolucao","Evolu\u00e7\u00e3o do patrim\u00f4nio"],["vencimentos","Pr\u00f3ximos vencimentos"],
-  ["offshore","Bloco offshore"]];
+  ["ativos","Lista de ativos"],["offshore","Bloco offshore"]];
 function secOn(ind,k){ var o=ind&&ind.secoes; return (!o||o[k]===undefined)?true:!!o[k]; }
 function setSecao(k,v){ if(!S.rasc.ind.secoes) S.rasc.ind.secoes={}; S.rasc.ind.secoes[k]=!!v; }
 /* quais indicadores entram na tabela comparativa. Ausente = ligado,
@@ -1390,6 +1408,16 @@ function addVenc(){
   S.rasc.ind.vencimentos.push(vencVazio()); render();
 }
 function delVenc(i){ S.rasc.ind.vencimentos.splice(i,1); render(); }
+var CAMPOS_NUM_ATIVO={posicao:1,rentMes:1,rent3m:1,rent6m:1,rentAno:1,rent12m:1,rentInicio:1};
+function setAtivo(i,campo,v){
+  if(!S.rasc.ind.ativos) S.rasc.ind.ativos=[];
+  S.rasc.ind.ativos[i][campo]=CAMPOS_NUM_ATIVO[campo]?n(v):v;
+}
+function addAtivo(){
+  if(!S.rasc.ind.ativos) S.rasc.ind.ativos=[];
+  S.rasc.ind.ativos.push(ativoVazio()); render();
+}
+function delAtivo(i){ S.rasc.ind.ativos.splice(i,1); render(); }
 function salvarCarta(){
   var ed=document.getElementById("edCarta"); if(!ed) return;
   var conteudo=ed.innerHTML.trim();
@@ -1650,6 +1678,31 @@ function viewPreencher(){
      }).join(""):'<tr><td colspan="6" style="color:var(--muted);font-size:12.5px">Nenhum vencimento informado.</td></tr>')+
      '</tbody></table></div>'+
      '<button class="btn" style="margin-top:14px" onclick="addVenc()">+ Adicionar vencimento</button></div>';
+
+  var ativos=S.rasc.ind.ativos||[];
+  h+='<div class="card"><div class="sec-title">Lista de ativos</div>'+
+     '<div class="sec-sub">Opcional. Se ficar em branco, a seção não aparece no relatório. Taxa e vencimento só fazem sentido para renda fixa — deixe em branco nos demais.</div>'+
+     '<div style="overflow-x:auto"><table class="form"><thead><tr>'+
+     '<th style="min-width:170px">Ativo</th><th style="min-width:110px">Taxa (RF)</th>'+
+     '<th style="min-width:140px">Vencimento (RF)</th><th class="num" style="min-width:130px">Posição (R$)</th>'+
+     '<th class="num">Mês</th><th class="num">3 meses</th><th class="num">6 meses</th>'+
+     '<th class="num">Ano</th><th class="num">12 meses</th><th class="num">Desde o início</th><th></th></tr></thead><tbody>'+
+     (ativos.length?ativos.map(function(x,i){
+       return '<tr>'+
+       '<td><input class="inp" value="'+esc(x.nome)+'" oninput="setAtivo('+i+',\'nome\',this.value)" placeholder="Ex.: CDB Banco XYZ"></td>'+
+       '<td><input class="inp" value="'+esc(x.taxa)+'" oninput="setAtivo('+i+',\'taxa\',this.value)" placeholder="Ex.: 112% do CDI"></td>'+
+       '<td><input class="inp" type="date" value="'+esc(x.vencimento)+'" oninput="setAtivo('+i+',\'vencimento\',this.value)"></td>'+
+       '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.posicao)+'" oninput="onMoeda(this,function(v){setAtivo('+i+',\'posicao\',v);})"></td>'+
+       '<td><input class="inp num" type="number" step="0.01" value="'+(x.rentMes||"")+'" oninput="setAtivo('+i+',\'rentMes\',this.value)"></td>'+
+       '<td><input class="inp num" type="number" step="0.01" value="'+(x.rent3m||"")+'" oninput="setAtivo('+i+',\'rent3m\',this.value)"></td>'+
+       '<td><input class="inp num" type="number" step="0.01" value="'+(x.rent6m||"")+'" oninput="setAtivo('+i+',\'rent6m\',this.value)"></td>'+
+       '<td><input class="inp num" type="number" step="0.01" value="'+(x.rentAno||"")+'" oninput="setAtivo('+i+',\'rentAno\',this.value)"></td>'+
+       '<td><input class="inp num" type="number" step="0.01" value="'+(x.rent12m||"")+'" oninput="setAtivo('+i+',\'rent12m\',this.value)"></td>'+
+       '<td><input class="inp num" type="number" step="0.01" value="'+(x.rentInicio||"")+'" oninput="setAtivo('+i+',\'rentInicio\',this.value)"></td>'+
+       '<td><button class="xbtn" onclick="delAtivo('+i+')" title="Remover">&times;</button></td></tr>';
+     }).join(""):'<tr><td colspan="11" style="color:var(--muted);font-size:12.5px">Nenhum ativo informado.</td></tr>')+
+     '</tbody></table></div>'+
+     '<button class="btn" style="margin-top:14px" onclick="addAtivo()">+ Adicionar ativo</button></div>';
 
   h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnSalvar" onclick="salvarMes()">Salvar mês e ver relatório</button>'+
      '<span style="font-size:12.5px;color:var(--muted)" id="resumoMini">Onshore: '+pct(t.rendPct)+' • '+brl2(t.rendRs)+'</span></div>';
@@ -2340,6 +2393,30 @@ function viewRelatorio(){
     }
     corpo+='<p class="foot-note">Valores estimados na data de referência, sujeitos a marcação a mercado e à incidência de tributos no resgate.</p></div>';
     pag(shead(nx(),titulo,"valores aproximados")+corpo);
+  }
+
+  /* --- lista de ativos --- */
+  var ativosRel=listaAtivos(r.ind);
+  if(ativosRel.length && secOn(r.ind,"ativos")){
+    var totalAtivos=ativosRel.reduce(function(a,x){return a+n(x.posicao);},0);
+    var corpoAt='<div class="panel"><table class="rt ativos"><thead><tr>'+
+      '<th>Ativo</th><th>Taxa (RF)</th><th class="n">Venc. (RF)</th><th class="n">Posição</th>'+
+      '<th class="n">Mês</th><th class="n">3m</th><th class="n">6m</th><th class="n">Ano</th>'+
+      '<th class="n">12m</th><th class="n">Iníc.</th></tr></thead><tbody>'+
+      ativosRel.map(function(x){
+        var rp=function(v){ return v||v===0?'<span class="'+sinal(n(v))+'">'+pct(n(v))+'</span>':"—"; };
+        return '<tr><td>'+esc(x.nome||"—")+'</td><td>'+esc(x.taxa||"—")+'</td>'+
+        '<td class="n">'+(x.vencimento?dataBR(x.vencimento):"—")+'</td>'+
+        '<td class="n">'+(n(x.posicao)?brl(n(x.posicao)):"—")+'</td>'+
+        '<td class="n">'+rp(x.rentMes)+'</td><td class="n">'+rp(x.rent3m)+'</td>'+
+        '<td class="n">'+rp(x.rent6m)+'</td><td class="n">'+rp(x.rentAno)+'</td>'+
+        '<td class="n">'+rp(x.rent12m)+'</td><td class="n">'+rp(x.rentInicio)+'</td></tr>';
+      }).join("")+
+      '<tr class="tot"><td colspan="3">Total</td><td class="n">'+brl(totalAtivos)+'</td>'+
+      '<td colspan="6"></td></tr>'+
+      '</tbody></table>'+
+      '<p class="foot-note">Taxa e vencimento se aplicam apenas a ativos de renda fixa. Rentabilidades informadas pela instituição custodiante, líquidas de taxas quando aplicável, brutas de imposto de renda.</p></div>';
+    pag(shead(nx(),"Lista de ativos","posição em "+dataBase(S.mes,S.ano))+corpoAt);
   }
 
   /* --- offshore --- */
