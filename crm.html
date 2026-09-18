@@ -4985,6 +4985,29 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
       errors.cliente ? h('div',{className:'field-error'}, errors.cliente) : null
     ),
 
+    /* Logo depois do nome, sem precisar rolar: é a primeira pergunta que
+       importa fazer sobre um prospect, e enterrada lá embaixo do formulário
+       ninguém preenchia. Some junto com a tag: deixar o campo aqui depois da
+       captação seria um controle que não muda nada em tela nenhuma. Clicar
+       de novo no mesmo pipe limpa: voltar para "não classificado" precisa
+       ser possível sem apagar o cliente e recriar.
+       Cliente da base não tem pipe nem valor de captação no cadastro: o dele
+       se informa e se confirma na ficha, no bloco "Pipe". Um segundo caminho
+       aqui deixaria pipe sem captação, ou captação sem histórico. */
+    (initial.ganho || clienteDaBase(initial)) ? null : h('div',{className:'field'},
+      h('label',null,'Pipe'),
+      h('div',{className:'filtro-chips'},
+        TEMPERATURAS.map(t => h('button',{
+          key:t.key, type:'button',
+          className:'filtro-chip temp-chip' + ((initial.temperatura || '') === t.key ? ' ativo' : ''),
+          onClick:()=>onChange({ ...initial, temperatura: (initial.temperatura || '') === t.key ? '' : t.key }),
+        }, h('span',{className:'temp-dot', style:{background:t.cor}}), t.label))
+      ),
+      h('div',{className:'field-hint'}, temperaturaInfo(initial.temperatura)
+        ? descTemperatura(initial.temperatura, initial)
+        : 'Sem classificação. Registra como o cliente responde, não em que etapa ele está.')
+    ),
+
     /* Só na Jornada: conta é do banco, e o funil de produto não tem custódia.
        Cliente cadastrado aqui nasce sem conta e é isso mesmo — ela chega
        depois, quando o BTG abre. Preenchê-la é o que faz o cliente entrar na
@@ -5199,28 +5222,6 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
         h('input',{ value:initial.bancoAtual || '', onChange:set('bancoAtual'), placeholder:'Ex: Itaú, XP, imóveis' })
       )
     ) : null,
-    /* Some junto com a tag: deixar o campo aqui depois da captação seria um
-       controle que não muda nada em tela nenhuma.
-       Clicar de novo na mesma temperatura limpa: voltar para "não
-       classificado" precisa ser possível sem apagar o cliente e recriar. */
-    /* Cliente da base não tem valor nem temperatura de captação no cadastro:
-       a captação dele se informa e se confirma na ficha, no bloco "Captação
-       em negociação". Um segundo caminho aqui deixaria temperatura sem
-       captação, ou captação sem histórico. */
-    (initial.ganho || clienteDaBase(initial)) ? null : h('div',{className:'field'},
-      h('label',null,'Pipe'),
-      h('div',{className:'filtro-chips'},
-        TEMPERATURAS.map(t => h('button',{
-          key:t.key, type:'button',
-          className:'filtro-chip temp-chip' + ((initial.temperatura || '') === t.key ? ' ativo' : ''),
-          onClick:()=>onChange({ ...initial, temperatura: (initial.temperatura || '') === t.key ? '' : t.key }),
-        }, h('span',{className:'temp-dot', style:{background:t.cor}}), t.label))
-      ),
-      h('div',{className:'field-hint'}, temperaturaInfo(initial.temperatura)
-        ? descTemperatura(initial.temperatura, initial)
-        : 'Sem classificação. Registra como o cliente responde, não em que etapa ele está.')
-    ),
-
     h('div',{className:'field-row'},
       h('div',{className:'field'},
         h('label',null,'Data do último contato'),
@@ -10773,7 +10774,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.65";
+var VERSAO_CRM="versão 2.66";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
