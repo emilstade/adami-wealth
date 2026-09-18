@@ -2479,9 +2479,9 @@ const SITUACOES = [
   { key:'alerta',     label:'Com alerta',        funis:['assessor','especialista'],
     testa:(l, hoje) => alertasUrgentes(l, hoje).length > 0 },
   { key:'atrasado',   label:'Contato atrasado',  funis:['assessor','especialista'],
-    testa:(l, hoje) => !!l.proximoContato && l.proximoContato < hoje },
+    testa:(l, hoje) => { const p = proximoContatoEfetivo(l, hoje); return !!p && p < hoje; } },
   { key:'semContato', label:'Sem próximo contato', funis:['assessor','especialista'],
-    testa:(l) => !l.proximoContato },
+    testa:(l, hoje) => !proximoContatoEfetivo(l, hoje) },
   { key:'sla',        label:'SLA estourado',     funis:['assessor'],
     testa:(l) => { const r = slaRestante(l); return r !== null && r < 0; } },
   { key:'onboarding', label:'Onboarding pendente', funis:['assessor'],
@@ -2902,6 +2902,18 @@ function reguaStatus(lead, hoje){
 }
 const reguaPendencias = (lead, hoje) => reguaStatus(lead, hoje).filter(r => r.atrasado);
 
+/* O que aparece como "próximo contato" quando ninguém digitou nada: pra
+   quem tem régua (carteira Private ou Exclusive), a data mais próxima dela
+   já é o próximo contato de verdade — só não foi copiada pro campo. Nunca
+   grava no banco (não é campo, é leitura): se gravasse, congelaria a data
+   na primeira edição salva, e a régua podia já ter avançado sem que o
+   campo acompanhasse. Quem digitou uma data nunca é substituído. */
+function proximoContatoEfetivo(lead, hoje){
+  if(lead && lead.proximoContato) return lead.proximoContato;
+  const regua = reguaStatus(lead, hoje);
+  return regua.length ? regua.map(r => r.prevista).sort()[0] : '';
+}
+
 /* ---- A mesma carteira, do lado de fora ----
    A regra de entrada é a de sempre, de propósito: enquanto a captação não se
    efetiva o dinheiro é do cliente, não da casa — e isso não muda por estar
@@ -3262,18 +3274,14 @@ const temperaturaInfo = (k) => TEMPERATURAS.find(t => t.key === k) || null;
 const clienteDaBase = (lead) => !!lead
   && (lead.funil || 'assessor') !== 'especialista' && (lead.esteira || 'novo') === 'base';
 
-/* Cliente da base só tem temperatura com captação aberta: a dele é a da
-   negociação, e sem negociação não há o que medir. */
+/* Leitura de relacionamento, vale pra todo mundo que não fechou ainda —
+   prospect ou cliente da base, com ou sem captação nova em jogo. */
 const temperaturaDe = (lead) => (lead && lead.ganho) ? null
-  : (clienteDaBase(lead) && !(valorCaptacaoNaMoeda(lead) > 0)) ? null
   : temperaturaInfo(lead && lead.temperatura);
 
-/* No cliente da base, a temperatura é a da captação nova em negociação: ele
-   já está em casa, e o que se mede é o dinheiro a mais — quanto
-   (valorEmCaptacao) e com que chance. Mesma coluna e mesma escala do
-   prospect: um cliente é prospect ou é da base, nunca os dois, e duas
-   colunas deixariam uma delas sempre vazia. Muda o texto, num lugar só
-   (`clienteDaBase`, declarada acima de temperaturaDe, que depende dela). */
+/* Só quando há uma captação nova de fato em jogo o texto fala de captação —
+   fora isso, mesmo em cliente da base, o pipe é leitura geral de
+   relacionamento, e o texto genérico (t.desc) é o que se aplica. */
 const TEMPERATURA_BASE_DESC = {
   quente:'Captação à vista: valor e decisão próximos',
   morno: 'Em negociação, sem data definida',
@@ -3282,7 +3290,7 @@ const TEMPERATURA_BASE_DESC = {
 function descTemperatura(k, lead){
   const t = temperaturaInfo(k);
   if(!t) return null;
-  return clienteDaBase(lead) ? TEMPERATURA_BASE_DESC[k] : t.desc;
+  return (clienteDaBase(lead) && valorCaptacaoNaMoeda(lead) > 0) ? TEMPERATURA_BASE_DESC[k] : t.desc;
 }
 
 /* O que o especialista precisa saber antes do primeiro contato. Os interesses
@@ -4240,9 +4248,11 @@ function fmtUSD(n){
   return 'US$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: n % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
 }
 function taskUrgency(lead){
-  if(!lead.proximoContato) return 'none';
-  if(lead.proximoContato < todayISO()) return 'late';
-  if(lead.proximoContato === todayISO()) return 'today';
+  const hoje = todayISO();
+  const p = proximoContatoEfetivo(lead, hoje);
+  if(!p) return 'none';
+  if(p < hoje) return 'late';
+  if(p === hoje) return 'today';
   return 'ok';
 }
 function initials(name){
@@ -4330,7 +4340,7 @@ if(configurado && libPronta && !invertido && !chaveSecreta){
 /* O banco usa snake_case; o app inteiro já fala camelCase. Estes dois tradutores
    isolam a diferença para que nenhum componente de tela precise mudar. */
 function leadFromRow(r){
-  return {
+  const lead = {
     id: r.id, cliente: r.cliente || '', oportunidade: r.oportunidade || '',
     telefone: r.telefone || '', email: r.email || '', observacoes: r.observacoes || '',
     responsavelId: r.responsavel_id || '',
@@ -4375,6 +4385,7 @@ function leadFromRow(r){
     criadoEm: r.criado_em ? new Date(r.criado_em).getTime() : Date.now(),
     atualizadoEm: r.atualizado_em ? new Date(r.atualizado_em).getTime() : 0,
   };
+  return lead;
 }
 const ts = (ms) => ms ? new Date(ms).toISOString() : null;
 function leadToRow(l){
@@ -4905,7 +4916,7 @@ function LeadCard({ lead, onOpen, onDragStart, onDragEnd, dragging, ownerName, s
       /* Temperatura no quadro: quem varre a coluna procura justamente por
          quem está quente. Escondê-la atrás do hover anularia o campo. */
       temperaturaDe(lead) ? h('div',{className:'card-temp',
-          title: clienteDaBase(lead) ? 'Temperatura da captação em negociação' : 'Temperatura de captação'},
+          title: (clienteDaBase(lead) && valorCaptacaoNaMoeda(lead) > 0) ? 'Pipe da captação em negociação' : 'Pipe de relacionamento'},
         h('span',{className:'temp-dot', style:{background:temperaturaDe(lead).cor}}),
         temperaturaDe(lead).label
       ) : null,
@@ -5015,10 +5026,11 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
        captação seria um controle que não muda nada em tela nenhuma. Clicar
        de novo no mesmo pipe limpa: voltar para "não classificado" precisa
        ser possível sem apagar o cliente e recriar.
-       Cliente da base não tem pipe nem valor de captação no cadastro: o dele
-       se informa e se confirma na ficha, no bloco "Pipe". Um segundo caminho
-       aqui deixaria pipe sem captação, ou captação sem histórico. */
-    (initial.ganho || clienteDaBase(initial)) ? null : h('div',{className:'field'},
+       Vale para todo mundo, cliente da base incluído: o pipe é a leitura de
+       engajamento do relacionamento, e isso não para de existir quando o
+       cliente entra na base. O cliente da base ainda tem, à parte, o pipe
+       específico de uma captação nova em negociação, dentro do extrato. */
+    initial.ganho ? null : h('div',{className:'field'},
       h('label',null,'Pipe'),
       h('div',{className:'filtro-chips'},
         TEMPERATURAS.map(t => h('button',{
@@ -5361,10 +5373,9 @@ function Timeline({ itens }){
    sem campos de formulário no caminho. A edição fica atrás de um botão. */
 function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegociacaoPipe, podeEditar }){
   const jornada = (lead.funil || 'assessor') !== 'especialista';
-  /* Mesma regra do formulário de cadastro: cliente da base e negócio ganho
-     têm o próprio pipe, dentro do fluxo de captação. Fora disso, editar
-     aqui na ficha evita ter que entrar em modo de edição só para isso. */
-  const pipeEditavel = !!onSetPipe && !!onSetValorPipe && !!onSetValorNegociacaoPipe && !!podeEditar && !lead.ganho && !clienteDaBase(lead);
+  /* Vale para todo mundo, cliente da base incluído — mesma regra do
+     formulário de cadastro. Só não existe pra negócio já ganho. */
+  const pipeEditavel = !!onSetPipe && !!onSetValorPipe && !!onSetValorNegociacaoPipe && !!podeEditar && !lead.ganho;
   /* Rascunho local dos dois valores: grava só ao sair do campo, não a cada
      tecla — senão cada dígito digitado viraria uma gravação no banco.
      Sincroniza de novo se o card mudar (outro cliente aberto) ou se o valor
@@ -5404,7 +5415,7 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegoci
         h('span',{className:'ficha-etapa', style:{background:info.color}}, etapaLonga(lead.etapa, lead.funil)),
         (!pipeEditavel && temperaturaDe(lead)) ? h('span',{className:'ficha-tag'},
           h('span',{className:'temp-dot', style:{background:temperaturaDe(lead).cor}}),
-          temperaturaDe(lead).label + (clienteDaBase(lead) ? ' · captação' : '')) : null,
+          temperaturaDe(lead).label + ((clienteDaBase(lead) && valorCaptacaoNaMoeda(lead) > 0) ? ' · captação' : '')) : null,
         h('span',{className:'ficha-tag'}, lead.tipoPessoa === 'PJ' ? 'Pessoa jurídica' : 'Pessoa física'),
         jornada ? h('span',{className:'ficha-tag'}, lead.segmento) : null,
         jornada ? h('span',{className:'ficha-tag'},
@@ -5483,7 +5494,7 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegoci
         (patrimonio === null && emCarteira === 0) ? '—' : fmtBRLCompact(emCarteira > 0 ? emCarteira : patrimonio),
         emCarteira > 0 ? 'ok' : ''),
       tile('Próximo contato',
-        lead.proximoContato ? fmtDate(lead.proximoContato) : 'Sem data',
+        proximoContatoEfetivo(lead, todayISO()) ? fmtDate(proximoContatoEfetivo(lead, todayISO())) : 'Sem data',
         urgencia === 'late' ? 'alerta' : urgencia === 'today' ? 'atencao' : ''),
       jornada
         ? tile('SLA da etapa',
@@ -6037,8 +6048,8 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
                   somenteLeitura
                     ? h('span',{className:'task-dot ' + st})
                     : h('input',{ type:'checkbox', className:'regua-check',
-                        checked: !r.atrasado, disabled: !r.atrasado,
-                        title: r.atrasado ? 'Marcar contato como realizado' : 'Em dia',
+                        checked: !r.atrasado,
+                        title: r.atrasado ? 'Marcar contato como realizado' : 'Em dia — clique para registrar um contato adiantado',
                         onChange:()=>{ setReguaAbrindo(r.tipo); setReguaNotaTxt(''); setReguaErro(''); } }),
                   h('div',{className:'alerta-corpo'},
                     h('div',{className:'alerta-linha'},
@@ -9219,7 +9230,7 @@ function PipelineOverview({ leads, onOpen, funil }){
   const emReuniao = countOf('R1') + countOf('R2') + countOf('R2.1');
   const emNegociacao = countOf('Negociando') + countOf('Contato Futuro');
   const avancados = countOf('R3') + countOf('R4');
-  const semProximo = leads.filter(l => !l.proximoContato).length;
+  const semProximo = leads.filter(l => !proximoContatoEfetivo(l, hoje)).length;
 
   const notificacoes = notificacoesDe(leads, hoje);
 
@@ -9329,6 +9340,7 @@ function ListaClientes({ leads, onOpen, users, showOwner, funil, podeEditar }){
   const cotacao = useCotacao();
   const [ordem, setOrdem] = useState({ campo:'valor', desc:true });
   const jornada = funil !== 'especialista';
+  const hoje = todayISO();
   const nomeDe = (id) => (users.find(u => u.id === id) || {}).nome || '—';
 
   const valorDe = (l) => jornada
@@ -9343,7 +9355,7 @@ function ListaClientes({ leads, onOpen, users, showOwner, funil, podeEditar }){
     valor:    valorDe,
     /* Sem data vai para o fim: quem não tem contato agendado não é o mais
        urgente da lista, mas também não pode encabeçá-la. */
-    proximo:  (l) => l.proximoContato || '9999-99-99',
+    proximo:  (l) => proximoContatoEfetivo(l, hoje) || '9999-99-99',
     responsavel: (l) => nomeDe(l.responsavelId).toLowerCase(),
   };
 
@@ -9408,8 +9420,8 @@ function ListaClientes({ leads, onOpen, users, showOwner, funil, podeEditar }){
             etapaCurta(l.etapa, l.funil))),
           h('td',{className:'num forte'}, fmtBRL(valorDe(l))),
           h('td',{className:'num'},
-            l.proximoContato
-              ? h('span',{className:'lista-data ' + taskUrgency(l)}, fmtDate(l.proximoContato))
+            proximoContatoEfetivo(l, hoje)
+              ? h('span',{className:'lista-data ' + taskUrgency(l)}, fmtDate(proximoContatoEfetivo(l, hoje)))
               : h('span',{className:'lista-fraco'},'—')),
           showOwner ? h('td',{className:'lista-fraco'}, nomeDe(l.responsavelId)) : null
         ))
@@ -10425,11 +10437,12 @@ function App(){
   /* Clicar no pipe na ficha grava na hora, sem abrir o formulário de edição —
      é campo de uso frequente, e o assessor não devia precisar entrar em modo
      de edição toda vez que muda de ideia sobre a temperatura do cliente.
-     Cliente da base e negócio ganho têm o próprio pipe, dentro do fluxo de
-     captação: aqui não se aplica, mesma regra do formulário. */
+     Vale para cliente da base também: o pipe geral é leitura de
+     relacionamento, independente do fluxo de captação (que continua à
+     parte, no extrato, para quem está com uma captação nova em jogo). */
   const setPipe = (leadId, key) => {
     const lead = leads.find(l => l.id === leadId);
-    if(!lead || !podeEditar(lead) || lead.ganho || clienteDaBase(lead)) return null;
+    if(!lead || !podeEditar(lead) || lead.ganho) return null;
     return mutate(leadId, l => ({ ...l, temperatura: (l.temperatura || '') === key ? '' : key }));
   };
 
@@ -10439,15 +10452,14 @@ function App(){
      depois de já ter classificado o pipe na ficha. */
   const setValorPipe = (leadId, valor) => {
     const lead = leads.find(l => l.id === leadId);
-    if(!lead || !podeEditar(lead) || lead.ganho || clienteDaBase(lead)) return null;
+    if(!lead || !podeEditar(lead) || lead.ganho) return null;
     return mutate(leadId, l => ({ ...l, valorPotencial: valor }));
   };
 
-  /* A fatia em negociação, separada do total: só existe pro prospect
-     (cliente da base tem o par valor/temperatura dele dentro da captação). */
+  /* A fatia em negociação, separada do total. */
   const setValorNegociacaoPipe = (leadId, valor) => {
     const lead = leads.find(l => l.id === leadId);
-    if(!lead || !podeEditar(lead) || lead.ganho || clienteDaBase(lead)) return null;
+    if(!lead || !podeEditar(lead) || lead.ganho) return null;
     return mutate(leadId, l => ({ ...l, valorEmNegociacao: valor }));
   };
 
@@ -10962,7 +10974,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.71";
+var VERSAO_CRM="versão 2.72";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
