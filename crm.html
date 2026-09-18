@@ -9805,11 +9805,17 @@ function App(){
     if(minhasNotificacoes.length > 0) setVerNotificacoes(true);
   }, [phase, minhasNotificacoes]);
 
-  /* Especialista só enxerga os produtos que atende; admin e assessor veem todos. */
+  /* Especialista só enxerga os produtos que atende; admin e assessor veem todos.
+     Sem produto nenhum reconhecido (cadastro sem marcar Consórcio nem Seguro em
+     Equipe, ou marcado só para um produto que o CRM ainda não modela, como
+     Previdência), o resultado é lista vazia — nunca a lista cheia como se
+     tivesse acesso a tudo. Devolver "tudo" aqui já escondeu esse esquecimento:
+     o especialista aterrissava sem aba nenhuma, a tela ficava presa em
+     Consórcio, e o card nascia lá sem ninguém perceber. */
   const produtosVisiveis = useMemo(() => {
     if(!currentUser) return PRODUTOS;
-    if(currentUser.role === 'especialista' && (currentUser.produtos || []).length)
-      return PRODUTOS.filter(p => currentUser.produtos.indexOf(p) !== -1);
+    if(currentUser.role === 'especialista')
+      return PRODUTOS.filter(p => (currentUser.produtos || []).indexOf(p) !== -1);
     return PRODUTOS;
   }, [currentUser]);
 
@@ -9860,7 +9866,10 @@ function App(){
   /* Roda antes da tela de login existir, então precisa tolerar sessão nula:
      ao sair de uma conta de especialista o funil continua em "Negócios". */
   const podeCriar = !!currentUser &&
-    (funil !== 'especialista' || isAdmin || currentUser.role === 'especialista');
+    (funil !== 'especialista' || isAdmin
+      /* Sem produto habilitado não há aba para escolher, e criar aqui só
+         gravaria o card num produto ao acaso. */
+      || (currentUser.role === 'especialista' && produtosVisiveis.length > 0));
 
   /* Edição pertence a quem é responsável. Acompanhar não é editar. */
   const podeEditar = (lead) => !!lead && !!currentUser && (isAdmin || lead.responsavelId === currentUser.id);
@@ -10514,6 +10523,17 @@ function App(){
               })
             )
           : null,
+        /* Especialista logado sem nenhum produto reconhecido pelo CRM (nada
+           marcado em Equipe, ou marcado só para um produto que o CRM ainda
+           não modela, como Previdência). Sem isto a tela ficava presa em
+           Consórcio, sem aba nenhuma para avisar, e o negócio nascia lá sem
+           ninguém perceber até chegar em Fechados. */
+        funil === 'especialista' && !isAdmin && currentUser && currentUser.role === 'especialista' && produtosVisiveis.length === 0
+          ? h('div',{className:'readonly-note'},
+              h('span',null,'Você não tem nenhum produto habilitado no CRM (Consórcio ou Seguro). Peça a um admin para marcar em ',
+                h('strong',null,'Equipe → Produtos do especialista'), '.')
+            )
+          : null,
         /* Atualizar base não é uma leitura da carteira, é uma operação sobre
            ela — por isso sai das abas e vai para a ponta direita da faixa,
            embaixo das ferramentas, com a borda direita na mesma linha do
@@ -10753,7 +10773,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.62";
+var VERSAO_CRM="versão 2.63";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
