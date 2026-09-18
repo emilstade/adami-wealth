@@ -559,6 +559,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
   <div id="view"><div class="card empty"><h2>Carregando…</h2></div></div>
 </main>
 
+<script src="vendor/xlsx-0.18.5.full.min.js"></script>
 <script>
 /* ============ conexão e sessão ============ */
 /* ============================================================
@@ -930,7 +931,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.56";
+var VERSAO="versão 2.57";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -1455,8 +1456,8 @@ function setConta(i,campo,v){
   if(campo==="nome"||campo==="inst") c[campo]=v; else c[campo]=n(v);
   atualizarResumo();
 }
-function addConta(cur){ S.rasc.contas.push(contaVazia(cur)); render(); }
-function delConta(i){ S.rasc.contas.splice(i,1); render(); }
+function addConta(cur){ S.rasc.contas.push(contaVazia(cur)); render(true); }
+function delConta(i){ S.rasc.contas.splice(i,1); render(true); }
 function setInd(k,v){ S.rasc.ind[k]=n(v); }
 function setEstrat(k,v){
   if(!S.rasc.ind.estrategias) S.rasc.ind.estrategias={};
@@ -1474,9 +1475,9 @@ function setVenc(i,campo,v){
 }
 function addVenc(){
   if(!S.rasc.ind.vencimentos) S.rasc.ind.vencimentos=[];
-  S.rasc.ind.vencimentos.push(vencVazio()); render();
+  S.rasc.ind.vencimentos.push(vencVazio()); render(true);
 }
-function delVenc(i){ S.rasc.ind.vencimentos.splice(i,1); render(); }
+function delVenc(i){ S.rasc.ind.vencimentos.splice(i,1); render(true); }
 var CAMPOS_NUM_ATIVO={posicao:1,rentMes:1,rent3m:1,rent6m:1,rentAno:1,rent12m:1,rentInicio:1};
 function setAtivo(i,campo,v){
   if(!S.rasc.ind.ativos) S.rasc.ind.ativos=[];
@@ -1484,9 +1485,110 @@ function setAtivo(i,campo,v){
 }
 function addAtivo(){
   if(!S.rasc.ind.ativos) S.rasc.ind.ativos=[];
-  S.rasc.ind.ativos.push(ativoVazio()); render();
+  S.rasc.ind.ativos.push(ativoVazio()); render(true);
 }
-function delAtivo(i){ S.rasc.ind.ativos.splice(i,1); render(); }
+function delAtivo(i){ S.rasc.ind.ativos.splice(i,1); render(true); }
+function baixarModeloAtivos(){
+  if(typeof XLSX==="undefined"){ alert("A planilha ainda não carregou. Recarregue a página (Cmd+Shift+R) e tente de novo."); return; }
+  var HEAD=["Categoria","Subcategoria","Ativo","Instituição","Taxa (RF/COE)","Vencimento (AAAA-MM-DD)","Posição (R$)","Mês (%)","3 meses (%)","6 meses (%)","Ano (%)","12 meses (%)","Desde o início (%)"];
+  var ativos=S.rasc.ind.ativos||[];
+  var linhas=ativos.length?ativos.map(function(x){
+    return [x.categoria||"",x.subcategoria||"",x.nome||"",x.inst||"",x.taxa||"",x.vencimento||"",x.posicao||0,x.rentMes||0,x.rent3m||0,x.rent6m||0,x.rentAno||0,x.rent12m||0,x.rentInicio||0];
+  }):[["","","","","","",0,0,0,0,0,0,0]];
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet([HEAD].concat(linhas));
+  ws['!cols']=[{wch:13},{wch:14},{wch:28},{wch:16},{wch:18},{wch:22},{wch:14},{wch:8},{wch:9},{wch:9},{wch:8},{wch:9},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws,"Ativos");
+  var instr=[["Como preencher"],
+    ["Uma linha por ativo. Categoria e Subcategoria precisam ser exatamente uma das opções abaixo (copie e cole para não errar a digitação)."],
+    ["Taxa e Vencimento só valem para Renda Fixa e COE — deixe em branco nos demais."],
+    ["Vencimento no formato AAAA-MM-DD, por exemplo 2027-03-15."],
+    ["Números podem usar vírgula ou ponto para decimal (ex.: 112,5 ou 112.5). Não use ponto nem vírgula como separador de milhar."],
+    [""],["Categorias válidas"]]
+    .concat(CATEGORIAS_ATIVO.map(function(c){return [c];}))
+    .concat([[""],["Subcategorias válidas"]])
+    .concat(SUBCATEGORIAS_ATIVO.map(function(s){return [s];}));
+  var ws2=XLSX.utils.aoa_to_sheet(instr);
+  ws2['!cols']=[{wch:95}];
+  XLSX.utils.book_append_sheet(wb,ws2,"Instruções");
+  var nomeCli=(cli()||{}).nome||"cliente";
+  XLSX.writeFile(wb,"ativos_"+nomeCli.replace(/[^a-zA-Z0-9]+/g,"_")+"_"+S.mes+"-"+S.ano+".xlsx");
+}
+function matchOpcaoAtivo(v,lista){
+  var s=String(v||"").trim(); if(!s) return "";
+  var achou=lista.filter(function(o){ return o.toLowerCase()===s.toLowerCase(); });
+  return achou.length?achou[0]:null;
+}
+function parseNumPlanilha(v){
+  if(v===undefined||v===null||v==="") return 0;
+  if(typeof v==="number") return v;
+  var s=String(v).trim().replace(/^R\$\s*/i,"").replace(/\s+/g,"");
+  if(!s) return 0;
+  if(s.indexOf(",")>=0 && s.indexOf(".")>=0){
+    if(s.lastIndexOf(",")>s.lastIndexOf(".")) s=s.replace(/\./g,"").replace(",",".");
+    else s=s.replace(/,/g,"");
+  } else if(s.indexOf(",")>=0){ s=s.replace(",","."); }
+  var x=parseFloat(s);
+  return isNaN(x)?0:x;
+}
+function parseVencPlanilha(v){
+  if(!v) return "";
+  if(v instanceof Date) return v.toISOString().slice(0,10);
+  var s=String(v).trim(); if(!s) return "";
+  var m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[0].slice(0,10);
+  m=s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/); if(m) return m[3]+"-"+m[2]+"-"+m[1];
+  return s;
+}
+function importarAtivosArquivo(input){
+  var f=input.files[0]; if(!f) return;
+  if(typeof XLSX==="undefined"){ alert("A planilha ainda não carregou. Recarregue a página (Cmd+Shift+R) e tente de novo."); input.value=""; return; }
+  var fr=new FileReader();
+  fr.onload=function(){
+    var linhas;
+    try{
+      var wb=XLSX.read(fr.result,{type:"array",cellDates:true});
+      var ws=wb.Sheets["Ativos"]||wb.Sheets[wb.SheetNames[0]];
+      linhas=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true});
+    }catch(e){
+      alert("Não consegui ler esse arquivo. Confira se é um .xlsx e se as colunas não foram alteradas.\n\n"+e.message);
+      input.value=""; return;
+    }
+    if(!linhas||linhas.length<2){ alert("Essa planilha não tem nenhuma linha de ativo preenchida."); input.value=""; return; }
+    var novos=[], erros=[];
+    for(var i=1;i<linhas.length;i++){
+      var l=linhas[i]; if(!l) continue;
+      var categoria=String(l[0]||"").trim();
+      var subcategoria=String(l[1]||"").trim();
+      var nome=String(l[2]||"").trim();
+      var inst=String(l[3]||"").trim();
+      var taxa=String(l[4]||"").trim();
+      var vencimento=parseVencPlanilha(l[5]);
+      var posicao=parseNumPlanilha(l[6]);
+      var rentMes=parseNumPlanilha(l[7]), rent3m=parseNumPlanilha(l[8]), rent6m=parseNumPlanilha(l[9]),
+          rentAno=parseNumPlanilha(l[10]), rent12m=parseNumPlanilha(l[11]), rentInicio=parseNumPlanilha(l[12]);
+      if(!nome && !categoria && !posicao) continue;
+      var linhaNum=i+1;
+      if(!nome){ erros.push("Linha "+linhaNum+": falta o nome do ativo."); continue; }
+      var categoriaOk=matchOpcaoAtivo(categoria,CATEGORIAS_ATIVO);
+      if(categoriaOk===null){ erros.push("Linha "+linhaNum+" (\""+nome+"\"): categoria \""+categoria+"\" não é válida. Use: "+CATEGORIAS_ATIVO.join(", ")+"."); continue; }
+      var subcategoriaOk=subcategoria?matchOpcaoAtivo(subcategoria,SUBCATEGORIAS_ATIVO):"";
+      if(subcategoria && subcategoriaOk===null){ erros.push("Linha "+linhaNum+" (\""+nome+"\"): subcategoria \""+subcategoria+"\" não é válida. Use: "+SUBCATEGORIAS_ATIVO.join(", ")+" ou deixe em branco."); continue; }
+      novos.push({nome:nome,categoria:categoriaOk,subcategoria:subcategoriaOk||"",inst:inst,taxa:taxa,vencimento:vencimento,
+        posicao:posicao,rentMes:rentMes,rent3m:rent3m,rent6m:rent6m,rentAno:rentAno,rent12m:rent12m,rentInicio:rentInicio});
+    }
+    if(erros.length){
+      alert("A planilha tem "+erros.length+" linha(s) com problema, então nada foi importado — corrija e tente de novo:\n\n"+erros.slice(0,12).join("\n")+(erros.length>12?"\n… e mais "+(erros.length-12)+".":""));
+      input.value=""; return;
+    }
+    if(!novos.length){ alert("Não encontrei nenhum ativo preenchido nessa planilha."); input.value=""; return; }
+    if(!confirm("Importar "+novos.length+" ativo(s) da planilha?\n\nIsso substitui a lista de ativos que está na tela agora, mas nada é gravado até você clicar em \"Salvar mês e ver relatório\".")){ input.value=""; return; }
+    S.rasc.ind.ativos=novos;
+    render(true);
+    input.value="";
+  };
+  fr.onerror=function(){ alert("Não consegui ler o arquivo."); input.value=""; };
+  fr.readAsArrayBuffer(f);
+}
 function salvarCarta(){
   var ed=document.getElementById("edCarta"); if(!ed) return;
   var conteudo=ed.innerHTML.trim();
@@ -1782,7 +1884,14 @@ function viewPreencher(){
        '<td><button class="xbtn" onclick="delAtivo('+i+')" title="Remover">&times;</button></td></tr>';
      }).join(""):'<tr><td colspan="14" style="color:var(--muted);font-size:12.5px">Nenhum ativo informado.</td></tr>')+
      '</tbody></table></div>'+
-     '<button class="btn" style="margin-top:14px" onclick="addAtivo()">+ Adicionar ativo</button></div>';
+     '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">'+
+     '<button class="btn" onclick="addAtivo()">+ Adicionar ativo</button>'+
+     '<button class="btn" onclick="baixarModeloAtivos()">Baixar planilha (modelo)</button>'+
+     '<button class="btn" onclick="document.getElementById(\'arqImportAtivos\').click()">Importar planilha</button>'+
+     '<input type="file" id="arqImportAtivos" accept=".xlsx,.xls" style="display:none" onchange="importarAtivosArquivo(this)">'+
+     '</div>'+
+     '<div class="sec-sub" style="margin-top:8px">Baixe a planilha para editar no Excel (ela já sai preenchida com os ativos atuais, ou com uma linha modelo se a lista estiver vazia). '+
+     'Depois de editar, use "Importar planilha" para trazer de volta — a tabela acima é atualizada para você conferir, e só grava de verdade quando clicar em "Salvar mês e ver relatório".</div></div>';
 
   h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnSalvar" onclick="salvarMes()">Salvar mês e ver relatório</button>'+
      '<span style="font-size:12.5px;color:var(--muted)" id="resumoMini">Onshore: '+pct(t.rendPct)+' • '+brl2(t.rendRs)+'</span></div>';
@@ -2873,7 +2982,8 @@ function fazerLogin(){
     document.getElementById("view").innerHTML=viewLogin(err.message);
   });
 }
-function render(){
+function render(manterScroll){
+  var scrollAntes=manterScroll?window.scrollY:0;
   var logado=!!(SESSAO&&SESSAO.access_token);
   document.querySelector(".rail").style.display=logado?"":"none";
   document.querySelector(".topbar").style.display=logado?"":"none";
@@ -2916,7 +3026,7 @@ function render(){
     S.tab==="preencher"?viewPreencher():
     (S.tab==="carta"?viewCarta():
     (S.tab==="historico"?viewHistorico():viewRelatorio()));
-  window.scrollTo(0,0);
+  if(manterScroll) window.scrollTo(0,scrollAntes); else window.scrollTo(0,0);
 }
 
 if(SESSAO&&SESSAO.access_token){
