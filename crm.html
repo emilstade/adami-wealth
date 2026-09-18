@@ -5049,6 +5049,24 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
           ORIGENS.map(o => h('option',{key:o, value:o}, o)))
       )
     ) : h(Fragment, null,
+      /* O produto nasce da aba aberta no momento da criação — um detalhe que
+         passa batido quando quem cadastra atende mais de um produto. Fica
+         editável aqui, visível e explícito, porque sem este campo um card
+         criado na aba errada não tinha como ser corrigido depois: o negócio
+         ficava preso no CRM de produto errado até ser refeito do zero. */
+      h('div',{className:'field'},
+        h('label',null,'Produto'),
+        h('select',{ value:initial.produto || '', onChange:(e)=>{
+          const novoProduto = e.target.value;
+          const produtoAntigo = initial.produto || '';
+          let oportunidade = initial.oportunidade || '';
+          if(produtoAntigo && oportunidade.indexOf(produtoAntigo) === 0){
+            oportunidade = novoProduto + oportunidade.slice(produtoAntigo.length);
+          }
+          onChange({ ...initial, produto: novoProduto, oportunidade });
+        }},
+          PRODUTOS.map(p => h('option',{key:p, value:p}, p)))
+      ),
       /* Perfil financeiro só no Seguro: é o que orienta a análise de risco
          e a composição da apólice. Consórcio não usa esses dados. */
       seguro ? h('div',{className:'field-row'},
@@ -10735,7 +10753,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.61";
+var VERSAO_CRM="versão 2.62";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
