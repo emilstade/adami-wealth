@@ -5335,8 +5335,12 @@ function Timeline({ itens }){
 /* ================= Ficha do cliente =================
    Modo de consulta: o que o assessor precisa ver antes de uma ligação,
    sem campos de formulário no caminho. A edição fica atrás de um botão. */
-function Ficha({ lead, users, grupo }){
+function Ficha({ lead, users, grupo, onSetPipe, podeEditar }){
   const jornada = (lead.funil || 'assessor') !== 'especialista';
+  /* Mesma regra do formulário de cadastro: cliente da base e negócio ganho
+     têm o próprio pipe, dentro do fluxo de captação. Fora disso, editar
+     aqui na ficha evita ter que entrar em modo de edição só para isso. */
+  const pipeEditavel = !!onSetPipe && !!podeEditar && !lead.ganho && !clienteDaBase(lead);
   const info = stageInfo(lead.etapa, lead.funil);
   const rot = rotulosPessoa(lead.tipoPessoa || 'PF');
   const responsavel = (users.find(u => u.id === lead.responsavelId) || {}).nome;
@@ -5366,7 +5370,7 @@ function Ficha({ lead, users, grupo }){
     h('div',{className:'ficha-topo'},
       h('div',{className:'ficha-tags'},
         h('span',{className:'ficha-etapa', style:{background:info.color}}, etapaLonga(lead.etapa, lead.funil)),
-        temperaturaDe(lead) ? h('span',{className:'ficha-tag'},
+        (!pipeEditavel && temperaturaDe(lead)) ? h('span',{className:'ficha-tag'},
           h('span',{className:'temp-dot', style:{background:temperaturaDe(lead).cor}}),
           temperaturaDe(lead).label + (clienteDaBase(lead) ? ' · captação' : '')) : null,
         h('span',{className:'ficha-tag'}, lead.tipoPessoa === 'PJ' ? 'Pessoa jurídica' : 'Pessoa física'),
@@ -5380,6 +5384,22 @@ function Ficha({ lead, users, grupo }){
       ),
       lead.oportunidade ? h('p',{className:'ficha-oportunidade'}, lead.oportunidade) : null
     ),
+
+    /* Editável direto na ficha, sem precisar entrar em "Editar": clicar de
+       novo no mesmo pipe limpa, igual no formulário de cadastro. */
+    pipeEditavel ? h('div',{className:'field'},
+      h('label',null,'Pipe'),
+      h('div',{className:'filtro-chips'},
+        TEMPERATURAS.map(t => h('button',{
+          key:t.key, type:'button',
+          className:'filtro-chip temp-chip' + ((lead.temperatura || '') === t.key ? ' ativo' : ''),
+          onClick:()=>onSetPipe(t.key),
+        }, h('span',{className:'temp-dot', style:{background:t.cor}}), t.label))
+      ),
+      h('div',{className:'field-hint'}, temperaturaInfo(lead.temperatura)
+        ? descTemperatura(lead.temperatura, lead)
+        : 'Sem classificação. Registra como o cliente responde, não em que etapa ele está.')
+    ) : null,
 
     /* Os quatro números que decidem se vale ligar agora. */
     h('div',{className:'ficha-tiles'},
@@ -5470,7 +5490,7 @@ function Ficha({ lead, users, grupo }){
   );
 }
 
-function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAdmin, onLose, onWin, onMove, onAddActivity, onCorrectStage, somenteLeitura, onEncaminhar, onTogglePauta, onAddAlerta, onResolverAlerta, onRemoverAlerta, grupos, grupo, pendenteIndicacao, onAddMov, onRemoverMov, onIniciarCaptacao, onConfirmarCaptacao, onEncerrarCaptacao }){
+function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAdmin, onLose, onWin, onMove, onAddActivity, onCorrectStage, somenteLeitura, onEncaminhar, onTogglePauta, onAddAlerta, onResolverAlerta, onRemoverAlerta, grupos, grupo, pendenteIndicacao, onAddMov, onRemoverMov, onIniciarCaptacao, onConfirmarCaptacao, onEncerrarCaptacao, onSetPipe }){
   useEsc(onClose);
   const [draft, setDraft] = useState(lead);
   const [errors, setErrors] = useState({});
@@ -5620,7 +5640,8 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
           ? h('fieldset',{className:'form-lock', disabled: somenteLeitura },
               h(LeadForm, { grupos, initial: draft, onChange:(v)=>{ setDraft(v); if(errors.cliente && v.cliente.trim()) setErrors({}); }, errors, users, currentUser, isAdmin, stageEditable:false })
             )
-          : h(Ficha,{ lead: draft, users, grupo }),
+          : h(Ficha,{ lead: draft, users, grupo, podeEditar: !somenteLeitura,
+              onSetPipe: (key) => { const atualizado = onSetPipe(draft.id, key); if(atualizado) setDraft(atualizado); } }),
         h('div',{className:'meta-line'}, 'Criado em ', new Date(draft.criadoEm).toLocaleDateString('pt-BR')),
         somenteLeitura ? h('div',{className:'readonly-note'},
           h(Icon,{path:'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zM8 11V7a4 4 0 118 0v4', size:14}),
@@ -10263,6 +10284,17 @@ function App(){
     return mutate(leadId, l => ({ ...l, alertas: (l.alertas || []).filter(a => a.id !== alertaId) }));
   };
 
+  /* Clicar no pipe na ficha grava na hora, sem abrir o formulário de edição —
+     é campo de uso frequente, e o assessor não devia precisar entrar em modo
+     de edição toda vez que muda de ideia sobre a temperatura do cliente.
+     Cliente da base e negócio ganho têm o próprio pipe, dentro do fluxo de
+     captação: aqui não se aplica, mesma regra do formulário. */
+  const setPipe = (leadId, key) => {
+    const lead = leads.find(l => l.id === leadId);
+    if(!lead || !podeEditar(lead) || lead.ganho || clienteDaBase(lead)) return null;
+    return mutate(leadId, l => ({ ...l, temperatura: (l.temperatura || '') === key ? '' : key }));
+  };
+
   const toggleOnboarding = (leadId, itemId) => {
     const lead = leads.find(l => l.id === leadId);
     if(!lead || !podeEditar(lead)) return null;
@@ -10704,7 +10736,7 @@ function App(){
     creating ? h(CreateModal,{ funil, grupos, produto: produtoFiltro, onClose:()=>{ setCreating(false); setQuickAddStage(null); }, onCreate:createLead, users, currentUser, isAdmin, initialStage:quickAddStage }) : null,
     openLead ? h(DetailModal,{ lead:openLead, grupos, grupo: grupoDe(leads, openLead, cotacao),
       pendenteIndicacao: pendentesIndicacao.has(openLead.id), somenteLeitura: !podeEditar(openLead), onEncaminhar:(l)=>setEncaminhando(l), onClose:()=>setOpenLead(null), onSave:saveLead, onDelete:deleteLead, users, currentUser, isAdmin, onLose:(lead)=>{ setOpenLead(null); setLosingLead(lead); }, onWin:(lead)=>{ setOpenLead(null); setWinningLead(lead); }, onMove:(lead, to)=>requestMove(lead.id, to), onAddActivity:addActivity, onCorrectStage:correctStage, onTogglePauta:toggleOnboarding, onAddAlerta:addAlerta, onResolverAlerta:resolverAlerta, onRemoverAlerta:removerAlerta, onAddMov:addMovimentacao, onRemoverMov:removerMovimentacao,
-      onIniciarCaptacao:iniciarCaptacaoLead, onConfirmarCaptacao:confirmarCaptacaoLead, onEncerrarCaptacao:encerrarCaptacaoLead }) : null,
+      onIniciarCaptacao:iniciarCaptacaoLead, onConfirmarCaptacao:confirmarCaptacaoLead, onEncerrarCaptacao:encerrarCaptacaoLead, onSetPipe:setPipe }) : null,
     managingTeam ? h(TeamModal,{ onClose:()=>setManagingTeam(false), users, leads, onDefinirRole:definirRole, onDefinirProdutos:definirProdutos, onApprove:approveUser, onRemove:removeUser, onResetPin:resetPin, onSetPadrao:definirPadrao, currentUser,
       convites, onConvidar:criarConvite, onCancelarConvite:cancelarConvite }) : null,
     losingLead ? h(LoseModal,{ lead:losingLead, onClose:()=>setLosingLead(null), onConfirm:confirmLose }) : null,
@@ -10774,7 +10806,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.66";
+var VERSAO_CRM="versão 2.67";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
