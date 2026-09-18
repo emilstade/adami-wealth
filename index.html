@@ -930,7 +930,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.55";
+var VERSAO="versão 2.56";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -998,7 +998,7 @@ function contaVazia(cur){ return {nome:"",inst:"",saldo:0,apl:0,res:0,rendPct:0,
 function curDe(c){ return (c&&c.moeda==="USD")?"USD":"BRL"; }
 function contasDe(r,cur){ cur=(cur==="USD")?"USD":"BRL"; return ((r&&r.contas)?r.contas:[]).filter(function(c){ return curDe(c)===cur; }); }
 function indVazio(){ var o={}; IND.forEach(function(p){o[p[0]]=0;}); o.carta=""; o.vencimentos=[]; o.ativos=[]; o.estrategias={}; ESTRAT.forEach(function(e){o.estrategias[e[0]]=0;}); return o; }
-/* Alocação por estratégia: soma a posição de cada ativo pela subcategoria
+/* Distribuição por estratégia: soma a posição de cada ativo pela subcategoria
    que o assessor marcou nele, e converte em % da carteira. Enquanto o mes
    nao tiver nenhum ativo com subcategoria marcada — relatorios antigos, de
    antes deste campo existir — cai no formato velho (percentuais digitados
@@ -1026,9 +1026,9 @@ var CATEGORIAS_ATIVO=["Renda Fixa","COE","Fundos","Previdência","Renda Variáve
 var CATEGORIAS_COM_PRAZO=["Renda Fixa","COE"];
 var SUBCATEGORIAS_ATIVO=["Pós-fixado","Pré-fixado","Inflação","Multimercado","Alternativo","Derivativo"];
 function ativoVazio(){ return {nome:"",categoria:CATEGORIAS_ATIVO[0],subcategoria:"",inst:"",taxa:"",vencimento:"",posicao:0,rentMes:0,rent3m:0,rent6m:0,rentAno:0,rent12m:0,rentInicio:0}; }
-/* Alocação por categoria: mesma soma por posição de listaEstrat, só que
+/* Distribuição por categoria: mesma soma por posição de listaEstrat, só que
    agrupando pela categoria do ativo (Renda Fixa, COE, Fundos...) em vez da
-   subcategoria — é a leitura "consolidado de carteiras" do relatório. */
+   subcategoria. */
 function listaConsolidado(ind){
   var ativos=listaAtivos(ind);
   var porCat={};
@@ -1212,12 +1212,12 @@ function herdarOffshore(){
 
 /* ---- indicadores de mercado: valem para todos os clientes no mes ---- */
 var INDGLOB=IND.map(function(x){return x[0];}).concat(["ptax"]);
-var SECOES=[["comentarios","Coment\u00e1rios do m\u00eas"],["estrategia","Aloca\u00e7\u00e3o por estrat\u00e9gia"],
-  ["instituicao","Distribui\u00e7\u00e3o por institui\u00e7\u00e3o"],["consolidado","Consolidado de carteiras"],
-  ["contas","Desempenho por conta"],["retornos","Retornos mensais"],
-  ["benchmarks","Carteira contra os indicadores"],
-  ["evolucao","Evolu\u00e7\u00e3o do patrim\u00f4nio"],["vencimentos","Pr\u00f3ximos vencimentos"],
-  ["ativos","Lista de ativos"],["offshore","Bloco offshore"]];
+var SECOES=[["comentarios","Coment\u00e1rios do m\u00eas"],
+  ["instituicao","Distribui\u00e7\u00e3o por institui\u00e7\u00e3o"],["consolidado","Distribui\u00e7\u00e3o por categoria"],
+  ["estrategia","Distribui\u00e7\u00e3o por estrat\u00e9gia"],["retornos","Retornos mensais"],
+  ["contas","Desempenho por conta"],["benchmarks","Carteira contra os indicadores"],
+  ["ativos","Lista de ativos"],["evolucao","Evolu\u00e7\u00e3o do patrim\u00f4nio"],
+  ["vencimentos","Pr\u00f3ximos vencimentos"],["offshore","Bloco offshore"]];
 function secOn(ind,k){ var o=ind&&ind.secoes; return (!o||o[k]===undefined)?true:!!o[k]; }
 function setSecao(k,v){ if(!S.rasc.ind.secoes) S.rasc.ind.secoes={}; S.rasc.ind.secoes[k]=!!v; }
 /* quais indicadores entram na tabela comparativa. Ausente = ligado,
@@ -1751,7 +1751,7 @@ function viewPreencher(){
   var ativos=S.rasc.ind.ativos||[];
   h+='<div class="card"><div class="sec-title">Lista de ativos</div>'+
      '<div class="sec-sub">Opcional. Se ficar em branco, a seção não aparece no relatório. Taxa e vencimento só fazem sentido para renda fixa e COE — deixe em branco nos demais. '+
-     'A subcategoria alimenta o gráfico de alocação por estratégia. O relatório separa por categoria, e os dados passam para o mês seguinte — só a rentabilidade nasce zerada.'+
+     'A subcategoria alimenta o gráfico de distribuição por estratégia. O relatório separa por categoria, e os dados passam para o mês seguinte — só a rentabilidade nasce zerada.'+
      (S.rasc._ativosHerdados?' <b>'+S.rasc._ativosHerdados+' ativo(s) trazido(s) do mês anterior, com a rentabilidade zerada.</b> Confira a posição antes de salvar.':'')+'</div>'+
      '<div style="overflow-x:auto"><table class="form"><thead><tr>'+
      '<th style="min-width:130px">Categoria</th><th style="min-width:140px">Subcategoria</th><th style="min-width:170px">Ativo</th>'+
@@ -2397,10 +2397,30 @@ function viewRelatorio(){
      quiser e o número impresso perde a sincronia com a folha física. */
   pag(p1);
 
+  if(secOn(r.ind,"instituicao")) pag(shead(nx(),"Distribuição por instituição","posição em "+dataBase(S.mes,S.ano))+
+     '<div class="panel" style="text-align:center">'+pizza(inst)+'<div class="dn-total">total <b>'+brl(t.pl)+'</b></div>'+
+     '<div class="dn-leg">'+inst.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+'</div>'+
+     '<div class="dn-rows">'+inst.map(function(x){return '<div><span>'+esc(x.nome)+'</span><b>'+brl(x.valor)+'</b></div>';}).join("")+'</div>'+
+     (inst.length?'<p class="foot-note">Maior exposição: '+esc(inst[0].nome)+' com '+brl(inst[0].valor)+', '+pct(inst[0].pc,1)+' do total de '+brl(t.pl)+'.</p>':'')+
+     '</div>');
+
+  /* Distribuição por categoria: a mesma leitura da distribuição por
+     instituição, só que por categoria do ativo (Renda Fixa, COE, Fundos...).
+     Usa listaAtivos, então só aparece nos meses em que a Lista de ativos foi
+     preenchida com categoria. */
+  var consol=listaConsolidado(r.ind);
+  if(consol.length && secOn(r.ind,"consolidado")) pag(shead(nx(),"Distribuição por categoria","% da carteira, por categoria")+
+     '<div class="panel" style="text-align:center">'+pizza(consol.map(function(x){return {nome:x.nome,valor:x.pc};}))+
+     '<div class="dn-total">total <b>'+brl(t.pl)+'</b></div>'+
+     '<div class="dn-leg">'+consol.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+'</div>'+
+     '<table class="rt" style="margin-top:8px;text-align:left"><thead><tr><th>Categoria</th><th class="n">% da carteira</th><th class="n">Valor estimado</th></tr></thead><tbody>'+
+     consol.map(function(x){return '<tr><td>'+esc(x.nome)+'</td><td class="n">'+pct(x.pc,1)+'</td><td class="n">'+brl(t.pl*x.pc/100)+'</td></tr>';}).join("")+
+     '</tbody></table></div>');
+
   var estr=listaEstrat(r.ind);
   if(estr.length && secOn(r.ind,"estrategia")){
     var somaE=estr.reduce(function(a,x){return a+x.pc;},0);
-    pag(shead(nx(),"Alocação por estratégia","% da carteira")+
+    pag(shead(nx(),"Distribuição por estratégia","% da carteira")+
        '<div class="panel" style="text-align:center">'+pizza(estr.map(function(x){return {nome:x.nome,valor:x.pc};}))+
        '<div class="dn-leg">'+estr.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+'</div>'+
        '<table class="rt" style="margin-top:8px;text-align:left"><thead><tr><th>Estratégia</th><th class="n">% da carteira</th><th class="n">Valor estimado</th></tr></thead><tbody>'+
@@ -2409,29 +2429,11 @@ function viewRelatorio(){
        '</tbody></table></div>');
   }
 
-  if(secOn(r.ind,"instituicao")) pag(shead(nx(),"Distribuição por instituição","posição em "+dataBase(S.mes,S.ano))+
-     '<div class="panel" style="text-align:center">'+pizza(inst)+'<div class="dn-total">total <b>'+brl(t.pl)+'</b></div>'+
-     '<div class="dn-leg">'+inst.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+'</div>'+
-     '<div class="dn-rows">'+inst.map(function(x){return '<div><span>'+esc(x.nome)+'</span><b>'+brl(x.valor)+'</b></div>';}).join("")+'</div>'+
-     (inst.length?'<p class="foot-note">Maior exposição: '+esc(inst[0].nome)+' com '+brl(inst[0].valor)+', '+pct(inst[0].pc,1)+' do total de '+brl(t.pl)+'.</p>':'')+
-     '</div>');
-
-  /* Consolidado de carteiras: a mesma leitura da distribuição por
-     instituição, só que por categoria do ativo (Renda Fixa, COE, Fundos...).
-     Usa listaAtivos, então só aparece nos meses em que a Lista de ativos foi
-     preenchida com categoria. */
-  var consol=listaConsolidado(r.ind);
-  if(consol.length && secOn(r.ind,"consolidado")) pag(shead(nx(),"Consolidado de carteiras","% da carteira, por categoria")+
-     '<div class="panel" style="text-align:center">'+pizza(consol.map(function(x){return {nome:x.nome,valor:x.pc};}))+
-     '<div class="dn-total">total <b>'+brl(t.pl)+'</b></div>'+
-     '<div class="dn-leg">'+consol.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+'</div>'+
-     '<table class="rt" style="margin-top:8px;text-align:left"><thead><tr><th>Categoria</th><th class="n">% da carteira</th><th class="n">Valor estimado</th></tr></thead><tbody>'+
-     consol.map(function(x){return '<tr><td>'+esc(x.nome)+'</td><td class="n">'+pct(x.pc,1)+'</td><td class="n">'+brl(t.pl*x.pc/100)+'</td></tr>';}).join("")+
-     '</tbody></table></div>');
-
   /* --- tabelas --- */
-  var p2="";
-  if(secOn(r.ind,"contas")) p2+=shead(nx(),"Desempenho por conta","")+
+  if(secOn(r.ind,"retornos")) pag(shead(nx(),"Retornos mensais","carteira contra o CDI")+
+     '<div class="panel tint">'+blocoRetornos(c.id,"BRL")+'</div>');
+
+  if(secOn(r.ind,"contas")) pag(shead(nx(),"Desempenho por conta","")+
      '<div class="panel"><table class="rt"><thead><tr><th>Conta</th><th class="n">Saldo</th><th class="n">% da carteira</th><th class="n">Último mês</th><th class="n">No ano</th><th class="n">12 meses</th></tr></thead><tbody>'+
      contasDe(r,"BRL").map(function(x){
        var noAno=contaAcum(c.id,x.nome,S.mes,S.ano,S.mes), m12=contaAcum(c.id,x.nome,S.mes,S.ano,12);
@@ -2442,15 +2444,83 @@ function viewRelatorio(){
        '<td class="n '+sinal(m12)+'">'+(m12!=null?pct(m12):"—")+'</td></tr>';
      }).join("")+
      '<tr class="tot"><td>Total</td><td class="n">'+brl(t.pl)+'</td><td class="n">100,0%</td><td class="n">'+pct(t.rendPct)+'</td><td class="n">'+pct(anoPct)+'</td><td class="n">'+(a12.meses?pct(a12.pct):"—")+'</td></tr>'+
-     '</tbody></table></div>';
+     '</tbody></table></div>');
 
-  if(secOn(r.ind,"retornos")) p2+=shead(nx(),"Retornos mensais","carteira contra o CDI")+
-     '<div class="panel tint">'+blocoRetornos(c.id,"BRL")+'</div>';
+  if(secOn(r.ind,"benchmarks")) pag(shead(nx(),"Carteira contra os indicadores","rentabilidade acumulada por período")+
+     tabelaBenchmarks(c.id,S.mes,S.ano,"BRL"));
 
-  if(secOn(r.ind,"benchmarks")) p2+=shead(nx(),"Carteira contra os indicadores","rentabilidade acumulada por período")+
-     tabelaBenchmarks(c.id,S.mes,S.ano,"BRL");
+  /* --- lista de ativos, por categoria --- */
+  var ativosRel=listaAtivos(r.ind);
+  if(ativosRel.length && secOn(r.ind,"ativos")){
+    var rp=function(v){ return v||v===0?'<span class="'+sinal(n(v))+'">'+pct(n(v))+'</span>':"—"; };
+    var tabelaAtivos=function(lista,comRF){
+      var sub=lista.reduce(function(a,x){return a+n(x.posicao);},0);
+      return '<table class="rt '+(comRF?"ativos-rf":"ativos-out")+'"><thead><tr>'+
+        '<th>Ativo</th><th>Instit.</th>'+
+        (comRF?'<th>Taxa</th><th class="n">Venc.</th>':'')+
+        '<th class="n">Posição</th>'+
+        '<th class="n">Mês</th><th class="n">3m</th><th class="n">6m</th><th class="n">Ano</th>'+
+        '<th class="n">12m</th><th class="n">Iníc.</th></tr></thead><tbody>'+
+        lista.map(function(x){
+          return '<tr><td>'+esc(x.nome||"—")+'</td><td>'+esc(x.inst||"—")+'</td>'+
+          (comRF?'<td>'+esc(x.taxa||"—")+'</td><td class="n">'+(x.vencimento?dataBR(x.vencimento):"—")+'</td>':'')+
+          '<td class="n">'+(n(x.posicao)?brl(n(x.posicao)):"—")+'</td>'+
+          '<td class="n">'+rp(x.rentMes)+'</td><td class="n">'+rp(x.rent3m)+'</td>'+
+          '<td class="n">'+rp(x.rent6m)+'</td><td class="n">'+rp(x.rentAno)+'</td>'+
+          '<td class="n">'+rp(x.rent12m)+'</td><td class="n">'+rp(x.rentInicio)+'</td></tr>';
+        }).join("")+
+        '<tr class="tot"><td colspan="'+(comRF?4:2)+'">Subtotal</td><td class="n">'+brl(sub)+'</td>'+
+        '<td colspan="6"></td></tr>'+
+        '</tbody></table>';
+    };
+    /* Dentro de cada categoria, quanto está em cada subcategoria (a mesma
+       leitura de listaEstrat, só que restrita aos ativos daquele grupo em
+       vez da carteira inteira) — só aparece quando algum ativo do grupo tem
+       subcategoria marcada. */
+    var subEstratDoGrupo=function(lista){
+      var porSub={}, totalGrupo=0;
+      lista.forEach(function(x){
+        var v=n(x.posicao); totalGrupo+=v;
+        var s=x.subcategoria; if(!s) return;
+        porSub[s]=(porSub[s]||0)+v;
+      });
+      if(totalGrupo<=0) return [];
+      return SUBCATEGORIAS_ATIVO.map(function(s){
+        var v=porSub[s]||0;
+        return {nome:s,valor:v,pc:v?(v/totalGrupo*100):0};
+      }).filter(function(x){ return x.pc>0; });
+    };
+    var totalGeral=ativosRel.reduce(function(a,x){return a+n(x.posicao);},0);
+    /* Cada categoria vira sua própria página: com 5 categorias possíveis agora
+       (a partir do COE), empilhar todas numa folha só estourava a altura da
+       A4 mesmo com poucos ativos. A seção continua com um único número — só
+       a primeira página leva o título; as demais só repetem o rótulo da
+       categoria, como continuação da mesma lista. */
+    var gruposComDados=CATEGORIAS_ATIVO.map(function(cat){
+      return {cat:cat,lista:ativosRel.filter(function(x){ return (x.categoria||CATEGORIAS_ATIVO[0])===cat; })};
+    }).filter(function(g){ return g.lista.length; });
+    gruposComDados.forEach(function(g,gi){
+      var corpo='<div class="panel"><h3 class="venc-tit">'+esc(g.cat)+'</h3>'+
+        tabelaAtivos(g.lista,CATEGORIAS_COM_PRAZO.indexOf(g.cat)!==-1);
+      var subEstr=subEstratDoGrupo(g.lista);
+      if(subEstr.length){
+        corpo+='<h3 class="venc-tit" style="margin-top:20px;opacity:.7">Estratégia dentro de '+esc(g.cat)+'</h3>'+
+          '<div class="dn-leg" style="justify-content:flex-start;margin:4px 0 2px">'+
+          subEstr.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+
+          '</div>';
+      }
+      if(gi===gruposComDados.length-1){
+        corpo+='<p class="foot-note" style="margin-top:16px"><b>Total geral: '+brl(totalGeral)+'.</b> '+
+          'Taxa e vencimento se aplicam apenas a ativos de renda fixa e COE. Rentabilidades informadas pela instituição '+
+          'custodiante, líquidas de taxas quando aplicável, brutas de imposto de renda.</p>';
+      }
+      corpo+='</div>';
+      if(gi===0) pag(shead(nx(),"Lista de ativos","posição em "+dataBase(S.mes,S.ano))+corpo);
+      else pag(corpo);
+    });
+  }
 
-  if(secOn(r.ind,"evolucao")) p2+=shead(nx(),"Evolução do patrimônio",serie.length+(serie.length===1?" mês":" meses")+" com saldo")+
+  if(secOn(r.ind,"evolucao")) pag(shead(nx(),"Evolução do patrimônio",serie.length+(serie.length===1?" mês":" meses")+" com saldo")+
      '<div class="panel tint">'+
      '<p class="foot-note" style="margin:0 0 18px">Patrimônio de <b>'+brl(t.pl)+'</b> em '+ref(S.mes,S.ano)+'.'+(serie.length<2?' A comparação entre meses aparece a partir do segundo mês lançado.':'')+'</p>'+
      chartEvolucao(serie,"BRL")+
@@ -2462,8 +2532,7 @@ function viewRelatorio(){
        '<td class="n">'+(mov?brl(mov):"—")+'</td><td class="n '+sinal(s2.rendRs)+'">'+brl(s2.rendRs)+'</td>'+
        '<td class="n '+sinal(varia)+'">'+(varia!=null?pct(varia):"—")+'</td></tr>';
      }).join("")+
-     '</tbody></table></div>';
-  if(p2) pag(p2);
+     '</tbody></table></div>');
 
   /* --- vencimentos (página própria quando houver) --- */
   var venc=listaVenc(r.ind);
@@ -2492,53 +2561,6 @@ function viewRelatorio(){
     }
     corpo+='<p class="foot-note">Valores estimados na data de referência, sujeitos a marcação a mercado e à incidência de tributos no resgate.</p></div>';
     pag(shead(nx(),titulo,"valores aproximados")+corpo);
-  }
-
-  /* --- lista de ativos, por categoria --- */
-  var ativosRel=listaAtivos(r.ind);
-  if(ativosRel.length && secOn(r.ind,"ativos")){
-    var rp=function(v){ return v||v===0?'<span class="'+sinal(n(v))+'">'+pct(n(v))+'</span>':"—"; };
-    var tabelaAtivos=function(lista,comRF){
-      var sub=lista.reduce(function(a,x){return a+n(x.posicao);},0);
-      return '<table class="rt '+(comRF?"ativos-rf":"ativos-out")+'"><thead><tr>'+
-        '<th>Ativo</th><th>Instit.</th>'+
-        (comRF?'<th>Taxa</th><th class="n">Venc.</th>':'')+
-        '<th class="n">Posição</th>'+
-        '<th class="n">Mês</th><th class="n">3m</th><th class="n">6m</th><th class="n">Ano</th>'+
-        '<th class="n">12m</th><th class="n">Iníc.</th></tr></thead><tbody>'+
-        lista.map(function(x){
-          return '<tr><td>'+esc(x.nome||"—")+'</td><td>'+esc(x.inst||"—")+'</td>'+
-          (comRF?'<td>'+esc(x.taxa||"—")+'</td><td class="n">'+(x.vencimento?dataBR(x.vencimento):"—")+'</td>':'')+
-          '<td class="n">'+(n(x.posicao)?brl(n(x.posicao)):"—")+'</td>'+
-          '<td class="n">'+rp(x.rentMes)+'</td><td class="n">'+rp(x.rent3m)+'</td>'+
-          '<td class="n">'+rp(x.rent6m)+'</td><td class="n">'+rp(x.rentAno)+'</td>'+
-          '<td class="n">'+rp(x.rent12m)+'</td><td class="n">'+rp(x.rentInicio)+'</td></tr>';
-        }).join("")+
-        '<tr class="tot"><td colspan="'+(comRF?4:2)+'">Subtotal</td><td class="n">'+brl(sub)+'</td>'+
-        '<td colspan="6"></td></tr>'+
-        '</tbody></table>';
-    };
-    var totalGeral=ativosRel.reduce(function(a,x){return a+n(x.posicao);},0);
-    /* Cada categoria vira sua própria página: com 5 categorias possíveis agora
-       (a partir do COE), empilhar todas numa folha só estourava a altura da
-       A4 mesmo com poucos ativos. A seção continua com um único número — só
-       a primeira página leva o título; as demais só repetem o rótulo da
-       categoria, como continuação da mesma lista. */
-    var gruposComDados=CATEGORIAS_ATIVO.map(function(cat){
-      return {cat:cat,lista:ativosRel.filter(function(x){ return (x.categoria||CATEGORIAS_ATIVO[0])===cat; })};
-    }).filter(function(g){ return g.lista.length; });
-    gruposComDados.forEach(function(g,gi){
-      var corpo='<div class="panel"><h3 class="venc-tit">'+esc(g.cat)+'</h3>'+
-        tabelaAtivos(g.lista,CATEGORIAS_COM_PRAZO.indexOf(g.cat)!==-1);
-      if(gi===gruposComDados.length-1){
-        corpo+='<p class="foot-note" style="margin-top:16px"><b>Total geral: '+brl(totalGeral)+'.</b> '+
-          'Taxa e vencimento se aplicam apenas a ativos de renda fixa e COE. Rentabilidades informadas pela instituição '+
-          'custodiante, líquidas de taxas quando aplicável, brutas de imposto de renda.</p>';
-      }
-      corpo+='</div>';
-      if(gi===0) pag(shead(nx(),"Lista de ativos","posição em "+dataBase(S.mes,S.ano))+corpo);
-      else pag(corpo);
-    });
   }
 
   /* --- offshore --- */
