@@ -4090,7 +4090,7 @@ function descreverRecorte(f, users){
   if(f && f.especialista && f.especialista !== 'all')
     partes.push('especialista: ' + (nomeDe(f.especialista) || '—'));
   if(f && f.temperatura && f.temperatura.length)
-    partes.push('temperatura: ' + f.temperatura
+    partes.push('pipe: ' + f.temperatura
       .map(k => k === 'sem' ? 'sem classificação' : (temperaturaInfo(k) || { label:k }).label.toLowerCase())
       .join(' e '));
   if(partes.length === 1) partes.push('todos os assessores e produtos');
@@ -5208,7 +5208,7 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
        em negociação". Um segundo caminho aqui deixaria temperatura sem
        captação, ou captação sem histórico. */
     (initial.ganho || clienteDaBase(initial)) ? null : h('div',{className:'field'},
-      h('label',null,'Temperatura'),
+      h('label',null,'Pipe'),
       h('div',{className:'filtro-chips'},
         TEMPERATURAS.map(t => h('button',{
           key:t.key, type:'button',
@@ -5767,7 +5767,7 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
                       temperaturaDe(draft)
                         ? h('span',{className:'ficha-tag'},
                             h('span',{className:'temp-dot', style:{background:temperaturaDe(draft).cor}}), temperaturaDe(draft).label)
-                        : h('span',{className:'captacao-sem-temp'},'sem temperatura'),
+                        : h('span',{className:'captacao-sem-temp'},'sem pipe'),
                       h('span',{className:'captacao-sobre'}, 'a mais sobre '
                         + (custodiaCaptacao(draft) === 'offshore'
                             ? fmtUSDCompact(valorEmCarteiraOffshore(draft)) + ' offshore'
@@ -6461,7 +6461,7 @@ function FiltrosPanel({ filtros, onChange, funil, aberto, grupos }){
     ) : null,
     jornada ? grupo('Esteira', 'esteira', ESTEIRAS.map(e => ({ valor:e.key, label:e.label }))) : null,
     grupo('Tipo', 'tipoPessoa', [{ valor:'PF', label:'Pessoa física' }, { valor:'PJ', label:'Pessoa jurídica' }]),
-    grupo('Temperatura', 'temperatura',
+    grupo('Pipe', 'temperatura',
       TEMPERATURAS.map(t => ({ valor:t.key, label:t.label })).concat([{ valor:'sem', label:'Sem classificação' }])),
     grupo('Situação', 'situacao', SITUACOES
       .filter(x => x.funis.indexOf(jornada ? 'assessor' : 'especialista') !== -1)
@@ -7800,7 +7800,7 @@ function KpiFiltros({ filtros, onChange, funil, users, leads, consolidado, colun
        tem temperatura, e recortar só a carteira daria dois números que não
        conversam na mesma tela. */
     h('div',{className:'filtro-grupo'},
-      h('div',{className:'filtro-titulo'},'Temperatura'),
+      h('div',{className:'filtro-titulo'},'Pipe'),
       h('div',{className:'filtro-chips'},
         TEMPERATURAS.concat([{ key:'sem', label:'Sem classificação', cor:null }]).map(t => h('button',{
           key:t.key, type:'button',
@@ -10773,7 +10773,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.64";
+var VERSAO_CRM="versão 2.65";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
