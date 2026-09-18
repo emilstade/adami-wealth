@@ -1146,6 +1146,10 @@
   }
   .alerta-item:last-child{border-bottom:none;}
   .alerta-item .task-dot{margin-top:5px;flex-shrink:0;}
+  /* Checkbox da régua: mesma métrica do .pauta-item, mas solto — aqui ele
+     é irmão do corpo do item, não um label envolvendo tudo. */
+  .alerta-item .regua-check{margin-top:6px;width:15px;height:15px;accent-color:var(--success);cursor:pointer;flex-shrink:0;}
+  .alerta-item .regua-check:disabled{cursor:default;}
   .alerta-corpo{flex:1;min-width:0;}
   .alerta-linha{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
   .alerta-tipo{font-size:11px;font-weight:600;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.06em;}
@@ -5687,6 +5691,26 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
     setAtivErro('');
   };
 
+  /* Marcar a régua é registrar a mesma atividade que o formulário de baixo
+     registraria — mesmo caminho (onAddActivity), só que com o tipo já
+     definido pelo item da régua e a data de hoje, sem pedir de novo o que
+     o clique já disse. Descrever o que foi falado continua obrigatório:
+     é o que dá valor ao registro, e o que faz o card virar histórico de
+     verdade, não só uma caixinha marcada. */
+  const [reguaAbrindo, setReguaAbrindo] = useState(null);
+  const [reguaNotaTxt, setReguaNotaTxt] = useState('');
+  const [reguaErro, setReguaErro] = useState('');
+  const marcarRegua = (tipo) => {
+    if(!reguaNotaTxt.trim()){ setReguaErro('Descreva o que foi conversado.'); return; }
+    const atividade = {
+      id: uid('a'), tipo, data: todayISO(),
+      nota: reguaNotaTxt.trim(), autor: currentUser.nome, criadoEm: Date.now(),
+    };
+    const atualizado = onAddActivity(draft.id, atividade);
+    if(atualizado) setDraft(atualizado);
+    setReguaAbrindo(null); setReguaNotaTxt(''); setReguaErro('');
+  };
+
   const aplicarCorrecao = () => {
     if(etapaCorrigida === draft.etapa){ setCorrigindo(false); return; }
     if(!motivoCorrecao.trim()) return;
@@ -5987,6 +6011,62 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
               )
         ) : null,
 
+        /* Régua de relacionamento (padrão Supernova): só existe para quem já
+           é carteira e tem segmento Private ou Exclusive — reguaStatus
+           devolve lista vazia para todo o resto, e o painel some sozinho.
+           Fica aqui, entre Movimentações e Atividades: marcar o contato
+           feito grava a mesma atividade que aparece no histórico logo
+           abaixo — é assim que a régua sabe que o contato aconteceu, sem
+           um estado paralelo que pudesse ficar dessincronizado do que
+           foi de fato registrado. */
+        jornadaLead ? (() => {
+          const regua = reguaStatus(draft, todayISO());
+          if(!regua.length) return null;
+          const atrasados = regua.filter(r => r.atrasado).length;
+          return h('div',{className:'pauta'},
+            h('div',{className:'pauta-head'},
+              h('div',{className:'bento-eyebrow'},'Régua de relacionamento'),
+              h('span',{className:'pauta-contador' + (atrasados === 0 ? ' completa' : '')},
+                atrasados === 0 ? 'em dia' : atrasados + (atrasados === 1 ? ' atrasada' : ' atrasadas'))
+            ),
+            h('div',{className:'alerta-lista'},
+              regua.map(r => {
+                const st = r.atrasado ? 'late' : 'ok';
+                const abrindo = reguaAbrindo === r.tipo;
+                return h('div',{key:r.tipo, className:'alerta-item ' + st},
+                  somenteLeitura
+                    ? h('span',{className:'task-dot ' + st})
+                    : h('input',{ type:'checkbox', className:'regua-check',
+                        checked: !r.atrasado, disabled: !r.atrasado,
+                        title: r.atrasado ? 'Marcar contato como realizado' : 'Em dia',
+                        onChange:()=>{ setReguaAbrindo(r.tipo); setReguaNotaTxt(''); setReguaErro(''); } }),
+                  h('div',{className:'alerta-corpo'},
+                    h('div',{className:'alerta-linha'},
+                      h('span',{className:'alerta-tipo'}, r.label + ' · ' + r.qtdAno + 'x/ano'),
+                      h('span',{className:'alerta-data ' + st},
+                        r.atrasado
+                          ? 'atrasada há ' + r.diasAtraso + (r.diasAtraso === 1 ? ' dia' : ' dias')
+                          : 'próxima ' + fmtDate(r.prevista))
+                    ),
+                    r.ultima ? h('div',{className:'alerta-texto-ver'}, 'Último contato: ' + fmtDate(r.ultima)) : null,
+                    abrindo ? h('div',{className:'activity-form', style:{marginTop:8,marginBottom:0}},
+                      h('textarea',{ value:reguaNotaTxt, placeholder:'O que foi conversado?', autoFocus:true,
+                        onChange:e=>{ setReguaNotaTxt(e.target.value); if(reguaErro) setReguaErro(''); } }),
+                      reguaErro ? h('div',{className:'field-error'}, reguaErro) : null,
+                      h('div',{style:{display:'flex',gap:8}},
+                        h('button',{className:'btn btn-ghost', style:{height:30,fontSize:12.5},
+                          onClick:()=>marcarRegua(r.tipo)}, 'Confirmar contato'),
+                        h('button',{className:'link-btn',
+                          onClick:()=>{ setReguaAbrindo(null); setReguaErro(''); }}, 'Cancelar')
+                      )
+                    ) : null
+                  )
+                );
+              })
+            )
+          );
+        })() : null,
+
         h('div',{className:'history-section'},
           h('h3',null,'Atividades e histórico'),
 
@@ -6036,42 +6116,6 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
                 (pauta.length - feitas.length) + ' pendente(s). Não impede o avanço da jornada.')
             : null
         ) : null,
-
-        /* Régua de relacionamento (padrão Supernova): só existe para quem já
-           é carteira e tem segmento Private ou Exclusive — reguaStatus
-           devolve lista vazia para todo o resto, e o painel some sozinho.
-           Sem botão de "resolver": o que quita a pendência é registrar a
-           atividade correspondente ali em cima, em Atividades. */
-        jornadaLead ? (() => {
-          const regua = reguaStatus(draft, todayISO());
-          if(!regua.length) return null;
-          const atrasados = regua.filter(r => r.atrasado).length;
-          return h('div',{className:'pauta'},
-            h('div',{className:'pauta-head'},
-              h('div',{className:'bento-eyebrow'},'Régua de relacionamento'),
-              h('span',{className:'pauta-contador' + (atrasados === 0 ? ' completa' : '')},
-                atrasados === 0 ? 'em dia' : atrasados + (atrasados === 1 ? ' atrasada' : ' atrasadas'))
-            ),
-            h('div',{className:'alerta-lista'},
-              regua.map(r => {
-                const st = r.atrasado ? 'late' : 'ok';
-                return h('div',{key:r.tipo, className:'alerta-item ' + st},
-                  h('span',{className:'task-dot ' + st}),
-                  h('div',{className:'alerta-corpo'},
-                    h('div',{className:'alerta-linha'},
-                      h('span',{className:'alerta-tipo'}, r.label + ' · ' + r.qtdAno + 'x/ano'),
-                      h('span',{className:'alerta-data ' + st},
-                        r.atrasado
-                          ? 'atrasada há ' + r.diasAtraso + (r.diasAtraso === 1 ? ' dia' : ' dias')
-                          : 'próxima ' + fmtDate(r.prevista))
-                    ),
-                    r.ultima ? h('div',{className:'alerta-texto-ver'}, 'Último contato: ' + fmtDate(r.ultima)) : null
-                  )
-                );
-              })
-            )
-          );
-        })() : null,
 
         /* Consolidado da família: o motivo de existir o grupo. */
         (jornadaLead && grupo && grupo.membros.length > 1) ? h('div',{className:'grupo-box'},
@@ -10918,7 +10962,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.70";
+var VERSAO_CRM="versão 2.71";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
