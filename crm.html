@@ -3463,6 +3463,15 @@ function dataBrParaISO(s){
   return m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0');
 }
 
+/* O banco só aceita 'PF' ou 'PJ' (check constraint). A coluna Tipo do BTG
+   também traz "INVESTIDOR ESTRANG EXTERNO - CC5" e "INVESTIDOR NÃO
+   RESIDENTE - CNR" — gravar esse texto direto quebra a gravação. Fora
+   PF/PJ, não dá pra saber qual dos dois é, então não gera patch. */
+function tipoPessoaDoArquivo(s){
+  const v = String(s == null ? '' : s).trim().toUpperCase();
+  return (v === 'PF' || v === 'PJ') ? v : '';
+}
+
 /* Compara o arquivo com a base e devolve o que mudou, sem gravar nada.
    Pura de propósito: a prévia mostra exatamente o que a aplicação vai fazer,
    porque é o mesmo resultado. */
@@ -3520,7 +3529,7 @@ function reconciliarBaseBTG(linhas, leads, users){
       novas.push({ conta, nome, saldo: saldoBTG,
         assessor: (donoPorCodigo && donoPorCodigo.nome) || assessorBTG,
         codigo, donoPorCodigo,
-        tipoPessoa: norm(d['Tipo']) === 'PJ' ? 'PJ' : 'PF',
+        tipoPessoa: tipoPessoaDoArquivo(d['Tipo']) || 'PF',
         nascimento: dataBrParaISO(d['Aniversário']) });
       continue;
     }
@@ -3550,7 +3559,7 @@ function reconciliarBaseBTG(linhas, leads, users){
     };
     cmp('email', 'E-mail', lead.email, d['E-Mail Comunicação']);
     cmp('profissao', 'Profissão', lead.profissao, d['Profissão / Setor']);
-    cmp('tipoPessoa', 'Tipo', lead.tipoPessoa, d['Tipo']);
+    cmp('tipoPessoa', 'Tipo', lead.tipoPessoa, tipoPessoaDoArquivo(d['Tipo']));
     cmp('nascimento', 'Nascimento', lead.nascimento, dataBrParaISO(d['Aniversário']));
 
     /* O padrão do nome, garantido a cada importação.
@@ -10726,7 +10735,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.60";
+var VERSAO_CRM="versão 2.61";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
