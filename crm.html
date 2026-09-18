@@ -5693,7 +5693,7 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
                      aporte que ainda não aconteceu, e mora junto dos que já
                      aconteceram. Com uma aberta, as ações ficam nela. */
                   (daBase && !captacaoAberta && !captacaoForm)
-                    ? h('button',{className:'link-btn', onClick:()=>abrirCaptacao('nova')}, '+ Nova captação')
+                    ? h('button',{className:'link-btn', onClick:()=>abrirCaptacao('nova')}, '+ Pipe')
                     : null,
                   h('button',{className:'link-btn', onClick:()=>{ setCaptacaoForm(null); setCriandoMov(v => !v); }},
                     criandoMov ? 'Cancelar' : '+ Registrar'))
@@ -5749,7 +5749,7 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
             ? h('div',{className:'captacao-pendente'},
                 h('div',{className:'captacao-cab'},
                   h('span',{className:'captacao-rotulo'},
-                    captacaoForm === 'nova' ? (captacaoAberta ? 'Alterar captação' : 'Nova captação')
+                    captacaoForm === 'nova' ? (captacaoAberta ? 'Alterar captação' : 'Pipe')
                     : captacaoForm === 'confirmar' ? 'Confirmar captação'
                     : captacaoForm === 'encerrar' ? 'Encerrar sem captar'
                     : 'Em negociação' + (custodiaCaptacao(draft) === 'offshore' ? ' · offshore' : '')),
@@ -6070,7 +6070,7 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
                     ? h('button',{className:'btn btn-danger-ghost', style:{color:'var(--success)'}, onClick:()=>abrirCaptacao('confirmar')},
                         h(IconThumbsUp,{size:13}), 'Confirmar captação')
                     : h('button',{className:'btn btn-danger-ghost', style:{color:'var(--success)'}, onClick:()=>abrirCaptacao('nova')},
-                        h(IconPlus,{size:13}), 'Nova captação'))
+                        h(IconPlus,{size:13}), 'Pipe'))
               : (draft.ganho && jornadaLead) ? null
                 : h('button',{className:'btn btn-danger-ghost', style:{color:'var(--success)'}, onClick:()=>onWin(draft)},
                     h(IconThumbsUp,{size:13}), jornadaLead ? 'Captação efetivada' : 'Marcar venda')
@@ -10773,7 +10773,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.63";
+var VERSAO_CRM="versão 2.64";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
