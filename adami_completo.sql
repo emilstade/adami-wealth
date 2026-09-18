@@ -213,6 +213,11 @@ create table if not exists public.leads (
   -- somar do lado do servidor quando a carteira crescer.
   valor_potencial  numeric(15,2),
   valor_fechado    numeric(15,2),
+  -- Pipe total (valor_potencial) é o tamanho do negócio; este é a fatia que
+  -- está sendo negociada agora, um número mais volátil que muda a cada
+  -- conversa. Só existe para prospect (esteira 'novo'); cliente da base tem
+  -- o equivalente em valor_em_captacao, com o próprio fluxo de captação.
+  valor_em_negociacao numeric(15,2),
   -- Patrimônio sob gestão no exterior, em DÓLAR. O mesmo cliente pode ter as
   -- duas custódias; são dois saldos de um relacionamento só, não dois
   -- clientes. Não é convertido na gravação de propósito: converter na entrada
@@ -287,6 +292,11 @@ create table if not exists public.leads (
   -- exclusivos e o banco passa a garantir isso.
   constraint leads_desfecho_exclusivo check (not (ganho and perdido))
 );
+
+-- Banco já existente não ganha coluna nova só por causa do "if not exists"
+-- do create table acima — ele só age em instalação nova. Esta linha é o que
+-- de fato adiciona a coluna em quem já tem a tabela.
+alter table public.leads add column if not exists valor_em_negociacao numeric(15,2);
 
 create index if not exists leads_responsavel_idx on public.leads (responsavel_id);
 create index if not exists leads_etapa_idx       on public.leads (etapa);

@@ -4315,6 +4315,7 @@ function leadFromRow(r){
     ultimoContato: r.ultimo_contato || '', proximoContato: r.proximo_contato || '',
     etapa: r.etapa, produtoServico: r.produto_servico || '',
     valorPotencial: valorDoBanco(r.valor_potencial), valorFechado: valorDoBanco(r.valor_fechado),
+    valorEmNegociacao: valorDoBanco(r.valor_em_negociacao),
     /* Saldo sob gestão do cliente da base, separado do patrimônio. */
     saldoInicial: valorDoBanco(r.saldo_inicial),
     /* O mesmo, lá fora: saldo offshore sob gestão, em dólar. */
@@ -4362,6 +4363,7 @@ function leadToRow(l){
     ultimo_contato: l.ultimoContato || null, proximo_contato: l.proximoContato || null,
     etapa: l.etapa, produto_servico: l.produtoServico || '',
     valor_potencial: valorParaBanco(l.valorPotencial), valor_fechado: valorParaBanco(l.valorFechado),
+    valor_em_negociacao: valorParaBanco(l.valorEmNegociacao),
     saldo_inicial: valorParaBanco(l.saldoInicial),
     saldo_inicial_offshore: valorParaBanco(l.saldoInicialOffshore),
     valor_em_captacao: valorParaBanco(l.valorEmCaptacao),
@@ -4617,7 +4619,7 @@ function emptyLead(ownerId){
   return {
     id: uid('l'), cliente:'', conta:'', oportunidade:'', telefone:'', email:'', observacoes:'',
     responsavelId: ownerId || '', ultimoContato: todayISO(), proximoContato:'',
-    etapa: 'Cliente Novo', produtoServico:'', valorPotencial:'', valorOffshore:'', criadoEm: Date.now(),
+    etapa: 'Cliente Novo', produtoServico:'', valorPotencial:'', valorEmNegociacao:'', valorOffshore:'', criadoEm: Date.now(),
     perdido:false, motivoPerda:'', perdidoEm:null,
     ganho:false, valorFechado:'', ganhoEm:null,
     historico: [], atividades: [], alertas: [], briefing: {}, movimentacoes: [],
@@ -5335,18 +5337,20 @@ function Timeline({ itens }){
 /* ================= Ficha do cliente =================
    Modo de consulta: o que o assessor precisa ver antes de uma ligação,
    sem campos de formulário no caminho. A edição fica atrás de um botão. */
-function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, podeEditar }){
+function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegociacaoPipe, podeEditar }){
   const jornada = (lead.funil || 'assessor') !== 'especialista';
   /* Mesma regra do formulário de cadastro: cliente da base e negócio ganho
      têm o próprio pipe, dentro do fluxo de captação. Fora disso, editar
      aqui na ficha evita ter que entrar em modo de edição só para isso. */
-  const pipeEditavel = !!onSetPipe && !!onSetValorPipe && !!podeEditar && !lead.ganho && !clienteDaBase(lead);
-  /* Rascunho local do valor: grava só ao sair do campo, não a cada tecla —
-     senão cada dígito digitado viraria uma gravação no banco. Sincroniza de
-     novo se o card mudar (outro cliente aberto) ou se o valor vier gravado
-     por outro caminho (ex: importação da base) enquanto a ficha está aberta. */
+  const pipeEditavel = !!onSetPipe && !!onSetValorPipe && !!onSetValorNegociacaoPipe && !!podeEditar && !lead.ganho && !clienteDaBase(lead);
+  /* Rascunho local dos dois valores: grava só ao sair do campo, não a cada
+     tecla — senão cada dígito digitado viraria uma gravação no banco.
+     Sincroniza de novo se o card mudar (outro cliente aberto) ou se o valor
+     vier gravado por outro caminho enquanto a ficha está aberta. */
   const [valorDraft, setValorDraft] = useState(lead.valorPotencial || '');
   useEffect(() => { setValorDraft(lead.valorPotencial || ''); }, [lead.id, lead.valorPotencial]);
+  const [negociacaoDraft, setNegociacaoDraft] = useState(lead.valorEmNegociacao || '');
+  useEffect(() => { setNegociacaoDraft(lead.valorEmNegociacao || ''); }, [lead.id, lead.valorEmNegociacao]);
   const info = stageInfo(lead.etapa, lead.funil);
   const rot = rotulosPessoa(lead.tipoPessoa || 'PF');
   const responsavel = (users.find(u => u.id === lead.responsavelId) || {}).nome;
@@ -5408,9 +5412,37 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, podeEditar }){
     ) : null,
 
     /* O valor anda junto do pipe: quem classifica a temperatura quer dizer
-       também quanto está em jogo, sem precisar entrar em "Editar" pra isso. */
-    pipeEditavel ? h('div',{className:'field'},
-      h('label',null, jornada ? rot.patrimonio : 'Valor do negócio'),
+       também quanto está em jogo, sem precisar entrar em "Editar" pra isso.
+       Pipe total é o tamanho do negócio inteiro; Pipe em negociação é a
+       fatia que está sendo discutida agora — um número mais miúdo e mais
+       volátil, que muda a cada conversa. Só existe para prospect: cliente
+       da base já tem o par valor/temperatura dele no fluxo de captação. */
+    (pipeEditavel && jornada) ? h('div',{className:'field-row'},
+      h('div',{className:'field'},
+        h('label',null,'Pipe total'),
+        h('input',{ value:valorDraft, onChange:e=>setValorDraft(e.target.value),
+          inputMode:'decimal', placeholder:'Ex: 500000',
+          onBlur:()=>{
+            const n = parseValor(valorDraft);
+            const formatado = n === null ? '' : fmtBRL(n);
+            setValorDraft(formatado);
+            if(formatado !== (lead.valorPotencial || '')) onSetValorPipe(formatado);
+          } })
+      ),
+      h('div',{className:'field'},
+        h('label',null,'Pipe em negociação'),
+        h('input',{ value:negociacaoDraft, onChange:e=>setNegociacaoDraft(e.target.value),
+          inputMode:'decimal', placeholder:'Ex: 200000',
+          onBlur:()=>{
+            const n = parseValor(negociacaoDraft);
+            const formatado = n === null ? '' : fmtBRL(n);
+            setNegociacaoDraft(formatado);
+            if(formatado !== (lead.valorEmNegociacao || '')) onSetValorNegociacaoPipe(formatado);
+          } })
+      )
+    ) : null,
+    (pipeEditavel && !jornada) ? h('div',{className:'field'},
+      h('label',null,'Valor do negócio'),
       h('input',{ value:valorDraft, onChange:e=>setValorDraft(e.target.value),
         inputMode:'decimal', placeholder:'Ex: 500000',
         onBlur:()=>{
@@ -5510,7 +5542,7 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, podeEditar }){
   );
 }
 
-function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAdmin, onLose, onWin, onMove, onAddActivity, onCorrectStage, somenteLeitura, onEncaminhar, onTogglePauta, onAddAlerta, onResolverAlerta, onRemoverAlerta, grupos, grupo, pendenteIndicacao, onAddMov, onRemoverMov, onIniciarCaptacao, onConfirmarCaptacao, onEncerrarCaptacao, onSetPipe, onSetValorPipe }){
+function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAdmin, onLose, onWin, onMove, onAddActivity, onCorrectStage, somenteLeitura, onEncaminhar, onTogglePauta, onAddAlerta, onResolverAlerta, onRemoverAlerta, grupos, grupo, pendenteIndicacao, onAddMov, onRemoverMov, onIniciarCaptacao, onConfirmarCaptacao, onEncerrarCaptacao, onSetPipe, onSetValorPipe, onSetValorNegociacaoPipe }){
   useEsc(onClose);
   const [draft, setDraft] = useState(lead);
   const [errors, setErrors] = useState({});
@@ -5662,7 +5694,8 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
             )
           : h(Ficha,{ lead: draft, users, grupo, podeEditar: !somenteLeitura,
               onSetPipe: (key) => { const atualizado = onSetPipe(draft.id, key); if(atualizado) setDraft(atualizado); },
-              onSetValorPipe: (valor) => { const atualizado = onSetValorPipe(draft.id, valor); if(atualizado) setDraft(atualizado); } }),
+              onSetValorPipe: (valor) => { const atualizado = onSetValorPipe(draft.id, valor); if(atualizado) setDraft(atualizado); },
+              onSetValorNegociacaoPipe: (valor) => { const atualizado = onSetValorNegociacaoPipe(draft.id, valor); if(atualizado) setDraft(atualizado); } }),
         h('div',{className:'meta-line'}, 'Criado em ', new Date(draft.criadoEm).toLocaleDateString('pt-BR')),
         somenteLeitura ? h('div',{className:'readonly-note'},
           h(Icon,{path:'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zM8 11V7a4 4 0 118 0v4', size:14}),
@@ -7405,6 +7438,12 @@ function computeKpiStats(scopedLeads, allLeads, users){
   const ganhos = scopedLeads.filter(l => l.ganho);
   const perdidos = scopedLeads.filter(l => l.perdido);
   const valorPipeline = ativos.reduce((s,l) => s + (parseValor(l.valorPotencial)||0), 0);
+  /* A fatia do pipe que está de fato sendo discutida agora, não o tamanho
+     total do negócio — número menor e mais volátil, que muda a cada
+     conversa. Só existe em prospect; cliente da base tem o equivalente
+     dentro da captação, já contado em "Em captação". */
+  const valorEmNegociacao = ativos.reduce((s,l) => s + (parseValor(l.valorEmNegociacao)||0), 0);
+  const negociosEmNegociacao = ativos.filter(l => (parseValor(l.valorEmNegociacao)||0) > 0).length;
   const valorGanho = ganhos.reduce((s,l) => s + (parseValor(l.valorFechado) ?? parseValor(l.valorPotencial) ?? 0), 0);
   const valorPerdido = perdidos.reduce((s,l) => s + (parseValor(l.valorPotencial)||0), 0);
   const decididos = ganhos.length + perdidos.length;
@@ -7451,7 +7490,7 @@ function computeKpiStats(scopedLeads, allLeads, users){
   }).sort((a,b) => b.valor - a.valor);
   const vendorMax = Math.max(1, ...vendorRanking.map(v=>v.valor));
 
-  return { ativos, ganhos, perdidos, valorPipeline, valorGanho, valorPerdido, taxaConversao, ticketMedio, funnelStages, funnelCounts, funnelBase, avgStageDays, monthly, monthlyMax, vendorRanking, vendorMax };
+  return { ativos, ganhos, perdidos, valorPipeline, valorEmNegociacao, negociosEmNegociacao, valorGanho, valorPerdido, taxaConversao, ticketMedio, funnelStages, funnelCounts, funnelBase, avgStageDays, monthly, monthlyMax, vendorRanking, vendorMax };
 }
 
 /* ================= PDF export (jsPDF) ================= */
@@ -9019,6 +9058,7 @@ function KpisView({ scopedLeads, allLeads, users, vendorFilter, currentUser, per
           )
         )
       ),
+      h('div',{className:'kpi-tile span2 gold'}, h('div',{className:'kpi-label'},'Pipe em negociação'), h('div',{className:'kpi-num'}, fmtBRLCompact(s.valorEmNegociacao)), h('div',{className:'kpi-sub'}, s.negociosEmNegociacao, s.negociosEmNegociacao === 1 ? ' negócio em conversa' : ' negócios em conversa')),
       h('div',{className:'kpi-tile span2 success'}, h('div',{className:'kpi-label'},'Vendas fechadas'), h('div',{className:'kpi-num'}, s.ganhos.length), h('div',{className:'kpi-sub'}, fmtBRLCompact(s.valorGanho), ' faturados')),
       h('div',{className:'kpi-tile span2 danger'}, h('div',{className:'kpi-label'},'Negócios perdidos'), h('div',{className:'kpi-num'}, s.perdidos.length), h('div',{className:'kpi-sub'}, fmtBRLCompact(s.valorPerdido), ' em perdas')),
       h('div',{className:'kpi-tile span2'},
@@ -10326,6 +10366,14 @@ function App(){
     return mutate(leadId, l => ({ ...l, valorPotencial: valor }));
   };
 
+  /* A fatia em negociação, separada do total: só existe pro prospect
+     (cliente da base tem o par valor/temperatura dele dentro da captação). */
+  const setValorNegociacaoPipe = (leadId, valor) => {
+    const lead = leads.find(l => l.id === leadId);
+    if(!lead || !podeEditar(lead) || lead.ganho || clienteDaBase(lead)) return null;
+    return mutate(leadId, l => ({ ...l, valorEmNegociacao: valor }));
+  };
+
   const toggleOnboarding = (leadId, itemId) => {
     const lead = leads.find(l => l.id === leadId);
     if(!lead || !podeEditar(lead)) return null;
@@ -10767,7 +10815,7 @@ function App(){
     creating ? h(CreateModal,{ funil, grupos, produto: produtoFiltro, onClose:()=>{ setCreating(false); setQuickAddStage(null); }, onCreate:createLead, users, currentUser, isAdmin, initialStage:quickAddStage }) : null,
     openLead ? h(DetailModal,{ lead:openLead, grupos, grupo: grupoDe(leads, openLead, cotacao),
       pendenteIndicacao: pendentesIndicacao.has(openLead.id), somenteLeitura: !podeEditar(openLead), onEncaminhar:(l)=>setEncaminhando(l), onClose:()=>setOpenLead(null), onSave:saveLead, onDelete:deleteLead, users, currentUser, isAdmin, onLose:(lead)=>{ setOpenLead(null); setLosingLead(lead); }, onWin:(lead)=>{ setOpenLead(null); setWinningLead(lead); }, onMove:(lead, to)=>requestMove(lead.id, to), onAddActivity:addActivity, onCorrectStage:correctStage, onTogglePauta:toggleOnboarding, onAddAlerta:addAlerta, onResolverAlerta:resolverAlerta, onRemoverAlerta:removerAlerta, onAddMov:addMovimentacao, onRemoverMov:removerMovimentacao,
-      onIniciarCaptacao:iniciarCaptacaoLead, onConfirmarCaptacao:confirmarCaptacaoLead, onEncerrarCaptacao:encerrarCaptacaoLead, onSetPipe:setPipe, onSetValorPipe:setValorPipe }) : null,
+      onIniciarCaptacao:iniciarCaptacaoLead, onConfirmarCaptacao:confirmarCaptacaoLead, onEncerrarCaptacao:encerrarCaptacaoLead, onSetPipe:setPipe, onSetValorPipe:setValorPipe, onSetValorNegociacaoPipe:setValorNegociacaoPipe }) : null,
     managingTeam ? h(TeamModal,{ onClose:()=>setManagingTeam(false), users, leads, onDefinirRole:definirRole, onDefinirProdutos:definirProdutos, onApprove:approveUser, onRemove:removeUser, onResetPin:resetPin, onSetPadrao:definirPadrao, currentUser,
       convites, onConvidar:criarConvite, onCancelarConvite:cancelarConvite }) : null,
     losingLead ? h(LoseModal,{ lead:losingLead, onClose:()=>setLosingLead(null), onConfirm:confirmLose }) : null,
@@ -10837,7 +10885,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.68";
+var VERSAO_CRM="versão 2.69";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
