@@ -1116,7 +1116,7 @@
   .alerta-form{display:flex;flex-direction:column;gap:8px;padding:10px 0 4px;}
   /* Captação da base em negociação, dentro do extrato. Tracejada em dourado:
      é promessa, não saldo — a mesma gramática de "ausência de dado tem forma
-     própria", e o dourado de "Em captação" no card e no painel. */
+     própria", e o dourado do "Pipe" no card e no painel. */
   .captacao-pendente{
     margin:12px 0 4px;padding:10px 12px;border-radius:var(--radius-sm);
     border:1px dashed var(--gold);background:var(--bg);
@@ -1443,12 +1443,30 @@
     .painel .linha-4 .ind:nth-child(4){padding-left:14px;border-left:1px solid var(--border);}
     .painel .offshore-linha .ind:nth-child(odd),
     .painel .linha-4 .ind:nth-child(odd){padding-left:0;border-left:none;}
+    /* A faixa de Carteira tem um item .largo (Total da carteira): sem isto
+       ele herda o span:3 da faixa padrão de 6 campos, que não existe aqui —
+       a grade de 2 colunas ganha uma terceira trilha implícita pra caber o
+       span, e os itens seguintes saem do lugar. */
+    .painel .linha-4 .ind.largo{grid-column:span 2;}
   }
   @media (max-width:600px){
     .painel .painel-linha.offshore-linha,
     .painel .painel-linha.linha-4{grid-template-columns:minmax(0,1fr);}
     .painel .offshore-linha .ind,
     .painel .linha-4 .ind{padding-left:0;border-left:none;}
+    /* O span:2 da faixa 1400px continuaria valendo aqui — mais específico
+       que o span:1 genérico do painel — e abriria uma segunda coluna
+       implícita numa grade de uma coluna só. */
+    .painel .linha-4 .ind.largo{grid-column:span 1;}
+  }
+  /* Duas colunas, para a faixa de Negócios (Produção e Em negociação): só
+     colapsa para uma no mesmo ponto em que as outras faixas do painel já
+     colapsam, sem passo intermediário — já nasce com metade das colunas
+     da faixa padrão. */
+  .painel .painel-linha.linha-2{grid-template-columns:repeat(2, minmax(0,1fr));}
+  @media (max-width:600px){
+    .painel .painel-linha.linha-2{grid-template-columns:minmax(0,1fr);}
+    .painel .linha-2 .ind:nth-child(2){padding-left:0;border-left:none;}
   }
 
   @media (prefers-reduced-motion:reduce){
@@ -2466,7 +2484,7 @@ const SITUACOES = [
     testa:(l) => onboardingPendentes(l).length > 0 },
   { key:'captado',    label:'Captação efetivada', funis:['assessor'],
     testa:(l) => !!l.ganho },
-  { key:'emCaptacao', label:'Em captação',       funis:['assessor'],
+  { key:'emCaptacao', label:'Pipe',              funis:['assessor'],
     testa:(l) => valorCaptacaoNaMoeda(l) > 0 },
   { key:'offshore',   label:'Com offshore',       funis:['assessor'],
     testa:(l) => temOffshore(l) },
@@ -4913,7 +4931,7 @@ function LeadCard({ lead, onOpen, onDragStart, onDragEnd, dragging, ownerName, s
         title: custodiaCaptacao(lead) === 'offshore'
           ? 'Captação offshore em negociação com este cliente da base'
           : 'Captação em negociação com este cliente da base'},
-        h('span',{className:'card-captacao-rotulo'}, custodiaCaptacao(lead) === 'offshore' ? 'Em captação · off' : 'Em captação'),
+        h('span',{className:'card-captacao-rotulo'}, custodiaCaptacao(lead) === 'offshore' ? 'Pipe · off' : 'Pipe'),
         h('span',{className:'card-captacao-valor'},
           (custodiaCaptacao(lead) === 'offshore' ? fmtUSDCompact : fmtBRLCompact)(valorCaptacaoNaMoeda(lead)))
       ) : null,
@@ -7058,7 +7076,7 @@ function computeAssessoriaStats(scopedLeads, users, filtros, cotacao){
    pela temperatura: quanto está quente, com quem, e o quê. Uma captação é o
    prospect ainda não efetivado ou o cliente da base com valor em
    negociação — o mesmo corte de valorEmCaptacao, para o total bater com o
-   "Em captação" do topo do painel. Cliente da base sem valor negociado não
+   "Pipe" do topo do painel. Cliente da base sem valor negociado não
    entra: sem valor não há captação, só uma leitura de relacionamento.
    "Sem classificação" é um dos grupos e não um resto: é o que diz se a
    temperatura virou rotina. */
@@ -7441,7 +7459,7 @@ function computeKpiStats(scopedLeads, allLeads, users){
   /* A fatia do pipe que está de fato sendo discutida agora, não o tamanho
      total do negócio — número menor e mais volátil, que muda a cada
      conversa. Só existe em prospect; cliente da base tem o equivalente
-     dentro da captação, já contado em "Em captação". */
+     dentro da captação, já contado no indicador "Pipe". */
   const valorEmNegociacao = ativos.reduce((s,l) => s + (parseValor(l.valorEmNegociacao)||0), 0);
   const negociosEmNegociacao = ativos.filter(l => (parseValor(l.valorEmNegociacao)||0) > 0).length;
   const valorGanho = ganhos.reduce((s,l) => s + (parseValor(l.valorFechado) ?? parseValor(l.valorPotencial) ?? 0), 0);
@@ -7938,8 +7956,16 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
     ),
 
     h('div',{className:'painel-area'},
-      /* Faixa de números: a leitura de abertura, em linha única. */
-      h('div',{className:'painel-linha'},
+      /* Faixa de números: a leitura de abertura, agora em duas linhas — uma
+         por mundo. Investimento (carteira sob gestão, Pipe, fluxo, prazo) e
+         negócios de produto (Seguro e Consórcio) são leituras diferentes,
+         de processos diferentes; numa linha só, ninguém separava o que era
+         patrimônio do que era venda de produto. */
+      h('div',{className:'painel-secao'},
+        h('span',{className:'painel-secao-nome'},'Carteira'),
+        h('span',{className:'painel-secao-desc'},'investimentos sob gestão')
+      ),
+      h('div',{className:'painel-linha linha-4'},
         h(Indicador,{ rotulo:'Total da carteira', largo:true,
           valor: carteira.totalCarteira, formato: fmtBRLCompact,
           /* Onshore e offshore no mesmo número: o contexto diz de que ele é
@@ -7949,13 +7975,8 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
                 ? carteira.sobGestao + ' clientes · ' + fmtUSDCompact(carteira.offshore.usd) + ' offshore incluídos'
                 : carteira.sobGestao + ' clientes · ' + fmtUSDCompact(carteira.offshore.usd) + ' offshore FORA, sem cotação')
             : carteira.sobGestao + ' de ' + carteira.ativos.length + ' clientes sob gestão' }),
-        h(Indicador,{ rotulo:'Em captação', tom:'ouro',
+        h(Indicador,{ rotulo:'Pipe', tom:'ouro',
           valor: carteira.emCaptacao, formato: fmtBRLCompact, contexto:'clientes novos e da base' }),
-        h(Indicador,{ rotulo:'Produção', tom:'verde',
-          valor: producaoTotal, formato: fmtBRLCompact,
-          contexto: fechados.length + (fechados.length === 1 ? ' negócio fechado' : ' negócios fechados') }),
-        h(Indicador,{ rotulo:'Em negociação',
-          valor: emJogo, formato: fmtBRLCompact, contexto: abertos.length + ' em aberto' }),
         h(Indicador,{ rotulo:'Net New Money',
           tom: carteira.fluxo.liquido < 0 ? 'alerta' : 'verde',
           valor: carteira.fluxo.liquido, formato: (n) => (n >= 0 ? '+' : '−') + fmtBRLCompact(Math.abs(n)),
@@ -7963,6 +7984,18 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
         h(Indicador,{ rotulo:'SLA estourado', tom: carteira.slaEstourado ? 'alerta' : 'verde',
           valor: carteira.slaEstourado, formato: numero,
           contexto: carteira.slaEstourado ? 'fora do prazo' : 'tudo no prazo' })
+      ),
+
+      h('div',{className:'painel-secao'},
+        h('span',{className:'painel-secao-nome'},'Negócios'),
+        h('span',{className:'painel-secao-desc'},'consórcio e seguro')
+      ),
+      h('div',{className:'painel-linha linha-2'},
+        h(Indicador,{ rotulo:'Produção', tom:'verde',
+          valor: producaoTotal, formato: fmtBRLCompact,
+          contexto: fechados.length + (fechados.length === 1 ? ' negócio fechado' : ' negócios fechados') }),
+        h(Indicador,{ rotulo:'Em negociação',
+          valor: emJogo, formato: fmtBRLCompact, contexto: abertos.length + ' em aberto' })
       ),
 
       /* A página segue a ordem do processo: primeiro a assessoria, que
@@ -7992,7 +8025,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
          temperatura. Fica logo depois da carteira e antes do offshore: é o
          que ainda pode entrar nela. */
       h('div',{className:'painel-secao'},
-        h('span',{className:'painel-secao-nome'},'Em captação'),
+        h('span',{className:'painel-secao-nome'},'Pipe'),
         h('span',{className:'painel-secao-desc'}, captacaoTemp.total
           ? 'por temperatura · ' + captacaoTemp.total + (captacaoTemp.total === 1 ? ' captação' : ' captações')
             + ', ' + captacaoTemp.classificados + ' com temperatura'
@@ -8744,7 +8777,7 @@ function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo
         h('div',{className:'kpi-sub'}, (s.ativos.length - s.pj), ' PF · ', s.daBase, ' vindos da base')
       ),
       h('div',{className:'kpi-tile span2 gold'},
-        h('div',{className:'kpi-label'},'Em captação'),
+        h('div',{className:'kpi-label'},'Pipe'),
         h('div',{className:'kpi-num'}, fmtBRLCompact(s.emCaptacao)),
         h('div',{className:'kpi-sub'},'clientes novos e captações da base')
       ),
@@ -8772,7 +8805,7 @@ function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo
        do admin, recortado para a carteira dele. */
     captacaoTemp.total === 0 ? null : h('div',{className:'kpi-two-col'},
       h('div',{className:'kpi-section'},
-        h('div',{className:'kpi-section-head'}, h('h2',null,'Em captação por temperatura'),
+        h('div',{className:'kpi-section-head'}, h('h2',null,'Pipe por temperatura'),
           h('span',null, captacaoTemp.classificados + ' de ' + captacaoTemp.total + ' com temperatura')),
         captacaoTemp.porTemperatura.map(t => h(BarRow,{
           key:t.key, label:t.label, dotColor:t.cor, color:t.cor, value:t.valor,
@@ -10885,7 +10918,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.69";
+var VERSAO_CRM="versão 2.70";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
