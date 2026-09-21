@@ -10921,7 +10921,11 @@ function App(){
     }) : null,
     encaminhando ? h(EncaminharModal,{
       lead: encaminhando,
-      especialistas: users.filter(u => u.role === 'especialista' && u.status === 'ativo'),
+      /* Um admin também pode atender produto como especialista (marcado na
+         tela de Equipe do hub) — nesse caso ele entra na lista igual a um
+         especialista puro, sem deixar de ser admin. */
+      especialistas: users.filter(u => u.status === 'ativo'
+        && (u.role === 'especialista' || (u.role === 'admin' && u.produtos && u.produtos.length > 0))),
       jaEncaminhados: leads.filter(l => l.origemLeadId === encaminhando.id && !l.excluido).map(l => l.produto),
       padroes: ((users.find(u => u.id === encaminhando.responsavelId) || {}).especialistasPadrao) || {},
       onClose:()=>{
