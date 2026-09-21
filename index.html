@@ -483,7 +483,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
   .pg-mark{top:13mm;right:14mm}
   .pg-num{bottom:8mm;right:14mm}
   /* capa sangrando na folha inteira */
-  .cover{margin:0;padding:46mm 22mm 20mm;height:297mm;border-radius:0;
+  .cover{margin:0;padding:46mm 22mm 20mm;height:var(--pg-altura,297mm);border-radius:0;
          background:#fff!important;border:0;display:flex;flex-direction:column}
   .cover h1{font-size:30pt}
   /* manter título junto do bloco e evitar sobras */
@@ -554,7 +554,8 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
     </div>
     <div class="spacer"></div>
     <button class="btn" id="btnChk" onclick="rodarConferencia()" style="display:none">Conferir dados</button>
-    <button class="btn pri" id="btnPdf" onclick="imprimir()" style="display:none">Imprimir / Salvar PDF</button>
+    <button class="btn" id="btnPdfR" onclick="imprimir('retrato')" style="display:none">Imprimir retrato</button>
+    <button class="btn pri" id="btnPdfP" onclick="imprimir('paisagem')" style="display:none">Imprimir paisagem</button>
   </div>
   <div id="view"><div class="card empty"><h2>Carregando…</h2></div></div>
 </main>
@@ -931,7 +932,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.57";
+var VERSAO="versão 2.58";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -1026,6 +1027,22 @@ var CATEGORIAS_ATIVO=["Renda Fixa","COE","Fundos","Previdência","Renda Variáve
    essa mecânica (fundo e previdência não vencem; renda variável não tem taxa). */
 var CATEGORIAS_COM_PRAZO=["Renda Fixa","COE"];
 var SUBCATEGORIAS_ATIVO=["Pós-fixado","Pré-fixado","Inflação","Multimercado","Alternativo","Derivativo"];
+/* Quantas linhas de ativo cabem numa página impressa, calibrado com
+   Playwright (renderizando nomes reais de ativo, que quebram linha em
+   colunas estreitas) contra a altura útil de uma folha A4. Usa sempre o
+   orçamento da paisagem (297x210mm), que é o mais apertado dos dois formatos
+   de impressão — assim a mesma lista de páginas nunca estoura nem em
+   retrato nem em paisagem, sem precisar saber de antemão qual botão de
+   impressão o usuário vai clicar. Valores em pixels a 96dpi (1mm=3,7795px).
+   alturaPagina já vem com ~5% de folga sobre os 210mm físicos (794px). */
+var PADRAO_LINHAS_ATIVOS={
+  alturaPagina:754,
+  overheadComTitulo:360,  // cabeçalho da seção + título da categoria + preenchimentos + cabeçalho da tabela
+  overheadSemTitulo:240,  // sem o cabeçalho da seção (só acontece na 1ª página de toda a Lista de ativos)
+  subtotal:35,
+  linhaComTaxa:95,        // Renda Fixa/COE: colunas mais estreitas (têm taxa e vencimento), quebram mais
+  linhaSemTaxa:55         // Fundos/Previdência/Renda Variável: coluna do ativo mais larga
+};
 function ativoVazio(){ return {nome:"",categoria:CATEGORIAS_ATIVO[0],subcategoria:"",inst:"",taxa:"",vencimento:"",posicao:0,rentMes:0,rent3m:0,rent6m:0,rentAno:0,rent12m:0,rentInicio:0}; }
 /* Distribuição por categoria: mesma soma por posição de listaEstrat, só que
    agrupando pela categoria do ativo (Renda Fixa, COE, Fundos...) em vez da
@@ -2562,8 +2579,11 @@ function viewRelatorio(){
   var ativosRel=listaAtivos(r.ind);
   if(ativosRel.length && secOn(r.ind,"ativos")){
     var rp=function(v){ return v||v===0?'<span class="'+sinal(n(v))+'">'+pct(n(v))+'</span>':"—"; };
-    var tabelaAtivos=function(lista,comRF){
-      var sub=lista.reduce(function(a,x){return a+n(x.posicao);},0);
+    /* subtotalCompleto: número (mostra a linha de Subtotal com esse valor,
+       usado só no último pedaço de cada categoria) ou null (esconde a linha —
+       usado nos pedaços intermediários, pra não mostrar dois "Subtotal"
+       diferentes na mesma categoria). */
+    var tabelaAtivos=function(lista,comRF,subtotalCompleto){
       return '<table class="rt '+(comRF?"ativos-rf":"ativos-out")+'"><thead><tr>'+
         '<th>Ativo</th><th>Instit.</th>'+
         (comRF?'<th>Taxa</th><th class="n">Venc.</th>':'')+
@@ -2578,8 +2598,8 @@ function viewRelatorio(){
           '<td class="n">'+rp(x.rent6m)+'</td><td class="n">'+rp(x.rentAno)+'</td>'+
           '<td class="n">'+rp(x.rent12m)+'</td><td class="n">'+rp(x.rentInicio)+'</td></tr>';
         }).join("")+
-        '<tr class="tot"><td colspan="'+(comRF?4:2)+'">Subtotal</td><td class="n">'+brl(sub)+'</td>'+
-        '<td colspan="6"></td></tr>'+
+        (subtotalCompleto==null?"":'<tr class="tot"><td colspan="'+(comRF?4:2)+'">Subtotal</td><td class="n">'+brl(subtotalCompleto)+'</td>'+
+        '<td colspan="6"></td></tr>')+
         '</tbody></table>';
     };
     /* Dentro de cada categoria, quanto está em cada subcategoria (a mesma
@@ -2600,32 +2620,70 @@ function viewRelatorio(){
       }).filter(function(x){ return x.pc>0; });
     };
     var totalGeral=ativosRel.reduce(function(a,x){return a+n(x.posicao);},0);
-    /* Cada categoria vira sua própria página: com 5 categorias possíveis agora
-       (a partir do COE), empilhar todas numa folha só estourava a altura da
-       A4 mesmo com poucos ativos. A seção continua com um único número — só
-       a primeira página leva o título; as demais só repetem o rótulo da
-       categoria, como continuação da mesma lista. */
+    /* Quantas linhas cabem numa folha sem estourar a altura física — calibrado
+       com Playwright contra nomes reais de ativos (que quebram linha em
+       colunas estreitas) e sempre pelo orçamento mais apertado dos dois
+       formatos de impressão (paisagem tem menos altura que retrato), pra a
+       mesma lista de páginas valer pros dois sem recalcular nada na hora de
+       imprimir. Ver PADRAO_LINHAS_ATIVOS logo acima da função viewRelatorio. */
+    var maxLinhas=function(comRF,primeiraPagina){
+      var p=PADRAO_LINHAS_ATIVOS;
+      var overhead=primeiraPagina?p.overheadComTitulo:p.overheadSemTitulo;
+      var disponivel=p.alturaPagina-overhead-p.subtotal;
+      var porLinha=comRF?p.linhaComTaxa:p.linhaSemTaxa;
+      return Math.max(3,Math.floor(disponivel/porLinha));
+    };
+    var chunk=function(lista,tam){
+      var out=[];
+      for(var i=0;i<lista.length;i+=tam) out.push(lista.slice(i,i+tam));
+      return out;
+    };
+    /* Cada categoria vira uma ou mais páginas: com 5 categorias possíveis
+       agora (a partir do COE) e clientes com dezenas de ativos numa mesma
+       categoria, uma tabela só não cabe numa folha. A seção continua com um
+       único número — só a primeira página leva o título; as demais só
+       repetem o rótulo da categoria (com "continuação" quando for o mesmo
+       grupo) como continuação da mesma lista. */
     var gruposComDados=CATEGORIAS_ATIVO.map(function(cat){
       return {cat:cat,lista:ativosRel.filter(function(x){ return (x.categoria||CATEGORIAS_ATIVO[0])===cat; })};
     }).filter(function(g){ return g.lista.length; });
+    var primeiraPaginaGeral=true;
     gruposComDados.forEach(function(g,gi){
-      var corpo='<div class="panel"><h3 class="venc-tit">'+esc(g.cat)+'</h3>'+
-        tabelaAtivos(g.lista,CATEGORIAS_COM_PRAZO.indexOf(g.cat)!==-1);
-      var subEstr=subEstratDoGrupo(g.lista);
-      if(subEstr.length){
-        corpo+='<h3 class="venc-tit" style="margin-top:20px;opacity:.7">Estratégia dentro de '+esc(g.cat)+'</h3>'+
-          '<div class="dn-leg" style="justify-content:flex-start;margin:4px 0 2px">'+
-          subEstr.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+
-          '</div>';
-      }
-      if(gi===gruposComDados.length-1){
-        corpo+='<p class="foot-note" style="margin-top:16px"><b>Total geral: '+brl(totalGeral)+'.</b> '+
-          'Taxa e vencimento se aplicam apenas a ativos de renda fixa e COE. Rentabilidades informadas pela instituição '+
-          'custodiante, líquidas de taxas quando aplicável, brutas de imposto de renda.</p>';
-      }
-      corpo+='</div>';
-      if(gi===0) pag(shead(nx(),"Lista de ativos","posição em "+dataBase(S.mes,S.ano))+corpo);
-      else pag(corpo);
+      var comRF=CATEGORIAS_COM_PRAZO.indexOf(g.cat)!==-1;
+      var subtotalCategoria=g.lista.reduce(function(a,x){return a+n(x.posicao);},0);
+      /* O orçamento de linhas por página só é menor na página que leva o
+         cabeçalho da seção (shead) — isso acontece só uma vez em todo o
+         relatório (a folha em que "primeiraPaginaGeral" ainda é true), nunca
+         de novo dentro da mesma categoria. Por isso o corte em pedaços
+         acontece linha a linha, e não de uma vez com um tamanho fixo — senão
+         toda a primeira categoria herdava o orçamento apertado da 1ª folha. */
+      var restante=g.lista.slice();
+      var pedacos=[];
+      while(restante.length){ pedacos.push(restante.splice(0,maxLinhas(comRF,primeiraPaginaGeral && pedacos.length===0))); }
+      var ehUltimaCategoria=gi===gruposComDados.length-1;
+      pedacos.forEach(function(pedaco,ci){
+        var ehUltimoPedaco=ci===pedacos.length-1;
+        var titulo=ci===0?g.cat:g.cat+" (continuação)";
+        var corpo='<div class="panel"><h3 class="venc-tit">'+esc(titulo)+'</h3>'+
+          tabelaAtivos(pedaco,comRF,ehUltimoPedaco?subtotalCategoria:null);
+        if(ehUltimoPedaco){
+          var subEstr=subEstratDoGrupo(g.lista);
+          if(subEstr.length){
+            corpo+='<h3 class="venc-tit" style="margin-top:20px;opacity:.7">Estratégia dentro de '+esc(g.cat)+'</h3>'+
+              '<div class="dn-leg" style="justify-content:flex-start;margin:4px 0 2px">'+
+              subEstr.map(function(x,i){return '<span><i style="background:'+CORES[i%CORES.length]+'"></i>'+esc(x.nome)+' '+pct(x.pc,1)+'</span>';}).join("")+
+              '</div>';
+          }
+          if(ehUltimaCategoria){
+            corpo+='<p class="foot-note" style="margin-top:16px"><b>Total geral: '+brl(totalGeral)+'.</b> '+
+              'Taxa e vencimento se aplicam apenas a ativos de renda fixa e COE. Rentabilidades informadas pela instituição '+
+              'custodiante, líquidas de taxas quando aplicável, brutas de imposto de renda.</p>';
+          }
+        }
+        corpo+='</div>';
+        if(primeiraPaginaGeral){ pag(shead(nx(),"Lista de ativos","posição em "+dataBase(S.mes,S.ano))+corpo); primeiraPaginaGeral=false; }
+        else pag(corpo);
+      });
     });
   }
 
@@ -2749,7 +2807,15 @@ function tituloPdf(){
   var c=cli();
   return nomeArquivo([EMPRESA.nome, refArquivo(S.mes,S.ano), (c?c.nome:null), "Relat\u00f3rio Consolidado"]);
 }
-function imprimir(){
+function setOrientacaoImpressao(o){
+  var paisagem=o==="paisagem";
+  var el=document.getElementById("printOrient");
+  if(!el){ el=document.createElement("style"); el.id="printOrient"; document.head.appendChild(el); }
+  el.textContent="@media print{ @page{ size:A4 "+(paisagem?"landscape":"portrait")+"; margin:0; } }";
+  document.documentElement.style.setProperty("--pg-altura",paisagem?"210mm":"297mm");
+}
+function imprimir(orientacao){
+  setOrientacaoImpressao(orientacao||"retrato");
   var tituloAntigo=document.title;
   document.title=tituloPdf();
   var restaurar=function(){ document.title=tituloAntigo; window.removeEventListener("afterprint",restaurar); };
@@ -3018,7 +3084,8 @@ function render(manterScroll){
   document.getElementById("tabC").className=S.tab==="carta"?"on":"";
   document.getElementById("tabR").className=S.tab==="relatorio"?"on":"";
   document.getElementById("tabH").className=S.tab==="historico"?"on":"";
-  document.getElementById("btnPdf").style.display=S.tab==="relatorio"?"":"none";
+  document.getElementById("btnPdfR").style.display=S.tab==="relatorio"?"":"none";
+  document.getElementById("btnPdfP").style.display=S.tab==="relatorio"?"":"none";
   document.getElementById("btnChk").style.display=S.tab==="relatorio"?"":"none";
   var ma=document.getElementById("miniAcesso");
   if(ma) ma.textContent="Os dados ficam no servidor. "+(EU.admin?"Como administrador, voc\u00ea enxerga os clientes de todos os assessores.":"Cada assessor enxerga apenas os pr\u00f3prios clientes.");
