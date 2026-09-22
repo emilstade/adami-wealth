@@ -7890,7 +7890,11 @@ function KpiFiltros({ filtros, onChange, funil, users, leads, consolidado, colun
   const especialista = !simples && (consolidado || funil === 'especialista');
 
   const assessores = users.filter(u => u.status === 'ativo' && u.role !== 'especialista');
-  const especialistas = users.filter(u => u.status === 'ativo' && u.role === 'especialista');
+  /* Admin que também atende produto (produtos marcado na tela de Equipe do
+     hub) entra na lista de especialistas igual a um especialista puro —
+     mesmo critério usado no "Indicar negócio" (EncaminharModal). */
+  const especialistas = users.filter(u => u.status === 'ativo'
+    && (u.role === 'especialista' || (u.role === 'admin' && u.produtos && u.produtos.length > 0)));
 
   const alternarProduto = (p) => {
     const atual = filtros.produtos;
