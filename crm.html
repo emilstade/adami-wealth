@@ -3375,12 +3375,20 @@ function nomeCliente(lead){
 }
 
 /* O nome cru, sem a conta — para o formulário, que edita o dado, e para
-   qualquer lugar que precise do texto que o assessor digitou. */
+   qualquer lugar que precise do texto que o assessor digitou.
+
+   NÃO usa trim() no caminho comum (sem sufixo de conta pra tirar): esta
+   função roda a cada tecla no campo Nome do formulário (é ela que calcula
+   o value do input controlado). Se trimasse sempre, o espaço digitado
+   entre nome e sobrenome virava fim-de-texto por um instante e desaparecia
+   antes da letra seguinte — "Aparecido Melchior" nunca conseguia separar
+   as palavras, saía "AparecidoMelchior". O trim só faz sentido quando há
+   mesmo um sufixo de conta pra descolar (dado antigo, formato legado). */
 function nomeSemConta(cliente, conta){
-  const nome = (cliente || '').trim();
+  const nome = cliente || '';
   const c = (conta || '').trim();
-  if(!c || !nome.endsWith(c)) return nome;
-  return nome.replace(new RegExp('\\s*[·\\-–]?\\s*' + c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'), '').trim();
+  if(!c || !nome.trim().endsWith(c)) return nome;
+  return nome.trim().replace(new RegExp('\\s*[·\\-–]?\\s*' + c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$'), '').trim();
 }
 
 /* ================= Atualização semanal da base BTG =================
@@ -5313,7 +5321,7 @@ function CreateModal({ onClose, onCreate, users, currentUser, isAdmin, initialSt
   const [errors, setErrors] = useState({});
   const submit = () => {
     if(!lead.cliente.trim()){ setErrors({ cliente: 'Informe o nome do cliente.' }); return; }
-    onCreate(lead);
+    onCreate({ ...lead, cliente: lead.cliente.trim() });
   };
   return h('div',{className:'overlay', onClick:(e)=>{ if(e.target===e.currentTarget) onClose(); }},
     h('div',{className:'modal'},
@@ -5644,7 +5652,7 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
 
   const save = () => {
     if(!draft.cliente.trim()){ setErrors({ cliente:'Informe o nome do cliente.' }); return; }
-    onSave(draft);
+    onSave({ ...draft, cliente: draft.cliente.trim() });
   };
 
   const historico = draft.historico || [];
