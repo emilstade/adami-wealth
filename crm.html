@@ -5400,7 +5400,6 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegoci
   const offshoreUsd = valorEmCarteiraOffshore(lead);
   const emCarteiraOnshore = valorEmCarteira(lead);
   const emCarteira = valorEmCarteiraTotal(lead, cotacao);
-  const sla = slaRestante(lead);
   const urgencia = taskUrgency(lead);
   const feitos = onboardingFeitos(lead).length;
   const seguro = lead.produto === 'Seguro';
@@ -5504,11 +5503,7 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegoci
       tile('Próximo contato',
         proximoContatoEfetivo(lead, todayISO()) ? fmtDate(proximoContatoEfetivo(lead, todayISO())) : 'Sem data',
         urgencia === 'late' ? 'alerta' : urgencia === 'today' ? 'atencao' : ''),
-      jornada
-        ? tile('SLA da etapa',
-            sla === null ? 'Sem prazo' : (sla < 0 ? Math.abs(sla) + 'd em atraso' : sla + 'd restantes'),
-            sla !== null && sla < 0 ? 'alerta' : '')
-        : tile('Último contato', lead.ultimoContato ? fmtDate(lead.ultimoContato) : '—'),
+      tile('Último contato', lead.ultimoContato ? fmtDate(lead.ultimoContato) : '—'),
       jornada
         ? tile('Onboarding', feitos + '/' + ONBOARDING.length, feitos === ONBOARDING.length ? 'ok' : '')
         : tile('Responsável', responsavel || '—')
@@ -6051,13 +6046,19 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
             h('div',{className:'alerta-lista'},
               regua.map(r => {
                 const st = r.atrasado ? 'late' : 'ok';
+                /* "Em dia" não é a mesma coisa que "feito": um cliente que acabou
+                   de entrar na carteira também não está atrasado, mas ainda não
+                   teve nenhum contato registrado. A caixinha só marca quando
+                   existe de fato um contato — senão o card nasce parecendo já
+                   preenchido sem ninguém ter feito nada. */
+                const feito = !!r.ultima && !r.atrasado;
                 const abrindo = reguaAbrindo === r.tipo;
                 return h('div',{key:r.tipo, className:'alerta-item ' + st},
                   somenteLeitura
                     ? h('span',{className:'task-dot ' + st})
                     : h('input',{ type:'checkbox', className:'regua-check',
-                        checked: !r.atrasado,
-                        title: r.atrasado ? 'Marcar contato como realizado' : 'Em dia — clique para registrar um contato adiantado',
+                        checked: feito,
+                        title: feito ? 'Em dia — clique para registrar um contato adiantado' : 'Marcar contato como realizado',
                         onChange:()=>{ setReguaAbrindo(r.tipo); setReguaNotaTxt(''); setReguaErro(''); } }),
                   h('div',{className:'alerta-corpo'},
                     h('div',{className:'alerta-linha'},
@@ -10990,7 +10991,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.72";
+var VERSAO_CRM="versão 2.73";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
