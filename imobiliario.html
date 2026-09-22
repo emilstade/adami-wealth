@@ -48,12 +48,6 @@ th.idx,td.idx{width:34px;text-align:center;color:var(--sec);font-size:11px}
 .alertas ul{margin:7px 0 0;padding-left:18px}
 .alertas li{margin:2px 0}
 .dim{color:var(--sec)}
-.paletas{display:flex;gap:12px;flex-wrap:wrap}
-.cor{display:flex;align-items:center;gap:7px}
-.sw{width:26px;height:26px;border-radius:5px;border:1px solid var(--borda);flex:none}
-.cor input{width:96px;font-family:ui-monospace,monospace;text-transform:uppercase}
-#logoPreview{margin-top:8px;padding:14px;border:1px dashed var(--borda);border-radius:6px;background:#fff;min-height:64px;display:flex;align-items:center}
-#logoPreview img{max-height:52px}
 #visor{background:#E9EBEF;border-radius:8px;padding:20px;overflow:auto}
 #paginas{--z:1}
 .pagina{width:1333.3px;height:750px;background:#fff;position:relative;margin:0 auto 18px;
@@ -89,7 +83,7 @@ th.idx,td.idx{width:34px;text-align:center;color:var(--sec);font-size:11px}
 
 <header>
   <h1>RELATÓRIO IMOBILIÁRIO</h1>
-  <span class="dim" style="font-size:12px">gerador white label</span>
+  <span class="dim" style="font-size:12px">Adami Captal</span>
   <span class="dim" id="selo" style="font-size:11px;letter-spacing:.5px;opacity:.55"></span>
   <span class="dim" id="rasc" style="font-size:11px;opacity:.45"></span>
   <span class="esp"></span>
@@ -107,7 +101,6 @@ th.idx,td.idx{width:34px;text-align:center;color:var(--sec);font-size:11px}
   <button data-aba="imoveis">Imóveis</button>
   <button data-aba="projetos">Projetos</button>
   <button data-aba="historico">Histórico</button>
-  <button data-aba="marca">Marca</button>
   <button data-aba="preview">Preview</button>
 </nav>
 
@@ -150,34 +143,6 @@ th.idx,td.idx{width:34px;text-align:center;color:var(--sec);font-size:11px}
     <h2>Histórico de retornos</h2>
     <p class="dica">Alimenta o gráfico de retornos históricos. Deixe as rentabilidades em branco para usar as da carteira atual.</p>
     <div class="rolagem"><div id="tabHistorico"></div></div>
-  </div>
-</section>
-
-<section class="aba" id="aba-marca">
-  <div class="cartao">
-    <h2>Marca</h2>
-    <p class="dica">Configure uma vez e salve como projeto para reaproveitar em todos os clientes.</p>
-    <div class="campos">
-      <div><label>Escritório</label><input id="fEscritorio"></div>
-      <div><label>Assinatura do rodapé</label><input id="fRodape"></div>
-    </div>
-    <div style="margin-top:16px"><label>Logo (PNG ou JPG, fundo transparente de preferência)</label>
-      <button class="btn leve" onclick="document.getElementById('arqLogo').click()">Carregar logo</button>
-      <button class="btn leve" onclick="EST.params.logo=null;campos();marcarSujo()">Remover</button>
-      <input type="file" id="arqLogo" accept="image/*" class="oculto">
-      <div id="logoPreview"></div>
-    </div>
-  </div>
-  <div class="cartao">
-    <h2>Paleta</h2>
-    <p class="dica">Hex sem #. A cor primária domina títulos e barras; as de destaque colorem gráficos e setores.</p>
-    <div class="paletas">
-      <div class="cor"><span class="sw" id="cPrimsw"></span><div><label>Primária</label><input id="cPrim"></div></div>
-      <div class="cor"><span class="sw" id="cSecsw"></span><div><label>Secundária</label><input id="cSec"></div></div>
-      <div class="cor"><span class="sw" id="cD1sw"></span><div><label>Destaque 1</label><input id="cD1"></div></div>
-      <div class="cor"><span class="sw" id="cD2sw"></span><div><label>Destaque 2</label><input id="cD2"></div></div>
-      <div class="cor"><span class="sw" id="cD3sw"></span><div><label>Destaque 3</label><input id="cD3"></div></div>
-    </div>
   </div>
 </section>
 
@@ -461,6 +426,15 @@ function calcular(est){
   });
   const carteiraTotal = {};
   ['qtd','vm','receita','aluMkt'].forEach(k=> carteiraTotal[k]=soma(carteira,c=>c[k]));
+  /* % de cada setor dentro de cada coluna do gráfico empilhado — pré-calculado
+     aqui (mesmo padrão de composicao.pct acima) porque o gráfico do PPTX é
+     100% empilhado e precisa da própria porcentagem como valor: o rótulo do
+     PowerPoint mostra o valor bruto formatado com "%" no final, não a fração
+     da pilha, então alimentar com R$ bruto virava "6200000%" no lugar de "62%". */
+  carteira.forEach(c=>{
+    c.pct = {};
+    ['qtd','vm','receita','aluMkt'].forEach(k=>{ c.pct[k] = carteiraTotal[k] ? c[k]/carteiraTotal[k]*100 : 0; });
+  });
 
   const historico = est.historico.filter(h=>String(h.mes||'').trim()).map(h=>({
     mes:String(h.mes).trim(), receita:n(h.receita),
@@ -1289,7 +1263,7 @@ function linhaTotal(cells, fs) {
   const coresSet = { Residencial: PRIM, Rural: D1, Comercial: D2, Industrial: SEC };
   if (setoresAtivos.length) {
   s.addChart(pres.ChartType.bar, setoresAtivos.map(c => ({
-    name: c.setor, labels: cats, values: [c.qtd, c.vm, c.receita, c.aluMkt]
+    name: c.setor, labels: cats, values: [c.pct.qtd, c.pct.vm, c.pct.receita, c.pct.aluMkt]
   })), {
     x: MX, y: 4.38, w: 6.5, h: 2.4, barDir: 'col', barGrouping: 'percentStacked',
     chartColors: setoresAtivos.map(c => coresSet[c.setor] || SEC),
@@ -1438,10 +1412,20 @@ const COLS_HIST = [
 
 function linhaVazia(cols){ const o={}; cols.forEach(c=>o[c.k]=''); return o; }
 
+/* Marca fixa da Adami Captal. Este gerador deixou de ser white label:
+   logo, cores e rodapé não têm mais tela de edição — ficam sempre assim,
+   mesmo abrindo um projeto salvo ou importando uma planilha de antes
+   desta mudança (ver abrirProjeto() e importarPlanilha() mais abaixo,
+   que reaplicam esta marca por cima do que for carregado). */
+const MARCA_ADAMI = {
+  escritorio:'ADAMI CAPTAL',
+  rodape:'ADAMI CAPTAL | GESTÃO PATRIMONIAL',
+  logo:'data:image/png;base64,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',
+  logoRatio:4.354430379746836,
+  cores:{primaria:'1B2A4A',secundaria:'8A9199',d1:'C8A24A',d2:'3E7CB1',d3:'7FA8C9'}
+};
 let EST = {
-  params:{cliente:'',mes:'',dataRef:'',escritorio:'ADAMI CAPITAL',
-    rodape:'ADAMI CAPITAL | GESTÃO PATRIMONIAL',taxa:16,logo:null,logoRatio:4,
-    cores:{primaria:'1B2A4A',secundaria:'8A9199',d1:'C8A24A',d2:'3E7CB1',d3:'7FA8C9'}},
+  params:Object.assign({cliente:'',mes:'',dataRef:'',taxa:16}, MARCA_ADAMI),
   imoveis:[], projetos:[], historico:[]
 };
 
@@ -1484,16 +1468,72 @@ document.addEventListener('change', e=>{
   const t=e.target;
   if(t.tagName==='SELECT' && t.dataset.k){ EST[t.dataset.k][+t.dataset.i][t.dataset.c]=t.value; marcarSujo(); }
 });
+function colunasDe(chave){ return chave==='imoveis'?COLS_IMOVEIS:chave==='projetos'?COLS_PROJETOS:COLS_HIST; }
+function focarCelula(chave,i,k){
+  const el=document.querySelector('[data-k="'+chave+'"][data-i="'+i+'"][data-c="'+k+'"]');
+  if(el){ el.focus(); if(el.select) el.select(); }
+}
+
 document.addEventListener('click', e=>{
   const t=e.target;
   if(t.dataset.add){
-    const cols = t.dataset.add==='imoveis'?COLS_IMOVEIS:t.dataset.add==='projetos'?COLS_PROJETOS:COLS_HIST;
-    EST[t.dataset.add].push(linhaVazia(cols)); redesenhar(); marcarSujo();
+    const chave=t.dataset.add, cols=colunasDe(chave);
+    EST[chave].push(linhaVazia(cols));
+    const novoI=EST[chave].length-1;
+    redesenhar(); marcarSujo();
+    focarCelula(chave,novoI,cols[0].k);
   }
   if(t.classList.contains('del')){
     EST[t.dataset.k].splice(+t.dataset.i,1); redesenhar(); marcarSujo();
   }
   if(t.dataset.aba) abrirAba(t.dataset.aba);
+});
+
+/* Tab na última célula da última linha acrescenta uma linha nova e já
+   entra nela — igual planilha, sem precisar tirar a mão do teclado pra
+   clicar em "+ Adicionar linha" a cada imóvel digitado. */
+document.addEventListener('keydown', e=>{
+  const t=e.target;
+  if(e.key!=='Tab' || e.shiftKey || !t.dataset || t.dataset.k===undefined) return;
+  const chave=t.dataset.k, cols=colunasDe(chave), i=+t.dataset.i;
+  const ehUltimaLinha = i===EST[chave].length-1;
+  const ehUltimaCol = cols[cols.length-1].k===t.dataset.c;
+  if(!ehUltimaLinha || !ehUltimaCol) return;
+  e.preventDefault();
+  EST[chave].push(linhaVazia(cols));
+  redesenhar(); marcarSujo();
+  focarCelula(chave,i+1,cols[0].k);
+});
+
+/* Cola em bloco (várias células de uma vez, coladas do Excel/Planilhas):
+   se o texto colado tem tabulação ou quebra de linha, distribui célula a
+   célula a partir da que está em foco, criando linha nova quando precisa.
+   Colar um valor só continua colando normal, sem interferir. */
+document.addEventListener('paste', e=>{
+  const t=e.target;
+  if(!t.dataset || t.dataset.k===undefined || t.dataset.c===undefined) return;
+  const texto=(e.clipboardData||window.clipboardData).getData('text');
+  if(!texto || (texto.indexOf('\t')<0 && texto.indexOf('\n')<0)) return;
+  e.preventDefault();
+  const chave=t.dataset.k, cols=colunasDe(chave), linhaBase=+t.dataset.i;
+  const colIdx=cols.findIndex(c=>c.k===t.dataset.c);
+  if(colIdx<0) return;
+  const linhas=texto.replace(/\r/g,'').split('\n').filter((l,i,arr)=>!(i===arr.length-1 && l===''));
+  linhas.forEach((linhaTxt,offset)=>{
+    const valores=linhaTxt.split('\t');
+    const destI=linhaBase+offset;
+    while(EST[chave].length<=destI) EST[chave].push(linhaVazia(cols));
+    valores.forEach((v,vOffset)=>{
+      const destCol=cols[colIdx+vOffset];
+      if(!destCol) return;
+      const valor=v.trim();
+      EST[chave][destI][destCol.k]=destCol.opts
+        ? ((destCol.opts.find(o=>sa(o)===sa(valor)))||valor)
+        : valor;
+    });
+  });
+  redesenhar(); marcarSujo();
+  focarCelula(chave,linhaBase,t.dataset.c);
 });
 
 document.addEventListener('blur', e=>{
@@ -1521,23 +1561,13 @@ function redesenhar(){
 function campos(){
   const p=EST.params;
   const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.value=v===null||v===undefined?'':v; };
-  set('fCliente',p.cliente); set('fMes',p.mes); set('fDataRef',p.dataRef);
-  set('fEscritorio',p.escritorio); set('fRodape',p.rodape); set('fTaxa',p.taxa);
-  set('cPrim',p.cores.primaria); set('cSec',p.cores.secundaria);
-  set('cD1',p.cores.d1); set('cD2',p.cores.d2); set('cD3',p.cores.d3);
-  ['cPrim','cSec','cD1','cD2','cD3'].forEach(id=>{
-    const sw=document.getElementById(id+'sw'); if(sw) sw.style.background='#'+document.getElementById(id).value;
-  });
-  const lg=document.getElementById('logoPreview');
-  lg.innerHTML = p.logo ? '<img src="'+p.logo+'">' : '<span class="dim">Nenhuma logo carregada. O nome do escritório será usado como texto.</span>';
+  set('fCliente',p.cliente); set('fMes',p.mes); set('fDataRef',p.dataRef); set('fTaxa',p.taxa);
 }
 
 function lerCampos(){
   const g=id=>{ const e=document.getElementById(id); return e?e.value:''; };
   EST.params.cliente=g('fCliente'); EST.params.mes=g('fMes'); EST.params.dataRef=g('fDataRef');
-  EST.params.escritorio=g('fEscritorio'); EST.params.rodape=g('fRodape'); EST.params.taxa=g('fTaxa');
-  EST.params.cores={primaria:g('cPrim').replace('#',''),secundaria:g('cSec').replace('#',''),
-    d1:g('cD1').replace('#',''),d2:g('cD2').replace('#',''),d3:g('cD3').replace('#','')};
+  EST.params.taxa=g('fTaxa');
 }
 
 /* ---------------------------------------------------------- validacao */
@@ -1598,14 +1628,8 @@ function importarPlanilha(arquivo){
         if(m.cliente) p.cliente=m.cliente;
         if(m.mesdereferencia) p.mes=m.mesdereferencia;
         if(m.datadereferencia) p.dataRef = m.datadereferencia instanceof Date ? dataBR(m.datadereferencia) : m.datadereferencia;
-        if(m.escritorio) p.escritorio=m.escritorio;
-        if(m.assinaturarodape) p.rodape=m.assinaturarodape;
         if(m.taxadecorretagem!==undefined && m.taxadecorretagem!=='')
           p.taxa = typeof m.taxadecorretagem==='number' ? +(m.taxadecorretagem*100).toFixed(2) : m.taxadecorretagem;
-        ['corprimaria','corsecundaria','cordestaque1','cordestaque2','cordestaque3'].forEach((c,i)=>{
-          const alvo=['primaria','secundaria','d1','d2','d3'][i];
-          if(m[c]) p.cores[alvo]=String(m[c]).replace('#','');
-        });
       }
       const im=pega('Imoveis').map(r=>mapear(r,MAPA_IMOVEIS,['part'])).filter(r=>String(r.imovel||'').trim());
       const pj=pega('Projetos').map(r=>mapear(r,MAPA_PROJ,['part','rent'])).filter(r=>String(r.projeto||'').trim());
@@ -1628,14 +1652,7 @@ function baixarModelo(){
     ['Cliente','','Aparece na capa e no rodape'],
     ['Mes de Referencia','','Ex.: Dezembro, 2025'],
     ['Data de Referencia','','dd/mm/aaaa. Base do calculo de vencimento dos contratos'],
-    ['Escritorio',EST.params.escritorio,''],
-    ['Assinatura Rodape',EST.params.rodape,''],
-    ['Taxa de Corretagem',16,'Em percentual. Ex.: 16'],
-    ['Cor Primaria',EST.params.cores.primaria,'Hex sem #'],
-    ['Cor Secundaria',EST.params.cores.secundaria,'Hex sem #'],
-    ['Cor Destaque 1',EST.params.cores.d1,'Hex sem #'],
-    ['Cor Destaque 2',EST.params.cores.d2,'Hex sem #'],
-    ['Cor Destaque 3',EST.params.cores.d3,'Hex sem #']];
+    ['Taxa de Corretagem',16,'Em percentual. Ex.: 16']];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(par), 'Parametros');
   const cabIm=['Conta','Cidade/UF','Categoria','Setor','Tipo','Imovel','Part. %','Area Total',
     'Area Privativa','Valor Aquisitivo','Valor Mercado','Data Aquisicao','Situacao','Valor Aluguel',
@@ -1665,22 +1682,14 @@ function abrirProjeto(arquivo){
   const fr=new FileReader();
   fr.onload=ev=>{ try{
     const o=JSON.parse(ev.target.result);
-    EST=Object.assign(EST,o); redesenhar(); marcarSujo();
+    EST=Object.assign(EST,o);
+    /* Projeto salvo antes desta mudança pode trazer marca própria no JSON —
+       a marca da Adami Captal não é mais opcional, então sobrepõe de novo. */
+    EST.params=Object.assign({},EST.params,MARCA_ADAMI);
+    redesenhar(); marcarSujo();
     notificar('Projeto carregado.');
   }catch(err){ notificar('Arquivo inválido: '+err.message,true);} };
   fr.readAsText(arquivo);
-}
-
-/* --------------------------------------------------------- logo/cores */
-function carregarLogo(arquivo){
-  const fr=new FileReader();
-  fr.onload=ev=>{
-    const img=new Image();
-    img.onload=()=>{ EST.params.logo=ev.target.result;
-      EST.params.logoRatio = img.width/img.height; campos(); marcarSujo(); };
-    img.src=ev.target.result;
-  };
-  fr.readAsDataURL(arquivo);
 }
 
 /* ------------------------------------------------------------ preview */
@@ -1730,12 +1739,11 @@ function abrirAba(id){
 <script>
 document.getElementById('arqPlanilha').addEventListener('change',e=>{ if(e.target.files[0]) importarPlanilha(e.target.files[0]); e.target.value=''; });
 document.getElementById('arqProjeto').addEventListener('change',e=>{ if(e.target.files[0]) abrirProjeto(e.target.files[0]); e.target.value=''; });
-document.getElementById('arqLogo').addEventListener('change',e=>{ if(e.target.files[0]) carregarLogo(e.target.files[0]); e.target.value=''; });
-['fCliente','fMes','fDataRef','fTaxa','fEscritorio','fRodape','cPrim','cSec','cD1','cD2','cD3']
+['fCliente','fMes','fDataRef','fTaxa']
   .forEach(id=>document.getElementById(id).addEventListener('input',()=>{ lerCampos(); campos(); marcarSujo(); validarUI(); }));
 
 /* ====================== SELO DE VERSAO ====================== */
-var VERSAO_IMOB = "versão 2.50";
+var VERSAO_IMOB = "versão 2.51";
 document.getElementById('selo').textContent = VERSAO_IMOB;
 
 /* ====================== RASCUNHO AUTOMATICO ======================
