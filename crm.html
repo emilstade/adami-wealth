@@ -1472,6 +1472,14 @@
     .painel .painel-linha.linha-2{grid-template-columns:minmax(0,1fr);}
     .painel .linha-2 .ind:nth-child(2){padding-left:0;border-left:none;}
   }
+  /* Três colunas, para a faixa de Carteira depois que o SLA saiu (eram
+     quatro campos, agora três) — mesmo padrão da linha-2, um degrau maior. */
+  .painel .painel-linha.linha-3{grid-template-columns:repeat(3, minmax(0,1fr));}
+  @media (max-width:600px){
+    .painel .painel-linha.linha-3{grid-template-columns:minmax(0,1fr);}
+    .painel .linha-3 .ind:nth-child(2),
+    .painel .linha-3 .ind:nth-child(3){padding-left:0;border-left:none;}
+  }
 
   @media (prefers-reduced-motion:reduce){
     .rosca-fatia, .barra-v-fill{animation:none;}
@@ -5113,7 +5121,8 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
         h('label',null,'Como chegou'),
         h('select',{ value:initial.origem || '', onChange:set('origem') },
           h('option',{value:''},'Não informado'),
-          ORIGENS.map(o => h('option',{key:o, value:o}, o)))
+          ORIGENS.map(o => h('option',{key:o, value:o}, o))),
+        h('div',{className:'field-hint'}, 'Alimenta o indicador "De onde vem o patrimônio". Sem preencher, o cliente não entra nesse relatório.')
       )
     ) : h(Fragment, null,
       /* O produto nasce da aba aberta no momento da criação — um detalhe que
@@ -5132,7 +5141,8 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
           }
           onChange({ ...initial, produto: novoProduto, oportunidade });
         }},
-          PRODUTOS.map(p => h('option',{key:p, value:p}, p)))
+          PRODUTOS.map(p => h('option',{key:p, value:p}, p))),
+        h('div',{className:'field-hint'}, 'Trocar aqui muda de CRM: o card some daqui e passa a aparecer no funil do produto novo.')
       ),
       /* Perfil financeiro só no Seguro: é o que orienta a análise de risco
          e a composição da apólice. Consórcio não usa esses dados. */
@@ -5141,7 +5151,8 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
           h('label',null,'Patrimônio'),
           h('input',{ value:initial.patrimonio || '', onChange:set('patrimonio'),
             inputMode:'decimal', placeholder:'Ex: 1200000',
-            onBlur:(e)=>{ const n = parseValor(e.target.value); onChange({ ...initial, patrimonio: n === null ? '' : fmtBRL(n) }); } })
+            onBlur:(e)=>{ const n = parseValor(e.target.value); onChange({ ...initial, patrimonio: n === null ? '' : fmtBRL(n) }); } }),
+          h('div',{className:'field-hint'}, 'Só para a análise de risco do seguro. Não é o valor do negócio nem entra na carteira.')
         ),
         h('div',{className:'field'},
           h('label',null,'Renda mensal'),
@@ -5263,7 +5274,8 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
       ),
       h('div',{className:'field'},
         h('label',null, pj ? 'Onde os recursos estão hoje' : 'Onde o patrimônio está hoje'),
-        h('input',{ value:initial.bancoAtual || '', onChange:set('bancoAtual'), placeholder:'Ex: Itaú, XP, imóveis' })
+        h('input',{ value:initial.bancoAtual || '', onChange:set('bancoAtual'), placeholder:'Ex: Itaú, XP, imóveis' }),
+        h('div',{className:'field-hint'}, 'Ajuda a entender de onde pode vir a captação.')
       )
     ) : null,
     h('div',{className:'field-row'},
@@ -5273,7 +5285,8 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
       ),
       h('div',{className:'field'},
         h('label',null,'Data do próximo contato'),
-        h('input',{ type:'date', value:initial.proximoContato, onChange:set('proximoContato') })
+        h('input',{ type:'date', value:initial.proximoContato, onChange:set('proximoContato') }),
+        h('div',{className:'field-hint'}, 'O card avisa quando essa data passa sem contato registrado.')
       )
     ),
     h('div',{className:'field-row'},
@@ -7085,37 +7098,11 @@ function computeAssessoriaStats(scopedLeads, users, filtros, cotacao){
     return { key: st.key, color: st.color, count: naEtapa.length, valor: somar(naEtapa) };
   });
 
-  /* SLA por etapa: quantos estão dentro e quantos passaram do prazo. */
-  const slaPorEtapa = Object.keys(SLA_DIAS).map(etapa => {
-    const naEtapa = ativos.filter(l => l.etapa === etapa);
-    const fora = naEtapa.filter(l => { const r = slaRestante(l); return r !== null && r < 0; });
-    return { etapa, prazo: SLA_DIAS[etapa], total: naEtapa.length, fora: fora.length };
-  });
-  const slaEstourado = slaPorEtapa.reduce((acc, x) => acc + x.fora, 0);
-
   const porOrigem = ORIGENS.map(o => {
     const daOrigem = ativos.filter(l => l.origem === o);
     return { key: o, count: daOrigem.length, valor: emCarteira(daOrigem) };
   }).filter(x => x.count > 0).sort((a,b) => b.valor - a.valor);
   const semOrigem = ativos.filter(l => !l.origem).length;
-
-  /* Tempo real entre reuniões, lido do histórico de movimentações. */
-  const tempoEtapa = {};
-  scopedLeads.forEach(l => {
-    const hist = (l.historico || []).filter(x => x.de);
-    hist.forEach((mov, i) => {
-      const anterior = i === 0 ? (l.criadoEm || mov.data) : hist[i-1].data;
-      const etapa = mov.de;
-      if(!tempoEtapa[etapa]) tempoEtapa[etapa] = { total:0, count:0 };
-      tempoEtapa[etapa].total += (mov.data - anterior);
-      tempoEtapa[etapa].count += 1;
-    });
-  });
-  const diasPorEtapa = STAGES_ASSESSOR.map(st => {
-    const t = tempoEtapa[st.key];
-    return { key: st.key, color: st.color, days: t ? (t.total/t.count)/86400000 : null,
-             prazo: SLA_DIAS[st.key] || null };
-  });
 
   const ranking = users
     .filter(u => scopedLeads.some(l => l.responsavelId === u.id))
@@ -7131,8 +7118,8 @@ function computeAssessoriaStats(scopedLeads, users, filtros, cotacao){
   const onboardingIncompleto = ativos.filter(l => onboardingPendentes(l).length > 0).length;
 
   return { ativos, totalCarteira, totalOnshore, offshore, emCaptacao, sobGestao, semPatrimonio, fluxo,
-           porSegmento, porEtapa, slaPorEtapa, slaEstourado,
-           porOrigem, semOrigem, diasPorEtapa, ranking, rankingMax, pj, daBase, onboardingIncompleto };
+           porSegmento, porEtapa,
+           porOrigem, semOrigem, ranking, rankingMax, pj, daBase, onboardingIncompleto };
 }
 
 /* ================= Em captação, por temperatura =================
@@ -8004,8 +7991,6 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
   const producaoTotal = fechados.reduce((a,l) => a + valorDe(l), 0);
   const emJogo = abertos.reduce((a,l) => a + valorDe(l), 0);
 
-  const numero = (n) => String(Math.round(n));
-
   return h('div',{className:'painel'},
     h('div',{className:'print-header'},
       h('div',{className:'print-brand'}, h('span',{className:'brand-mark'}), h('span',null,'Pipeline')),
@@ -8033,7 +8018,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
         h('span',{className:'painel-secao-nome'},'Carteira'),
         h('span',{className:'painel-secao-desc'},'investimentos sob gestão')
       ),
-      h('div',{className:'painel-linha linha-4'},
+      h('div',{className:'painel-linha linha-3'},
         h(Indicador,{ rotulo:'Total da carteira', largo:true,
           valor: carteira.totalCarteira, formato: fmtBRLCompact,
           /* Onshore e offshore no mesmo número: o contexto diz de que ele é
@@ -8048,10 +8033,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
         h(Indicador,{ rotulo:'Net New Money',
           tom: carteira.fluxo.liquido < 0 ? 'alerta' : 'verde',
           valor: carteira.fluxo.liquido, formato: (n) => (n >= 0 ? '+' : '−') + fmtBRLCompact(Math.abs(n)),
-          contexto: fmtBRLCompact(carteira.fluxo.entrou) + ' entrou · ' + fmtBRLCompact(carteira.fluxo.retiradas) + ' saiu' }),
-        h(Indicador,{ rotulo:'SLA estourado', tom: carteira.slaEstourado ? 'alerta' : 'verde',
-          valor: carteira.slaEstourado, formato: numero,
-          contexto: carteira.slaEstourado ? 'fora do prazo' : 'tudo no prazo' })
+          contexto: fmtBRLCompact(carteira.fluxo.entrou) + ' entrou · ' + fmtBRLCompact(carteira.fluxo.retiradas) + ' saiu' })
       ),
 
       h('div',{className:'painel-secao'},
@@ -8803,7 +8785,6 @@ function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo
   const maxSegmento = Math.max(1, ...s.porSegmento.map(x => x.valor));
   const maxEtapa = Math.max(1, ...s.porEtapa.map(x => x.count));
   const maxOrigem = Math.max(1, ...s.porOrigem.map(x => x.valor));
-  const maxDias = Math.max(1, ...s.diasPorEtapa.map(x => x.days || 0));
 
   return h(Fragment, null,
     h('div',{className:'print-header'},
@@ -8826,13 +8807,6 @@ function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo
                 s.offshore.consolidado ? ' offshore' : ' offshore fora do total')
             : null
         )
-      ),
-      h('div',{className:'kpi-tile span2' + (s.slaEstourado ? ' danger' : ' success')},
-        h('div',{className:'kpi-label'},'SLA estourado'),
-        h('div',{className:'kpi-num'}, s.slaEstourado),
-        h('div',{className:'kpi-sub'}, s.slaEstourado
-          ? 'clientes passaram do prazo entre reuniões'
-          : 'nenhum cliente fora do prazo')
       ),
       h('div',{className:'kpi-tile span2'},
         h('div',{className:'kpi-label'},'Onboarding pendente'),
@@ -8940,7 +8914,6 @@ function CarteiraSecoes({ stats, leads, admin }){
   const maxSegmento = Math.max(1, ...s.porSegmento.map(x => x.valor));
   const maxEtapa = Math.max(1, ...s.porEtapa.map(x => x.count));
   const maxOrigem = Math.max(1, ...s.porOrigem.map(x => x.valor));
-  const maxDias = Math.max(1, ...s.diasPorEtapa.map(x => x.days || 0));
   return h(Fragment, null,
     /* A curva de patrimônio sob gestão abre a análise: é a pergunta que o
        assessor faz sobre a própria carteira antes de qualquer recorte. */
@@ -8973,67 +8946,33 @@ function CarteiraSecoes({ stats, leads, admin }){
       )
     ),
 
-    h('div',{className:'kpi-two-col'},
-      h('div',{className:'kpi-section'},
-        h('div',{className:'kpi-section-head'}, h('h2',null,'De onde vem o patrimônio'), h('span',null,'por canal de origem')),
-        s.porOrigem.length === 0
-          ? h('div',{className:'empty-kpi'},'Nenhuma origem registrada. Preencha "como chegou" no cadastro.')
-          : h(Fragment, null,
-              s.porOrigem.map((o, i) => h(BarRow,{
-                key:o.key, label:o.key, value:o.valor, max:maxOrigem, posicao:i+1,
-                display: fmtBRLCompact(o.valor),
-                secundario: o.count + (o.count === 1 ? ' cliente' : ' clientes'),
-                color:'var(--primary)',
-              })),
-              s.semOrigem ? h('div',{className:'field-hint', style:{marginTop:10}},
-                s.semOrigem + ' cliente(s) sem origem informada.') : null
-            )
-      ),
-      /* SLA, ranking e tempo por etapa comparam pessoas e prazos do processo:
-         são leituras de gestão. Na carteira do assessor, distraem do que ele
-         de fato controla. */
-      admin ? h('div',{className:'kpi-section'},
-        h('div',{className:'kpi-section-head'}, h('h2',null,'Cumprimento de SLA'), h('span',null,'fora do prazo por etapa')),
-        s.slaPorEtapa.every(x => x.total === 0)
-          ? h('div',{className:'empty-kpi'},'Nenhum cliente nas etapas com prazo definido.')
-          : s.slaPorEtapa.map(x => h(BarRow,{
-              key:x.etapa, label:etapaCurta(x.etapa),
-              value:x.fora, max:Math.max(1, ...s.slaPorEtapa.map(y=>y.total)),
-              semDados: x.total === 0,
-              display: x.total === 0 ? 'nenhum cliente' : x.fora + ' de ' + x.total,
-              secundario: x.total === 0 ? null : 'prazo de ' + x.prazo + ' dias',
-              color: x.fora > 0 ? 'var(--danger)' : 'var(--success)',
-            }))
-      ) : null
+    h('div',{className:'kpi-section'},
+      h('div',{className:'kpi-section-head'}, h('h2',null,'De onde vem o patrimônio'), h('span',null,'por canal de origem')),
+      s.porOrigem.length === 0
+        ? h('div',{className:'empty-kpi'},'Nenhuma origem registrada. Preencha "como chegou" no cadastro.')
+        : h(Fragment, null,
+            s.porOrigem.map((o, i) => h(BarRow,{
+              key:o.key, label:o.key, value:o.valor, max:maxOrigem, posicao:i+1,
+              display: fmtBRLCompact(o.valor),
+              secundario: o.count + (o.count === 1 ? ' cliente' : ' clientes'),
+              color:'var(--primary)',
+            })),
+            s.semOrigem ? h('div',{className:'field-hint', style:{marginTop:10}},
+              s.semOrigem + ' cliente(s) sem origem informada.') : null
+          )
     ),
 
-    admin ? h('div',{className:'kpi-two-col'},
-      h('div',{className:'kpi-section'},
-        h('div',{className:'kpi-section-head'}, h('h2',null,'Carteira por assessor'), h('span',null,'patrimônio sob acompanhamento')),
-        s.ranking.length === 0 ? h('div',{className:'empty-kpi'},'Nenhum assessor com carteira.') :
-        s.ranking.map((v, i) => h(BarRow,{
-          key:v.id, label:v.nome, value:v.valor, max:s.rankingMax, posicao:i+1,
-          display: fmtBRLCompact(v.valor),
-          secundario: v.count + (v.count === 1 ? ' cliente' : ' clientes'),
-          color:'var(--primary)',
-        }))
-      ),
-      h('div',{className:'kpi-section'},
-        h('div',{className:'kpi-section-head'}, h('h2',null,'Tempo médio por etapa'), h('span',null,'dias reais versus prazo')),
-        s.diasPorEtapa.every(x => x.days === null)
-          ? h('div',{className:'empty-kpi'},'Ainda sem movimentações suficientes.')
-          : s.diasPorEtapa.map(x => h(BarRow,{
-              key:x.key, label:etapaCurta(x.key), dotColor:x.color, value:x.days || 0, max:maxDias,
-              semDados: x.days === null,
-              display: x.days === null ? 'sem movimentações'
-                : x.days.toLocaleString('pt-BR',{maximumFractionDigits:1}) + 'd',
-              secundario: (x.days !== null && x.prazo)
-                ? (x.days > x.prazo ? 'acima do prazo' : 'dentro do prazo') : null,
-              meta: x.prazo, metaLabel: x.prazo ? 'Prazo do processo: ' + x.prazo + ' dias' : null,
-              /* Vermelho quando a média real já passou do prazo do processo. */
-              color: (x.prazo && x.days > x.prazo) ? 'var(--danger)' : x.color,
-            }))
-      )
+    /* Ranking compara pessoas, é leitura de gestão: na carteira do próprio
+       assessor distrai do que ele de fato controla, por isso só o admin vê. */
+    admin ? h('div',{className:'kpi-section'},
+      h('div',{className:'kpi-section-head'}, h('h2',null,'Carteira por assessor'), h('span',null,'patrimônio sob acompanhamento')),
+      s.ranking.length === 0 ? h('div',{className:'empty-kpi'},'Nenhum assessor com carteira.') :
+      s.ranking.map((v, i) => h(BarRow,{
+        key:v.id, label:v.nome, value:v.valor, max:s.rankingMax, posicao:i+1,
+        display: fmtBRLCompact(v.valor),
+        secundario: v.count + (v.count === 1 ? ' cliente' : ' clientes'),
+        color:'var(--primary)',
+      }))
     ) : null
   );
 }
@@ -10991,7 +10930,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.73";
+var VERSAO_CRM="versão 2.74";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
