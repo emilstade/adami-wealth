@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store, max-age=0">
+<title>Processo Comercial</title>
+<style>
+:root{
+  --navy:#1B3A5F; --navy-d:#132B47; --ink:#16324F; --ink-2:#3C4C60; --muted:#7A8698;
+  --paper:#EDF0F4; --surface:#FFFFFF; --line:#DCE2EA; --line-2:#EDF1F5;
+  --gold:#C0A265; --gold-2:#D9C79B; --blue-2:#3D6D9E; --blue-3:#7FA0C4;
+  --green:#0A7344; --alert:#A03A2B;
+  --display:"Iowan Old Style",Constantia,Cambria,"Palatino Linotype",Georgia,serif;
+  --body:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Cascadia Mono",Consolas,"SF Mono",Menlo,"Courier New",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:var(--body);color:var(--ink);background:var(--paper);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;font-weight:600}
+button{font-family:inherit;cursor:pointer}
+
+#awVoltar{position:fixed;bottom:18px;left:18px;z-index:99999;background:var(--navy);color:#fff;border:0;
+  border-radius:999px;padding:10px 18px;font:500 13px var(--body);cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.92}
+#awVoltar:hover{background:var(--navy-d);opacity:1}
+
+.topo{background:var(--navy);color:#fff;padding:46px 24px 40px}
+.topo-int{max-width:920px;margin:0 auto}
+.topo .eyebrow{font:600 11px var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold-2);margin-bottom:10px}
+.topo h1{font-family:var(--display);font-size:34px;font-weight:600;letter-spacing:.005em}
+.topo .rule{width:52px;height:2px;background:var(--gold);margin:16px 0}
+.topo p{max-width:640px;color:#CFDAE8;font-size:14.5px;margin:0}
+
+.wrap{max-width:920px;margin:0 auto;padding:36px 24px 90px}
+
+section{margin-bottom:40px}
+.sec-head{margin-bottom:16px}
+.sec-head h2{font-family:var(--display);font-size:21px;color:var(--navy)}
+.sec-head p{color:var(--muted);font-size:13px;margin:5px 0 0;max-width:620px}
+
+/* ---- segmentação ---- */
+.seg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.seg-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 18px 20px}
+.seg-card .nome{font-family:var(--display);font-size:17px;color:var(--navy);font-weight:600}
+.seg-card .faixa{font:600 11px var(--mono);color:var(--gold);text-transform:uppercase;letter-spacing:.04em;margin:5px 0 10px}
+.seg-card p{font-size:12.5px;color:var(--ink-2);margin:0}
+
+/* ---- tabs de esteira ---- */
+.esteira-tabs{display:flex;gap:8px;margin-bottom:6px}
+.esteira-tabs button{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:14px 16px;text-align:left;font-family:inherit}
+.esteira-tabs button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.esteira-tabs button b{display:block;font-family:var(--display);font-size:16px}
+.esteira-tabs button span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.esteira-tabs button.on span{color:#B9C8DC}
+
+.esteira-intro{font-size:13px;color:var(--ink-2);margin:14px 0 18px;max-width:640px}
+
+/* ---- chips de caminho (segmento dentro de cliente novo) ---- */
+.caminho-chips{display:flex;gap:8px;margin-bottom:16px}
+.caminho-chips button{background:var(--surface);border:1px solid var(--line);border-radius:999px;
+  padding:7px 15px;font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.caminho-chips button.on{background:var(--gold);border-color:var(--gold);color:var(--navy-d)}
+.caminho-nota{font-size:12.5px;color:var(--muted);font-style:italic;margin:-8px 0 16px;max-width:640px}
+
+/* ---- timeline de etapas ---- */
+.timeline{position:relative;padding-left:2px}
+.etapa{display:flex;gap:16px;margin-bottom:4px}
+.etapa-trilho{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.etapa-cod{width:42px;height:42px;border-radius:50%;background:var(--navy);color:#fff;
+  display:flex;align-items:center;justify-content:center;font:700 12px var(--mono);flex-shrink:0}
+.etapa-fio{width:2px;flex:1;background:var(--line);margin:4px 0}
+.etapa-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:14px 16px;margin-bottom:18px;flex:1}
+.etapa-card h3{font-family:var(--display);font-size:16px;color:var(--navy);font-weight:600}
+.etapa-meta{display:flex;flex-wrap:wrap;gap:8px;margin:7px 0 9px}
+.etapa-tag{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--line-2);color:var(--ink-2)}
+.etapa-tag.modo-pres{background:#FBEFE3;color:#8A5A20}
+.etapa-tag.modo-flex{background:#E9F1FB;color:var(--blue-2)}
+.etapa-card p.oque{font-size:13px;color:var(--ink-2);margin:0}
+.etapa-card .extra{font-size:12px;color:var(--navy);background:var(--line-2);border-radius:6px;
+  padding:7px 10px;margin-top:9px}
+.etapa-sla{font-size:11.5px;color:var(--muted);margin-top:16px;padding-left:2px}
+.etapa-sla b{color:var(--ink-2);font-family:var(--mono)}
+
+.diferenca-box{background:#FBEFE3;border:1px solid #EBD9BE;border-radius:10px;padding:14px 16px;
+  font-size:13px;color:#5C4620;margin-top:6px}
+.diferenca-box b{color:#8A5A20}
+
+/* ---- presencial vs vídeo ---- */
+.pv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pv-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.pv-card h3{font-size:13.5px;color:var(--navy);margin-bottom:10px}
+.pv-card ul{margin:0;padding-left:0;list-style:none}
+.pv-card li{font-size:12.5px;color:var(--ink-2);margin-bottom:9px;padding-left:0}
+.pv-card li b{color:var(--ink);display:block;font-size:13px;margin-bottom:2px}
+.pv-card.pres{border-top:3px solid #C98A3A}
+.pv-card.flex{border-top:3px solid var(--blue-2)}
+.pv-nota{font-size:12px;color:var(--muted);margin-top:12px;font-style:italic}
+
+/* ---- matriz ---- */
+.matriz-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table.matriz{border-collapse:collapse;width:100%;font-size:12.5px}
+table.matriz th{background:var(--navy);color:#fff;text-align:left;padding:10px 12px;font-weight:600;white-space:nowrap}
+table.matriz th.centro,table.matriz td.centro{text-align:center}
+table.matriz td{padding:9px 12px;border-bottom:1px solid var(--line-2);color:var(--ink-2)}
+table.matriz tr:last-child td{border-bottom:none}
+table.matriz td.dot{color:var(--green);font-weight:700}
+table.matriz td.off{color:var(--line)}
+table.matriz td.reuniao{color:var(--ink);font-weight:600}
+
+footer{text-align:center;color:var(--muted);font-size:11px;padding:20px 24px 30px}
+
+@media (max-width:760px){
+  .seg-grid{grid-template-columns:1fr}
+  .esteira-tabs{flex-direction:column}
+  .pv-grid{grid-template-columns:1fr}
+  .topo h1{font-size:27px}
+}
+</style>
+</head>
+<body>
+
+<button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
+
+<div class="topo">
+  <div class="topo-int">
+    <div class="eyebrow">Ponto de apoio para assessores</div>
+    <h1>Processo Comercial</h1>
+    <div class="rule"></div>
+    <p>Sem um processo estruturado, cada assessor cria seu próprio caminho — com resultados
+       inconsistentes, oportunidades perdidas e experiência de cliente desigual. Esta página
+       documenta o caminho do primeiro contato até a reunião de produto, com o que fazer e
+       os entregáveis de cada etapa.</p>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section>
+    <div class="sec-head">
+      <h2>Segmentação: o ponto de partida</h2>
+      <p>O segmento do cliente define quais reuniões, entregáveis e especialistas fazem parte da
+         jornada. Quanto maior o patrimônio, mais camadas de valor são adicionadas.</p>
+    </div>
+    <div class="seg-grid" id="segGrid"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>A trilha, etapa por etapa</h2>
+      <p>Escolha a esteira do cliente — e, se for cliente novo, o segmento — para ver exatamente
+         o que fazer em cada reunião.</p>
+    </div>
+    <div class="esteira-tabs" id="esteiraTabs"></div>
+    <div id="esteiraConteudo"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Presencial vs. vídeo: onde estar fisicamente</h2>
+      <p>Nem todas as etapas exigem presença física — mas as reuniões de maior impacto na
+         conversão precisam acontecer olho no olho.</p>
+    </div>
+    <div class="pv-grid">
+      <div class="pv-card pres">
+        <h3>🏢 Reuniões presenciais obrigatórias</h3>
+        <ul>
+          <li><b>R1 — Descoberta</b>Primeiro contato, construção de vínculo e confiança. A presença física cria a base emocional para toda a jornada.</li>
+          <li><b>R2.1 — Consolidação</b>Captura de valores em outros bancos exige abertura e confiança do cliente. A presença física eleva significativamente a taxa de conversão.</li>
+        </ul>
+      </div>
+      <div class="pv-card flex">
+        <h3>💻 Reuniões por vídeo (funcionam bem)</h3>
+        <ul>
+          <li><b>R2 — Proposta</b>Presencial ou vídeo.</li>
+          <li><b>R3 — Liberdade Financeira</b>Presencial ou vídeo.</li>
+          <li><b>R4 — Produto</b>Presencial ou vídeo.</li>
+        </ul>
+        <div class="pv-nota">Vídeo facilita a cadência rápida entre etapas, mantendo o momentum do processo sem sacrificar qualidade.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Matriz reunião × segmento</h2>
+      <p>Visão consolidada de quais reuniões se aplicam a cada segmento e quem conduz cada etapa.</p>
+    </div>
+    <div class="matriz-wrap">
+      <table class="matriz" id="matrizTable"></table>
+    </div>
+  </section>
+
+</div>
+
+<footer>Ponto de apoio interno · não substitui o treinamento nem o DOCUMENTACAO.md do time técnico · <span id="verProcesso"></span></footer>
+
+<script>
+var VERSAO_PROCESSO = "versão 1.0";
+
+/* ================= Dados =================
+   Fonte: apresentação "Processo Comercial — Adami Captal Investimentos",
+   versão de trabalho 2025. Conteúdo fixo: quando o processo mudar, atualizar
+   aqui (não existe tela de edição — mesmo tratamento do resto do site). */
+
+var SEGMENTOS = [
+  { key:'advisory', nome:'Advisory', faixa:'Até R$ 1 milhão',
+    desc:'Jornada estruturada com entregáveis a definir — base para fidelização e crescimento patrimonial.' },
+  { key:'exclusive', nome:'Exclusive', faixa:'R$ 1 a R$ 5 milhões',
+    desc:'Relatório Consolidado completo como ferramenta central de visibilidade patrimonial.' },
+  { key:'private', nome:'Private', faixa:'Acima de R$ 5 milhões',
+    desc:'Relatório Consolidado + Plano Patrimonial + Consolidação Imobiliária + Reunião de Wealth Planning BTG.' }
+];
+
+/* SLA entre etapas: ritmo esperado, não indicador de cobrança — por isso não
+   tem alarme nem contagem aqui, só o contexto de por que o prazo existe. */
+var SLA = {
+  'R1':   { dias:3, nota:'Proposta deve chegar enquanto o cliente ainda está animado com a descoberta.' },
+  'R2':   { dias:7, nota:'1 semana para preparar o Relatório Consolidado real e agendar a consolidação.' },
+  'R2.1': { dias:7, nota:'1 semana para avançar ao Plano de Liberdade Financeira sem deixar esfriar.' },
+  'R3':   { dias:7, nota:'1 semana para fechar o ciclo com a reunião de produto personalizada.' }
+};
+
+var ESTEIRAS = {
+  novo: {
+    label:'Cliente Novo',
+    sub:'Sem conta nem recursos no escritório',
+    intro:'Uma jornada de reuniões que constrói confiança, propõe valor e converte patrimônio disperso em relacionamento consolidado.',
+    caminhos:{
+      padrao:{
+        label:'Advisory & Exclusive',
+        etapas:[
+          { key:'R1', titulo:'Descoberta', quem:'Assessor', modo:'pres',
+            oque:'Apresentação institucional, captura de informações e abertura de conta.' },
+          { key:'R2', titulo:'Proposta', quem:'Assessor + Investor (opcional)', modo:'flex',
+            oque:'Proposta BTG, modelo de remuneração, TED e modelo de Relatório Consolidado.' },
+          { key:'R2.1', titulo:'Consolidação', quem:'Assessor + Investor', modo:'pres',
+            oque:'Relatório real e captação de valores em outros bancos.' },
+          { key:'R3', titulo:'Liberdade Financeira', quem:'Assessor + Investor (opcional)', modo:'flex',
+            oque:'Plano de Liberdade Financeira e agendamento da R4.' },
+          { key:'R4', titulo:'Produto', quem:'Assessor + Especialista', modo:'flex',
+            oque:'Reunião temática por gap: Consórcio, Seguro ou Previdência.' }
+        ]
+      },
+      private:{
+        label:'Private',
+        nota:'A espinha dorsal é a mesma do Advisory/Exclusive, mas o Private recebe camadas adicionais de profundidade patrimonial em cada etapa — elevando a experiência a um nível premium.',
+        etapas:[
+          { key:'R1', titulo:'Descoberta', quem:'Assessor', modo:'pres',
+            oque:'Mesma base Advisory/Exclusive: institucional, captura de informações e abertura de conta. O relacionamento começa aqui.' },
+          { key:'R2', titulo:'Proposta + Plano Patrimonial (modelo)', quem:'Assessor + Investor (opcional)', modo:'flex',
+            oque:'Proposta BTG, modelo de remuneração e Relatório Consolidado. Diferencial Private: apresentação dos modelos de Plano Patrimonial e Análise de Enquadramento.' },
+          { key:'R2.1', titulo:'Plano Patrimonial Real', quem:'Assessor + Investor', modo:'pres',
+            oque:'Pré-reunião com formulário enviado ao cliente. Investor e Assessor desenvolvem o plano. Apresentação do Plano Patrimonial e da Análise de Enquadramento reais.' },
+          { key:'R3', titulo:'Liberdade Financeira + Wealth', quem:'Assessor + Investor (opcional)', modo:'flex',
+            oque:'Plano de Liberdade Financeira + Planejamento Imobiliário + oportunidade de Wealth Planning BTG. Agendamento da R4.' },
+          { key:'R4', titulo:'Produto', quem:'Assessor + Especialista', modo:'flex',
+            oque:'Reunião temática conforme gap identificado — Consórcio, Seguro ou Previdência. Uma pauta por reunião.' }
+        ]
+      }
+    }
+  },
+  base:{
+    label:'Gestão da Base',
+    sub:'Já tem conta e recursos no escritório',
+    intro:'Clientes que já têm conta e recursos no escritório entram direto na R2 — sem necessidade de reunião institucional. O foco é ampliar o share of wallet e aprofundar o relacionamento.',
+    etapas:[
+      { key:'R2', titulo:'Entrada', quem:'Assessor + Investor (opcional)', modo:'flex',
+        oque:'Relatório Consolidado (modelo), captura de extratos e definição do modelo de remuneração.' },
+      { key:'R2.1', titulo:'Consolidação', quem:'Assessor + Investor', modo:'pres',
+        oque:'Relatório Consolidado real + captação de valores em outros bancos. Presencial para máxima abertura.' },
+      { key:'R3', titulo:'Liberdade Financeira', quem:'Assessor + Investor (opcional)', modo:'flex',
+        oque:'Plano de Liberdade Financeira e agendamento da R4.',
+        extra:'Private: + Planejamento Imobiliário e Wealth Planning BTG.' },
+      { key:'R4', titulo:'Produto', quem:'Assessor + Especialista', modo:'flex',
+        oque:'Reunião temática conforme gap identificado — Consórcio, Seguro ou Previdência. Uma pauta por reunião.' }
+    ],
+    diferenca:'O cliente novo passa pela R1 institucional e pela R2 completa, com proposta BTG e TED. O cliente da base já tem conta e recursos — a jornada começa pela consolidação, com foco em share of wallet.'
+  }
+};
+
+var MATRIZ = [
+  { reuniao:'R1 — Institucional e captura', advisory:1, exclusive:1, private:1, conduz:'Assessor' },
+  { reuniao:'R2 — Proposta BTG, remuneração, modelo consolidado', advisory:1, exclusive:1, private:1, conduz:'Assessor + Investor (opc.)' },
+  { reuniao:'R2 — Modelos de Plano e Enquadramento', advisory:0, exclusive:0, private:1, conduz:'Assessor + Investor (opc.)' },
+  { reuniao:'R2.1 — Consolidado real + outros bancos', advisory:1, exclusive:1, private:1, conduz:'Assessor + Investor' },
+  { reuniao:'R2.1 Private — Plano + Enquadramento reais', advisory:0, exclusive:0, private:1, conduz:'Assessor + Investor' },
+  { reuniao:'R3 — Plano de Liberdade Financeira', advisory:1, exclusive:1, private:1, conduz:'Assessor + Investor (opc.)' },
+  { reuniao:'R3 Private — Imobiliário + Wealth BTG', advisory:0, exclusive:0, private:1, conduz:'Assessor + Investor (opc.)' },
+  { reuniao:'R4 — Reunião de Produto', advisory:1, exclusive:1, private:1, conduz:'Assessor + Especialista' }
+];
+
+/* ================= Estado + render ================= */
+var ESTADO = { esteira:'novo', caminho:'padrao' };
+
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+function renderSegmentos(){
+  document.getElementById('segGrid').innerHTML = SEGMENTOS.map(function(s){
+    return '<div class="seg-card">' +
+      '<div class="nome">' + esc(s.nome) + '</div>' +
+      '<div class="faixa">' + esc(s.faixa) + '</div>' +
+      '<p>' + esc(s.desc) + '</p>' +
+    '</div>';
+  }).join('');
+}
+
+function renderTabs(){
+  document.getElementById('esteiraTabs').innerHTML = ['novo','base'].map(function(key){
+    var e = ESTEIRAS[key];
+    return '<button class="' + (ESTADO.esteira === key ? 'on' : '') + '" onclick="mudarEsteira(\'' + key + '\')">' +
+      '<b>' + esc(e.label) + '</b><span>' + esc(e.sub) + '</span>' +
+    '</button>';
+  }).join('');
+}
+
+function mudarEsteira(key){
+  ESTADO.esteira = key;
+  renderTabs();
+  renderConteudo();
+}
+function mudarCaminho(key){
+  ESTADO.caminho = key;
+  renderConteudo();
+}
+
+function etapaTag(modo){
+  return modo === 'pres'
+    ? '<span class="etapa-tag modo-pres">🏢 Presencial obrigatório</span>'
+    : '<span class="etapa-tag modo-flex">💻 Presencial ou vídeo</span>';
+}
+
+function renderTimeline(etapas){
+  return '<div class="timeline">' + etapas.map(function(et, i){
+    var isLast = i === etapas.length - 1;
+    var sla = SLA[et.key];
+    return '<div class="etapa">' +
+      '<div class="etapa-trilho"><div class="etapa-cod">' + esc(et.key) + '</div>' +
+        (isLast ? '' : '<div class="etapa-fio"></div>') +
+      '</div>' +
+      '<div class="etapa-card">' +
+        '<h3>' + esc(et.titulo) + '</h3>' +
+        '<div class="etapa-meta">' +
+          '<span class="etapa-tag">' + esc(et.quem) + '</span>' +
+          etapaTag(et.modo) +
+        '</div>' +
+        '<p class="oque">' + esc(et.oque) + '</p>' +
+        (et.extra ? '<div class="extra">' + esc(et.extra) + '</div>' : '') +
+        (!isLast && sla ? '<div class="etapa-sla">Ritmo esperado até a próxima etapa: <b>' + sla.dias + ' dias</b> — ' + esc(sla.nota) + '</div>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+function renderConteudo(){
+  var e = ESTEIRAS[ESTADO.esteira];
+  var html = '<p class="esteira-intro">' + esc(e.intro) + '</p>';
+
+  if(ESTADO.esteira === 'novo'){
+    html += '<div class="caminho-chips">' + Object.keys(e.caminhos).map(function(key){
+      var c = e.caminhos[key];
+      return '<button class="' + (ESTADO.caminho === key ? 'on' : '') + '" onclick="mudarCaminho(\'' + key + '\')">' + esc(c.label) + '</button>';
+    }).join('') + '</div>';
+    var caminho = e.caminhos[ESTADO.caminho] || e.caminhos.padrao;
+    if(caminho.nota) html += '<p class="caminho-nota">' + esc(caminho.nota) + '</p>';
+    html += renderTimeline(caminho.etapas);
+  } else {
+    html += renderTimeline(e.etapas);
+    html += '<div class="diferenca-box"><b>Diferença-chave: </b>' + esc(e.diferenca) + '</div>';
+  }
+
+  document.getElementById('esteiraConteudo').innerHTML = html;
+}
+
+function renderMatriz(){
+  var dot = function(v){ return v ? '<td class="centro dot">●</td>' : '<td class="centro off">—</td>'; };
+  var head = '<tr><th>Reunião / Entregável</th><th class="centro">Advisory</th><th class="centro">Exclusive</th>' +
+    '<th class="centro">Private</th><th>Conduz</th></tr>';
+  var rows = MATRIZ.map(function(m){
+    return '<tr><td class="reuniao">' + esc(m.reuniao) + '</td>' +
+      dot(m.advisory) + dot(m.exclusive) + dot(m.private) +
+      '<td>' + esc(m.conduz) + '</td></tr>';
+  }).join('');
+  document.getElementById('matrizTable').innerHTML = head + rows;
+}
+
+renderSegmentos();
+renderTabs();
+renderConteudo();
+renderMatriz();
+document.getElementById('verProcesso').textContent = VERSAO_PROCESSO;
+</script>
+</body>
+</html>
