@@ -856,7 +856,10 @@ create policy clientes_alterar on public.clientes for update to authenticated
 create policy clientes_apagar on public.clientes for delete to authenticated
   using (assessor_id = auth.uid() or public.eh_admin());
 
--- lancamentos: seguem o dono do cliente
+-- lancamentos: leitura segue o dono do cliente, escrita é só do admin.
+-- O preenchimento do relatório (Carteiras) virou tarefa do admin; sem isso
+-- aqui, esconder a aba "Preencher" na tela não impede nada — o assessor
+-- ainda gravaria chamando a API direto.
 drop policy if exists lanc_ler on public.lancamentos;
 drop policy if exists lanc_inserir on public.lancamentos;
 drop policy if exists lanc_alterar on public.lancamentos;
@@ -864,11 +867,11 @@ drop policy if exists lanc_apagar on public.lancamentos;
 create policy lanc_ler on public.lancamentos for select to authenticated
   using (public.meu_cliente(cliente_id));
 create policy lanc_inserir on public.lancamentos for insert to authenticated
-  with check (public.meu_cliente(cliente_id));
+  with check (public.eh_admin());
 create policy lanc_alterar on public.lancamentos for update to authenticated
-  using (public.meu_cliente(cliente_id)) with check (public.meu_cliente(cliente_id));
+  using (public.eh_admin()) with check (public.eh_admin());
 create policy lanc_apagar on public.lancamentos for delete to authenticated
-  using (public.meu_cliente(cliente_id));
+  using (public.eh_admin());
 
 -- cartas: comentário é da casa, liberado a todos os autenticados
 drop policy if exists cartas_tudo on public.cartas;

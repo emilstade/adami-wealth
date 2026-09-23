@@ -691,7 +691,10 @@ var EQUIPE=[], CONVITES=[], ABA_EQ="equipe";
    exato pra achar o especialista de cada produto; a grafia tem que bater
    com a mesma constante lá (PRODUTOS), senão o vínculo nunca casa e o
    especialista de seguro nunca aparece como opção. */
-var PRODUTOS_ESP=["Consórcio","Seguro","Previdência","Câmbio","Crédito","Renda Variável","Offshore"];
+/* Mesma lista que o CRM realmente atende (const PRODUTOS em crm.html) — as
+   opções que existiam aqui além dessas duas não tinham funil nenhum por
+   trás; marcar um especialista nelas não roteava encaminhamento nenhum. */
+var PRODUTOS_ESP=["Consórcio","Seguro"];
 
 function abrirEquipe(){
   if(!EU.super) return;
@@ -960,7 +963,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.76";
+var VERSAO="versão 2.77";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -1516,7 +1519,10 @@ function excluirMes(){
 function falha(e){ status("err","Erro ao salvar"); alert("Não foi possível concluir:\n\n"+e.message); }
 function selCliente(id){ S._chk=false; S.cliente=id; montarRascunho(); render(); }
 function mudarRef(){ S._chk=false; S.mes=parseInt(document.getElementById("selMes").value,10); S.ano=parseInt(document.getElementById("selAno").value,10); montarRascunho(); render(); }
-function setTab(t){ S.tab=t; render(); if(t==="historico"){ HIST.log=null; HIST.backups=null; abrirHistorico(); } }
+function setTab(t){
+  if(t==="preencher"&&!EU.admin) return;
+  S.tab=t; render(); if(t==="historico"){ HIST.log=null; HIST.backups=null; abrirHistorico(); }
+}
 function setConta(i,campo,v){
   var c=S.rasc.contas[i];
   if(campo==="nome"||campo==="inst") c[campo]=v; else c[campo]=n(v);
@@ -3250,6 +3256,13 @@ function render(manterScroll){
   if(rb&&!rb.querySelector("img")) rb.insertAdjacentHTML("afterbegin",'<img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'">');
   renderRail();
   var ru=document.getElementById("railUser"); if(ru) ru.textContent=SESSAO.email||"";
+  /* Preencher grava lançamento (lanc_inserir/alterar exigem eh_admin() no
+     banco desde a migração de permissões) — só admin pode chegar lá.
+     Some da barra de abas para quem não é admin, e qualquer S.tab
+     herdado de uma sessão antiga (ou do padrão inicial) cai pro
+     Relatório em vez de mostrar uma aba que a política vai recusar. */
+  document.getElementById("tabP").style.display=EU.admin?"":"none";
+  if(S.tab==="preencher"&&!EU.admin) S.tab="relatorio";
   document.getElementById("tabP").className=S.tab==="preencher"?"on":"";
   document.getElementById("tabC").className=S.tab==="carta"?"on":"";
   document.getElementById("tabR").className=S.tab==="relatorio"?"on":"";
