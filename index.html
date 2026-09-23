@@ -960,7 +960,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.75";
+var VERSAO="versão 2.76";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -2996,8 +2996,6 @@ var APPS=[
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 3v18h18"/><path d="M7 15l4-5 3.5 3L21 6"/></svg>'},
   {id:"boletas",grupo:"ferramentas",nome:"Controle de Boletas",desc:"Valor disponível do cliente, ativos boletados e quanto falta alocar, calculado na hora.",tag:"Disponível",ativo:true,url:"boletas.html",
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>'},
-  {id:"financeiro",grupo:"ferramentas",nome:"Controle Financeiro",desc:"Entradas, saídas e orçamento do cliente mês a mês, com taxa de poupança e comprometimento.",tag:"Disponível",ativo:true,url:"financeiro.html",
-   ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 4v16"/><path d="M12 13h6M12 16.5h4"/></svg>'},
   {id:"agio",grupo:"simuladores",nome:"Ágio e Troca de Ativos",desc:"Em quanto tempo a taxa melhor compensa o deságio assumido na saída antecipada.",tag:"Disponível",ativo:true,url:"agio.html",
    ic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 18C7 18 9 6 13 6s5 6 8 6"/><path d="M3 9c4 0 6 9 10 9"/><circle cx="12.4" cy="11.4" r="1.6"/></svg>'},
   {id:"liberdade",grupo:"simuladores",nome:"Liberdade Financeira",desc:"Quanto juntar para manter o padrão e quanto dá para retirar por mês, em termos reais.",tag:"Disponível",ativo:true,url:"liberdade.html",
