@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controle Financeiro — Adami Captal</title>
+<style>
+:root{
+  --navy:#1B3A5F; --navy-d:#132B47; --ink:#16324F; --ink-2:#3C4C60;
+  --muted:#7A8698; --paper:#EDF0F4; --surface:#FFFFFF; --line:#DCE2EA;
+  --line-2:#EDF1F5; --gold:#C0A265; --gold-pale:#FBF6EA;
+  --green:#0A7344; --green-pale:#EDF7F1; --red:#B5563A; --red-pale:#FBEDE9;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;
+  padding:26px 20px 90px}
+.wrap{max-width:1340px;margin:0 auto}
+header.topo{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  flex-wrap:wrap;margin-bottom:22px}
+header.topo h1{font-family:var(--serif);font-size:25px;font-weight:600;color:var(--navy)}
+header.topo .sub{font-size:13px;color:var(--muted);margin-top:3px;max-width:72ch}
+.selo{font-size:11px;color:var(--muted)}
+
+.cartao{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:20px 22px;margin-bottom:18px}
+.cartao h2{font-family:var(--serif);font-size:16px;color:var(--navy);margin-bottom:3px}
+.cartao .ajuda{font-size:12.5px;color:var(--muted);margin-bottom:15px;max-width:78ch}
+
+.campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.campo{display:flex;flex-direction:column;gap:5px}
+.campo label{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600}
+.campo input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:7px;
+  font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
+.campo input:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(192,162,101,.16)}
+
+.painel{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px}
+.bloco{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.bloco .rot{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600}
+.bloco .val{font-family:var(--serif);font-size:23px;font-weight:700;color:var(--navy);
+  margin-top:5px;font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+.bloco .pe{font-size:11.5px;color:var(--muted);margin-top:3px}
+.bloco.ok .val{color:var(--green)}
+.bloco.ruim .val{color:var(--red)}
+.bloco.chave{border-color:rgba(192,162,101,.5);background:var(--gold-pale)}
+.bloco.chave .val{color:#7A6122}
+
+/* ---- grade mensal ---- */
+.rolagem{overflow-x:auto;border:1px solid var(--line);border-radius:9px;background:#fff}
+table.grade{border-collapse:collapse;font-variant-numeric:tabular-nums;min-width:1180px;width:100%}
+table.grade th,table.grade td{border-bottom:1px solid var(--line-2);padding:0}
+table.grade thead th{position:sticky;top:0;z-index:3;background:#F7F9FB;font-size:10.5px;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;
+  padding:9px 8px;text-align:right;border-bottom:1px solid var(--line)}
+table.grade thead th:first-child{text-align:left;z-index:4;left:0;position:sticky;background:#F7F9FB}
+table.grade th.rot,table.grade td.rot{position:sticky;left:0;background:#fff;z-index:2;
+  text-align:left;padding:7px 12px;font-size:13px;min-width:230px;max-width:230px}
+table.grade td input{width:100%;min-width:82px;padding:7px 8px;border:1px solid transparent;
+  border-radius:5px;font-size:13px;font-family:inherit;text-align:right;background:transparent;
+  color:var(--ink);font-variant-numeric:tabular-nums}
+table.grade td input:hover{border-color:var(--line)}
+table.grade td input:focus{outline:0;background:#fff;border-color:var(--gold);
+  box-shadow:0 0 0 2px rgba(192,162,101,.18)}
+tr.grupo td{background:#F2F5F8;font-weight:700;color:var(--navy);font-size:12px;
+  text-transform:uppercase;letter-spacing:.6px;padding:9px 12px}
+tr.grupo td.rot{background:#F2F5F8}
+tr.sub td{background:#FAFBFC;font-weight:700;font-size:12.5px}
+tr.sub td.rot{background:#FAFBFC}
+tr.sub td.calc{text-align:right;padding:7px 9px;color:var(--navy)}
+tr.orc td.rot{color:var(--muted);font-size:12px;padding-left:12px}
+tr.comp td{font-size:12px;text-align:right;padding:6px 9px;color:var(--muted)}
+tr.comp td.rot{color:var(--muted);font-size:12px}
+tr.comp td.estourou{color:var(--red);font-weight:700}
+tr.comp td.folga{color:var(--green)}
+td.calc{text-align:right;padding:7px 9px;font-size:13px}
+/* Ano e Media nunca quebram: "R$ 304.000" partido em duas linhas
+   desalinha a grade inteira e some com a coluna vizinha. */
+.col-ano{background:#FAFBFC;font-weight:700;white-space:nowrap;min-width:104px}
+table.grade thead th.col-ano{background:#F2F5F8}
+
+.acoes{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+.btn{background:var(--navy);color:#fff;border:0;border-radius:7px;padding:10px 17px;
+  font-size:13.5px;font-family:inherit;cursor:pointer}
+.btn:hover{background:var(--navy-d)}
+.btn.claro{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.claro:hover{background:var(--line-2)}
+.btn.perigo{background:#fff;color:var(--red);border:1px solid rgba(181,86,58,.4)}
+.btn.perigo:hover{background:var(--red-pale)}
+
+.aviso{margin-top:15px;padding:12px 15px;border-radius:8px;font-size:13px;line-height:1.55}
+.aviso.ok{background:var(--green-pale);color:#0A5C38;border:1px solid rgba(10,115,68,.28)}
+.aviso.alerta{background:var(--red-pale);color:#8E4330;border:1px solid rgba(181,86,58,.3)}
+.aviso.neutro{background:var(--gold-pale);color:#7A6122;border:1px solid rgba(192,162,101,.34)}
+
+#msg{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(14px);
+  background:var(--navy);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:999}
+#msg.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+#awVoltar{position:fixed;bottom:18px;left:18px;z-index:99999;background:var(--navy);color:#fff;
+  border:0;border-radius:999px;padding:10px 18px;font:500 13px inherit;cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.92}
+#awVoltar:hover{background:var(--navy-d);opacity:1}
+@media print{
+  body{background:#fff;padding:0}
+  #awVoltar,.acoes,#msg{display:none!important}
+  .rolagem{overflow:visible;border-color:#CCC}
+  table.grade{min-width:0;font-size:9px}
+  table.grade td input{border-color:transparent!important;box-shadow:none!important;font-size:9px}
+  .cartao,.bloco{border-color:#CCC;break-inside:avoid}
+  @page{size:A4 landscape;margin:10mm}
+}
+</style>
+</head>
+<body>
+
+<script>
+(function(){
+  var ok=false;
+  try{ var s=JSON.parse(localStorage.getItem("aw_sessao")||"null"); ok=!!(s&&s.access_token); }catch(e){}
+  if(!ok){ location.replace("index.html"); }
+})();
+</script>
+
+<div class="wrap">
+  <header class="topo">
+    <div>
+      <h1>Controle Financeiro</h1>
+      <p class="sub">Entradas, saídas e orçamento do cliente, mês a mês. Serve de base para a
+        conversa de planejamento: sem saber o custo de vida, não há como dimensionar reserva,
+        seguro nem aposentadoria.</p>
+    </div>
+    <div class="selo" id="selo"></div>
+  </header>
+
+  <div class="cartao">
+    <div class="campos">
+      <div class="campo">
+        <label for="cliente">Cliente</label>
+        <input id="cliente" placeholder="Nome do cliente" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label for="ano">Ano de referência</label>
+        <input id="ano" inputmode="numeric" placeholder="2026">
+      </div>
+    </div>
+  </div>
+
+  <div class="painel">
+    <div class="bloco"><div class="rot">Entradas no ano</div>
+      <div class="val" id="vEnt">R$ 0</div><div class="pe" id="peEnt">&nbsp;</div></div>
+    <div class="bloco"><div class="rot">Saídas no ano</div>
+      <div class="val" id="vSai">R$ 0</div><div class="pe" id="peSai">&nbsp;</div></div>
+    <div class="bloco chave" id="bRes"><div class="rot">Sobra no ano</div>
+      <div class="val" id="vRes">R$ 0</div><div class="pe" id="peRes">&nbsp;</div></div>
+    <div class="bloco" id="bTaxa"><div class="rot">Taxa de poupança</div>
+      <div class="val" id="vTaxa">—</div><div class="pe">quanto da renda sobra</div></div>
+  </div>
+
+  <div class="cartao">
+    <h2>Grade mensal</h2>
+    <p class="ajuda">Preencha só o que existe. Linha em branco não atrapalha, e a média anual
+      ignora os meses zerados, para não diluir o gasto de quem ainda não preencheu o ano todo.</p>
+    <div class="rolagem">
+      <table class="grade">
+        <thead id="cabeca"></thead>
+        <tbody id="corpo"></tbody>
+      </table>
+    </div>
+    <div id="aviso"></div>
+    <div class="acoes">
+      <button class="btn claro" onclick="replicarJaneiro()">Repetir janeiro no ano todo</button>
+      <button class="btn claro" onclick="copiarResumo()">Copiar resumo</button>
+      <button class="btn claro" onclick="window.print()">Imprimir</button>
+      <button class="btn perigo" onclick="limpar()">Limpar tudo</button>
+    </div>
+  </div>
+</div>
+
+<button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
+<div id="msg"></div>
+
+<script>
+var VERSAO_FIN="versão 2.75";
+document.getElementById("selo").textContent=VERSAO_FIN;
+
+var ENTRADAS=["Salário", "Reembolso", "Bônus e PLR", "Receita de Aluguel", "Outra"];
+var SAIDAS=[["Contas", ["Aluguel", "Celular, TV, Internet, e Telefone", "Gás", "Condomínio", "Energia", "Água", "Outra"]], ["Crédito e Financiamento", ["Financiamento de Consórcio", "Empréstimo", "Crédito", "Outra"]], ["Doações", ["Outra"]], ["Educação", ["Faculdade", "Cursos", "Escola", "Outra"]], ["Tarifas", ["Anuidade", "Outra"]], ["Alimentação", ["Café e Padaria", "Bar", "Restaurante", "Outra"]], ["Mercado", ["Hortifruti", "Bebidas", "Supermercado", "Açougue", "Outra"]], ["Saúde", ["Farmácia", "Dentista", "Exames", "Terapia", "Plano de Saúde", "Médico", "Outra"]], ["Casa", ["Decoração e Itens para Casa", "Segurança", "Empregados Domésticos", "Manutenção e Reformas", "Jardinagem e Piscina", "Lavanderia", "Outra"]], ["Seguros", ["Seguro de Viagem", "Seguro de Vida", "Seguro de Automóvel", "Seguro Residencial", "Outra"]], ["Lazer e Entretenimento", ["Jornais e Revista", "Parques", "Video sob Demanda", "Museus e Exposições", "Shows e eventos", "Clubes", "Jogos e Videogames", "Cinema e Teatros", "Outra"]], ["Cuidados Pessoais", ["Esportes", "Academia", "Cosméticos e Perfumaria", "Tattoo", "Salão de Beleza e Barbearia", "Spa e Clínica de Estética", "Outra"]], ["Pets", ["Pet Shop", "Veterinário", "Outra"]], ["Benefícios", ["Outra"]], ["Compras", ["Presentes", "Vestuário e Acessórios", "Eletrônicos", "Papelaria e livraria", "Artigos Esportivos", "Brinquedos", "Outra"]], ["Impostos e Tributos", ["IPTU", "IPVA", "DPVAT", "Outra"]], ["Transferências e Saques", ["Pix", "Saques", "Ted", "Outra"]], ["Transporte", ["Pedágio", "Multa de trânsito", "Aplicativos", "Estacionamento", "Bike", "Lavagem", "Combustível", "Manutenção e Reparo", "Transporte Público", "Aluguel de carro", "Outra"]], ["Viagem", ["Câmbio", "Hospedagem", "Passagem", "Outra"]], ["Outra Categoria", ["Outra"]]];
+
+var MESES=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+var CHAVE="aw_financeiro";
+
+/* Leitura de numero em pt-BR. A regra ingenua ("se tem virgula, o ponto e
+   milhar") quebra no caso mais comum de todos: quem digita um milhao
+   escreve "1.000.000", sem virgula, e parseFloat devolve 1. Um real no
+   lugar de um milhao passa despercebido na tela e vai para a mesa.
+
+   Regra usada aqui, na ordem:
+     1. tem virgula  -> virgula e decimal, pontos sao milhar
+     2. mais de um ponto -> todos sao milhar  (1.000.000)
+     3. um ponto com exatamente 3 digitos depois, no fim -> milhar (1.250)
+     4. no resto, o ponto e decimal  (1250.5, 1.5)                      */
+function n(v){
+  if(typeof v==="number") return isFinite(v)?v:0;
+  var s=String(v==null?"":v).replace(/[^\d,.-]/g,"");
+  if(!s) return 0;
+  if(s.indexOf(",")>-1){
+    s=s.replace(/\./g,"").replace(",",".");
+  } else {
+    var pontos=s.split(".").length-1;
+    if(pontos>1) s=s.replace(/\./g,"");
+    else if(pontos===1 && /\.\d{3}$/.test(s)) s=s.replace(".","");
+  }
+  var x=parseFloat(s);
+  return isFinite(x)?x:0;
+}
+function brl0(v){ return "R$ "+Math.round(n(v)).toLocaleString("pt-BR"); }
+function brlC(v){
+  var a=Math.abs(n(v));
+  if(a>=1e6) return "R$ "+(v/1e6).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+" mi";
+  if(a>=1e3) return "R$ "+(v/1e3).toLocaleString("pt-BR",{maximumFractionDigits:0})+" mil";
+  return brl0(v);
+}
+function pct(v){ return (Math.round(n(v)*10)/10).toLocaleString("pt-BR",
+  {minimumFractionDigits:1,maximumFractionDigits:1})+"%"; }
+function esc(s){ return String(s==null?"":s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function id12(){ var a=[],i; for(i=0;i<12;i++) a.push(""); return a; }
+
+/* ---------------------------------------------------------------- estado
+   Uma chave por item ("g3i2") e uma por orcamento de grupo ("o3"), cada
+   uma com doze posicoes. Guardar o texto digitado, e nao o numero, para
+   o campo nao se reescrever debaixo do dedo de quem digita.           */
+var EST={cliente:"",ano:"",v:{}};
+
+function chaveItem(g,i){ return "g"+g+"i"+i; }
+function chaveOrc(g){ return "o"+g; }
+function chaveEnt(i){ return "e"+i; }
+function serie(k){ if(!EST.v[k]) EST.v[k]=id12(); return EST.v[k]; }
+
+function carregar(){
+  try{
+    var o=JSON.parse(localStorage.getItem(CHAVE)||"null");
+    if(o&&o.v) EST=o;
+  }catch(e){}
+  if(!EST.ano) EST.ano=String(new Date().getFullYear());
+}
+function salvar(){ try{ localStorage.setItem(CHAVE, JSON.stringify(EST)); }catch(e){} }
+
+/* ----------------------------------------------------------------- soma */
+function somaSerie(k){ var s=0; serie(k).forEach(function(v){ s+=n(v); }); return s; }
+/* Media ignorando mes zerado: um ano preenchido so ate maio nao pode
+   virar media de doze meses, senao o custo de vida sai pela metade.   */
+function mediaSerie(k){
+  var s=0,q=0;
+  serie(k).forEach(function(v){ var x=n(v); if(x){ s+=x; q++; } });
+  return q?s/q:0;
+}
+function somaMes(k,m){ return n(serie(k)[m]); }
+
+function saidasMes(m){
+  var t=0;
+  SAIDAS.forEach(function(g,gi){
+    g[1].forEach(function(it,ii){ t+=somaMes(chaveItem(gi,ii),m); });
+  });
+  return t;
+}
+function entradasMes(m){
+  var t=0;
+  ENTRADAS.forEach(function(e,i){ t+=somaMes(chaveEnt(i),m); });
+  return t;
+}
+function grupoMes(gi,m){
+  var t=0;
+  SAIDAS[gi][1].forEach(function(it,ii){ t+=somaMes(chaveItem(gi,ii),m); });
+  return t;
+}
+function orcamentoMes(m){
+  var t=0;
+  SAIDAS.forEach(function(g,gi){ t+=somaMes(chaveOrc(gi),m); });
+  return t;
+}
+
+/* ---------------------------------------------------------------- tabela */
+function montarCabeca(){
+  var h='<tr><th>Categoria</th>';
+  MESES.forEach(function(m){ h+='<th>'+m+'</th>'; });
+  h+='<th class="col-ano">Ano</th><th class="col-ano">Média/mês</th></tr>';
+  document.getElementById("cabeca").innerHTML=h;
+}
+
+function celulasEditaveis(k){
+  var s=serie(k), h="", m;
+  for(m=0;m<12;m++){
+    h+='<td><input inputmode="numeric" value="'+esc(s[m])+'" '+
+       'oninput="setCel(\''+k+'\','+m+',this.value)" '+
+       'onblur="fmt(\''+k+'\','+m+',this)"></td>';
+  }
+  return h;
+}
+
+function montarCorpo(){
+  var h='';
+  h+='<tr class="grupo"><td class="rot" colspan="15">Entradas</td></tr>';
+  ENTRADAS.forEach(function(e,i){
+    h+='<tr><td class="rot">'+esc(e)+'</td>'+celulasEditaveis(chaveEnt(i))+
+       '<td class="calc col-ano" id="a_'+chaveEnt(i)+'"></td>'+
+       '<td class="calc col-ano" id="m_'+chaveEnt(i)+'"></td></tr>';
+  });
+  h+='<tr class="sub"><td class="rot">Total de entradas</td>';
+  for(var m=0;m<12;m++) h+='<td class="calc" id="tent'+m+'"></td>';
+  h+='<td class="calc col-ano" id="tentA"></td><td class="calc col-ano" id="tentM"></td></tr>';
+
+  SAIDAS.forEach(function(g,gi){
+    h+='<tr class="grupo"><td class="rot" colspan="15">'+esc(g[0])+'</td></tr>';
+    g[1].forEach(function(it,ii){
+      var k=chaveItem(gi,ii);
+      h+='<tr><td class="rot">'+esc(it)+'</td>'+celulasEditaveis(k)+
+         '<td class="calc col-ano" id="a_'+k+'"></td>'+
+         '<td class="calc col-ano" id="m_'+k+'"></td></tr>';
+    });
+    h+='<tr class="sub"><td class="rot">Subtotal</td>';
+    for(var j=0;j<12;j++) h+='<td class="calc" id="s'+gi+'_'+j+'"></td>';
+    h+='<td class="calc col-ano" id="sA'+gi+'"></td><td class="calc col-ano" id="sM'+gi+'"></td></tr>';
+    h+='<tr class="orc"><td class="rot">Orçamento</td>'+celulasEditaveis(chaveOrc(gi))+
+       '<td class="calc col-ano" id="a_'+chaveOrc(gi)+'"></td>'+
+       '<td class="calc col-ano" id="m_'+chaveOrc(gi)+'"></td></tr>';
+    h+='<tr class="comp"><td class="rot">Comprometimento</td>';
+    for(var c=0;c<12;c++) h+='<td id="c'+gi+'_'+c+'"></td>';
+    h+='<td class="col-ano" id="cA'+gi+'"></td><td class="col-ano"></td></tr>';
+  });
+
+  h+='<tr class="sub"><td class="rot">Total de saídas</td>';
+  for(var q=0;q<12;q++) h+='<td class="calc" id="tsai'+q+'"></td>';
+  h+='<td class="calc col-ano" id="tsaiA"></td><td class="calc col-ano" id="tsaiM"></td></tr>';
+  h+='<tr class="sub"><td class="rot">Resultado</td>';
+  for(var r=0;r<12;r++) h+='<td class="calc" id="tres'+r+'"></td>';
+  h+='<td class="calc col-ano" id="tresA"></td><td class="calc col-ano" id="tresM"></td></tr>';
+
+  document.getElementById("corpo").innerHTML=h;
+}
+
+function setCel(k,m,v){ serie(k)[m]=v; contas(); salvar(); }
+function fmt(k,m,el){
+  var v=n(el.value);
+  if(v){ el.value=Math.round(v).toLocaleString("pt-BR"); serie(k)[m]=el.value; salvar(); }
+  else if(el.value.trim()===""){ serie(k)[m]=""; }
+}
+
+function pintar(id,txt,cls){
+  var el=document.getElementById(id);
+  if(!el) return;
+  el.textContent=txt;
+  if(cls!==undefined) el.className=cls;
+}
+
+/* ----------------------------------------------------------------- contas */
+function contas(){
+  var m, gi, entAno=0, saiAno=0;
+
+  ENTRADAS.forEach(function(e,i){
+    var k=chaveEnt(i);
+    pintar("a_"+k, somaSerie(k)?brl0(somaSerie(k)):"");
+    pintar("m_"+k, mediaSerie(k)?brl0(mediaSerie(k)):"");
+  });
+  for(m=0;m<12;m++){
+    var te=entradasMes(m);
+    pintar("tent"+m, te?brl0(te):"");
+    entAno+=te;
+  }
+  pintar("tentA", entAno?brl0(entAno):"");
+  pintar("tentM", entAno?brl0(mediaMeses(entradasMes)):"");
+
+  SAIDAS.forEach(function(g,gix){
+    g[1].forEach(function(it,ii){
+      var k=chaveItem(gix,ii);
+      pintar("a_"+k, somaSerie(k)?brl0(somaSerie(k)):"");
+      pintar("m_"+k, mediaSerie(k)?brl0(mediaSerie(k)):"");
+    });
+    var ko=chaveOrc(gix);
+    pintar("a_"+ko, somaSerie(ko)?brl0(somaSerie(ko)):"");
+    pintar("m_"+ko, mediaSerie(ko)?brl0(mediaSerie(ko)):"");
+
+    var somaG=0, qG=0;
+    for(var mm=0;mm<12;mm++){
+      var v=grupoMes(gix,mm);
+      pintar("s"+gix+"_"+mm, v?brl0(v):"");
+      somaG+=v; if(v) qG++;
+      var orc=somaMes(ko,mm);
+      var cel=document.getElementById("c"+gix+"_"+mm);
+      if(cel){
+        if(!orc||!v){ cel.textContent=""; cel.className=""; }
+        else {
+          var r=v/orc*100;
+          cel.textContent=pct(r);
+          cel.className = r>100 ? "estourou" : (r<=85?"folga":"");
+        }
+      }
+    }
+    pintar("sA"+gix, somaG?brl0(somaG):"");
+    pintar("sM"+gix, qG?brl0(somaG/qG):"");
+    var orcAno=somaSerie(ko);
+    var ca=document.getElementById("cA"+gix);
+    if(ca){
+      if(!orcAno||!somaG){ ca.textContent=""; ca.className="col-ano"; }
+      else {
+        var ra=somaG/orcAno*100;
+        ca.textContent=pct(ra);
+        ca.className="col-ano"+(ra>100?" estourou":(ra<=85?" folga":""));
+      }
+    }
+  });
+
+  for(m=0;m<12;m++){
+    var ts=saidasMes(m);
+    pintar("tsai"+m, ts?brl0(ts):"");
+    saiAno+=ts;
+    var res=entradasMes(m)-ts;
+    var elr=document.getElementById("tres"+m);
+    if(elr){
+      var houve = entradasMes(m)||ts;
+      elr.textContent = houve?brl0(res):"";
+      elr.className = "calc"+(houve && res<0?" ":"");
+      elr.style.color = houve ? (res<0?"#B5563A":"#0A7344") : "";
+    }
+  }
+  pintar("tsaiA", saiAno?brl0(saiAno):"");
+  pintar("tsaiM", saiAno?brl0(mediaMeses(saidasMes)):"");
+  var resAno=entAno-saiAno;
+  var er=document.getElementById("tresA");
+  if(er){ er.textContent=(entAno||saiAno)?brl0(resAno):""; er.style.color=resAno<0?"#B5563A":"#0A7344"; }
+  pintar("tresM", (entAno||saiAno)?brl0(mediaMeses(function(mm){
+    return entradasMes(mm)-saidasMes(mm); })):"");
+
+  topo(entAno,saiAno,resAno);
+}
+
+/* Media dos meses com movimento, para qualquer funcao de mes. */
+function mediaMeses(fn){
+  var s=0,q=0,m;
+  for(m=0;m<12;m++){ var v=fn(m); if(v){ s+=v; q++; } }
+  return q?s/q:0;
+}
+
+function topo(ent,sai,res){
+  document.getElementById("vEnt").textContent=brlC(ent);
+  document.getElementById("vSai").textContent=brlC(sai);
+  document.getElementById("vRes").textContent=brlC(res);
+
+  var mesesAtivos=0,m;
+  for(m=0;m<12;m++) if(entradasMes(m)||saidasMes(m)) mesesAtivos++;
+  var txt = mesesAtivos ? (mesesAtivos===1?"1 mês preenchido":mesesAtivos+" meses preenchidos") : "nada preenchido";
+  document.getElementById("peEnt").textContent=txt;
+  document.getElementById("peSai").textContent =
+    mesesAtivos ? ("média de "+brlC(sai/mesesAtivos)+" por mês") : " ";
+
+  var b=document.getElementById("bRes");
+  b.className="bloco chave"+(res<0?" ruim":(res>0?" ok":""));
+  document.getElementById("peRes").textContent =
+    mesesAtivos ? (res<0?"gastando mais do que entra":"disponível para investir") : " ";
+
+  var taxa = ent>0 ? res/ent*100 : 0;
+  document.getElementById("vTaxa").textContent = ent>0 ? pct(taxa) : "—";
+  var bt=document.getElementById("bTaxa");
+  bt.className="bloco"+(ent>0?(taxa<0?" ruim":(taxa>=20?" ok":"")):"");
+
+  avisar(ent,sai,res,taxa,mesesAtivos);
+}
+
+function avisar(ent,sai,res,taxa,meses){
+  var el=document.getElementById("aviso");
+  if(!meses){ el.innerHTML=""; return; }
+  var orcAno=0,m;
+  for(m=0;m<12;m++) orcAno+=orcamentoMes(m);
+  var extra = orcAno ? ' O orçamento do ano soma '+brlC(orcAno)+
+      ' e o gasto ficou em '+pct(sai/orcAno*100)+' dele.' : '';
+  if(res<0){
+    el.innerHTML='<div class="aviso alerta"><b>As saídas superam as entradas.</b> '+
+      'No período preenchido entraram '+brlC(ent)+' e saíram '+brlC(sai)+', um déficit de '+
+      brlC(Math.abs(res))+'.'+extra+'</div>';
+  } else if(taxa<10){
+    el.innerHTML='<div class="aviso neutro"><b>Sobra apertada.</b> '+
+      'A taxa de poupança está em '+pct(taxa)+' da renda. Abaixo de 10% o plano de longo prazo '+
+      'depende quase todo da rentabilidade, e não do aporte.'+extra+'</div>';
+  } else {
+    el.innerHTML='<div class="aviso ok"><b>Sobra consistente.</b> '+
+      pct(taxa)+' da renda sobra, o que dá '+brlC(res)+' no período. '+
+      'É esse número que alimenta o plano de aposentadoria.'+extra+'</div>';
+  }
+}
+
+/* --------------------------------------------------------------- acoes */
+function replicarJaneiro(){
+  if(!confirm("Copia o valor de janeiro para os outros onze meses, em todas as linhas preenchidas. Confirma?")) return;
+  Object.keys(EST.v).forEach(function(k){
+    var s=EST.v[k];
+    if(!s||!s.length) return;
+    if(!n(s[0])) return;
+    for(var m=1;m<12;m++) s[m]=s[0];
+  });
+  montarCorpo(); contas(); salvar(); aviso2("Janeiro replicado no ano.");
+}
+function limpar(){
+  if(!confirm("Isto apaga todos os valores lançados. Confirma?")) return;
+  EST={cliente:"",ano:String(new Date().getFullYear()),v:{}};
+  document.getElementById("cliente").value="";
+  document.getElementById("ano").value=EST.ano;
+  montarCorpo(); contas(); salvar(); aviso2("Tudo limpo.");
+}
+function copiarResumo(){
+  var ent=0,sai=0,m;
+  for(m=0;m<12;m++){ ent+=entradasMes(m); sai+=saidasMes(m); }
+  var t=[];
+  t.push("CONTROLE FINANCEIRO — "+(EST.cliente.trim()||"cliente não informado")+" · "+EST.ano);
+  t.push("Entradas: "+brl0(ent));
+  t.push("Saídas: "+brl0(sai));
+  t.push("Sobra: "+brl0(ent-sai)+(ent>0?"  ("+pct((ent-sai)/ent*100)+" da renda)":""));
+  t.push("");
+  t.push("Maiores grupos de gasto:");
+  var gs=[];
+  SAIDAS.forEach(function(g,gi){
+    var s=0; for(m=0;m<12;m++) s+=grupoMes(gi,m);
+    if(s) gs.push([g[0],s]);
+  });
+  gs.sort(function(a,b){ return b[1]-a[1]; });
+  gs.slice(0,8).forEach(function(x){
+    t.push("• "+x[0]+": "+brl0(x[1])+(sai?"  ("+pct(x[1]/sai*100)+")":""));
+  });
+  var txt=t.join("\n");
+  if(navigator.clipboard && navigator.clipboard.writeText)
+    navigator.clipboard.writeText(txt).then(function(){ aviso2("Resumo copiado."); },
+      function(){ aviso2("Não consegui copiar."); });
+}
+function aviso2(txt){
+  var m=document.getElementById("msg");
+  m.textContent=txt; m.className="on";
+  clearTimeout(aviso2._t);
+  aviso2._t=setTimeout(function(){ m.className=""; },2200);
+}
+
+/* ---------------------------------------------------------- inicializa */
+carregar();
+document.getElementById("cliente").value=EST.cliente;
+document.getElementById("ano").value=EST.ano;
+document.getElementById("cliente").addEventListener("input",function(){
+  EST.cliente=this.value; salvar(); });
+document.getElementById("ano").addEventListener("input",function(){
+  EST.ano=this.value; salvar(); });
+montarCabeca(); montarCorpo(); contas();
+</script>
+</body>
+</html>

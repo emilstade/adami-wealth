@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controle de Boletas — Adami Captal</title>
+<style>
+:root{
+  --navy:#1B3A5F; --navy-d:#132B47; --ink:#16324F; --ink-2:#3C4C60;
+  --muted:#7A8698; --paper:#EDF0F4; --surface:#FFFFFF; --line:#DCE2EA;
+  --line-2:#EDF1F5; --gold:#C0A265; --gold-pale:#FBF6EA;
+  --green:#0A7344; --green-pale:#EDF7F1; --red:#B5563A; --red-pale:#FBEDE9;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;
+  padding:26px 20px 90px}
+.wrap{max-width:1060px;margin:0 auto}
+
+header.topo{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  flex-wrap:wrap;margin-bottom:22px}
+header.topo h1{font-family:var(--serif);font-size:25px;font-weight:600;color:var(--navy)}
+header.topo .sub{font-size:13px;color:var(--muted);margin-top:3px;max-width:64ch}
+.selo{font-size:11px;color:var(--muted)}
+
+.cartao{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:20px 22px;margin-bottom:18px}
+.cartao h2{font-family:var(--serif);font-size:16px;color:var(--navy);margin-bottom:3px}
+.cartao .ajuda{font-size:12.5px;color:var(--muted);margin-bottom:15px}
+
+.linha-campos{display:grid;grid-template-columns:1.6fr 1fr;gap:14px}
+@media(max-width:680px){.linha-campos{grid-template-columns:1fr}}
+.campo{display:flex;flex-direction:column;gap:5px}
+.campo label{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--muted);font-weight:600}
+.campo input,.campo textarea{width:100%;padding:10px 11px;border:1px solid var(--line);
+  border-radius:7px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
+.campo input:focus,.campo textarea:focus{outline:0;border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(192,162,101,.16)}
+input.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---- painel de saldo ---- */
+.painel{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;
+  margin-bottom:18px}
+.bloco{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px}
+.bloco .rot{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
+  font-weight:600}
+.bloco .val{font-family:var(--serif);font-size:25px;font-weight:700;color:var(--navy);
+  margin-top:5px;font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+.bloco .pe{font-size:11.5px;color:var(--muted);margin-top:3px}
+.bloco.restante{border-color:rgba(192,162,101,.5);background:var(--gold-pale)}
+.bloco.restante .val{color:#7A6122}
+.bloco.zerado{border-color:rgba(10,115,68,.45);background:var(--green-pale)}
+.bloco.zerado .val{color:var(--green)}
+.bloco.estourou{border-color:rgba(181,86,58,.5);background:var(--red-pale)}
+.bloco.estourou .val{color:var(--red)}
+
+/* ---- barra de alocacao ---- */
+.barra{height:9px;background:var(--line-2);border-radius:9px;overflow:hidden;margin-top:12px;
+  border:1px solid var(--line)}
+.barra i{display:block;height:100%;background:var(--gold);transition:width .18s ease}
+.barra.cheia i{background:var(--green)}
+.barra.estourou i{background:var(--red)}
+
+/* ---- tabela ---- */
+table{width:100%;border-collapse:collapse;margin-top:4px}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
+  font-weight:600;text-align:left;padding:0 9px 8px;border-bottom:1px solid var(--line)}
+th.r{text-align:right}
+td{padding:5px 4px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+td input{width:100%;padding:9px 10px;border:1px solid transparent;border-radius:6px;
+  font-size:13.5px;font-family:inherit;background:transparent;color:var(--ink)}
+td input:hover{border-color:var(--line)}
+td input:focus{outline:0;background:#fff;border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(192,162,101,.14)}
+td.val input{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+td.pct{text-align:right;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;
+  padding-right:10px;white-space:nowrap}
+td.x{width:34px;text-align:center}
+.bt-x{background:none;border:0;color:#C3CBD6;font-size:19px;line-height:1;cursor:pointer;
+  padding:3px 6px;border-radius:5px}
+.bt-x:hover{color:var(--red);background:var(--red-pale)}
+tr.vazia td{color:var(--muted);font-size:13px;text-align:center;padding:26px 8px}
+
+.acoes{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+.btn{background:var(--navy);color:#fff;border:0;border-radius:7px;padding:10px 17px;
+  font-size:13.5px;font-family:inherit;cursor:pointer}
+.btn:hover{background:var(--navy-d)}
+.btn.claro{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.claro:hover{background:var(--line-2)}
+.btn.perigo{background:#fff;color:var(--red);border:1px solid rgba(181,86,58,.4)}
+.btn.perigo:hover{background:var(--red-pale)}
+
+.aviso{margin-top:14px;padding:11px 14px;border-radius:8px;font-size:13px;line-height:1.5}
+.aviso.ok{background:var(--green-pale);color:#0A5C38;border:1px solid rgba(10,115,68,.28)}
+.aviso.alerta{background:var(--red-pale);color:#8E4330;border:1px solid rgba(181,86,58,.3)}
+.aviso.neutro{background:var(--gold-pale);color:#7A6122;border:1px solid rgba(192,162,101,.34)}
+
+#msg{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(14px);
+  background:var(--navy);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:999}
+#msg.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+#awVoltar{position:fixed;bottom:18px;left:18px;z-index:99999;background:var(--navy);color:#fff;
+  border:0;border-radius:999px;padding:10px 18px;font:500 13px inherit;cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.92}
+#awVoltar:hover{background:var(--navy-d);opacity:1}
+
+@media print{
+  body{background:#fff;padding:0}
+  #awVoltar,.acoes,.bt-x,td.x,#msg{display:none!important}
+  .cartao,.bloco{border-color:#CCC;break-inside:avoid}
+  td input{border-color:transparent!important;box-shadow:none!important}
+  @page{size:A4;margin:16mm}
+}
+</style>
+</head>
+<body>
+
+<script>
+/* Acesso restrito: exige sessao iniciada no portal, igual aos outros modulos. */
+(function(){
+  var ok=false;
+  try{ var s=JSON.parse(localStorage.getItem("aw_sessao")||"null"); ok=!!(s&&s.access_token); }catch(e){}
+  if(!ok){ location.replace("index.html"); }
+})();
+</script>
+
+<div class="wrap">
+
+  <header class="topo">
+    <div>
+      <h1>Controle de Boletas</h1>
+      <p class="sub">Quanto o cliente tem para alocar, o que já foi boletado e quanto falta.
+        A conta refaz a cada tecla, para ninguém fechar a ordem no olho.</p>
+    </div>
+    <div class="selo" id="selo"></div>
+  </header>
+
+  <div class="cartao">
+    <div class="linha-campos">
+      <div class="campo">
+        <label for="cliente">Cliente</label>
+        <input id="cliente" placeholder="Nome ou conta do cliente" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label for="disponivel">Valor disponível para alocar</label>
+        <input id="disponivel" class="num" inputmode="numeric" placeholder="R$ 0,00">
+      </div>
+    </div>
+  </div>
+
+  <div class="painel">
+    <div class="bloco">
+      <div class="rot">Disponível</div>
+      <div class="val" id="vDisp">R$ 0,00</div>
+      <div class="pe" id="peDisp">informe o valor acima</div>
+    </div>
+    <div class="bloco">
+      <div class="rot">Boletado</div>
+      <div class="val" id="vBol">R$ 0,00</div>
+      <div class="pe" id="peBol">nenhum ativo lançado</div>
+    </div>
+    <div class="bloco restante" id="blocoRest">
+      <div class="rot">Restante a boletar</div>
+      <div class="val" id="vRest">R$ 0,00</div>
+      <div class="pe" id="peRest">&nbsp;</div>
+    </div>
+  </div>
+
+  <div class="cartao">
+    <h2>Ativos boletados</h2>
+    <p class="ajuda">Escreva o ativo, o valor e a observação. Linha nova aparece sozinha
+      conforme você preenche a última.</p>
+
+    <div class="barra" id="barra"><i id="barraI" style="width:0%"></i></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36%">Ativo</th>
+          <th class="r" style="width:19%">Valor</th>
+          <th style="width:33%">Observação</th>
+          <th class="r" style="width:8%">% aloc.</th>
+          <th style="width:34px"></th>
+        </tr>
+      </thead>
+      <tbody id="corpo"></tbody>
+    </table>
+
+    <div id="aviso"></div>
+
+    <div class="acoes">
+      <button class="btn" onclick="addLinha(true)">Adicionar ativo</button>
+      <button class="btn claro" onclick="copiarResumo()">Copiar resumo</button>
+      <button class="btn claro" onclick="window.print()">Imprimir</button>
+      <button class="btn perigo" onclick="limpar()">Limpar tudo</button>
+    </div>
+  </div>
+
+</div>
+
+<button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
+<div id="msg"></div>
+
+<script>
+var VERSAO_BOLETAS="versão 2.75";
+document.getElementById("selo").textContent=VERSAO_BOLETAS;
+
+var CHAVE="aw_boletas";
+
+/* ---------------------------------------------------------- numeros
+   O usuario digita "1.250.000,50", "1250000.5" ou "1250000". Em pt-BR
+   a virgula decide: quando ela existe, o ponto e separador de milhar.
+   Ler sem essa regra transforma 1.250 em um real e vinte e cinco.    */
+/* Leitura de numero em pt-BR. A regra ingenua ("se tem virgula, o ponto e
+   milhar") quebra no caso mais comum de todos: quem digita um milhao
+   escreve "1.000.000", sem virgula, e parseFloat devolve 1. Um real no
+   lugar de um milhao passa despercebido na tela e vai para a mesa.
+
+   Regra usada aqui, na ordem:
+     1. tem virgula  -> virgula e decimal, pontos sao milhar
+     2. mais de um ponto -> todos sao milhar  (1.000.000)
+     3. um ponto com exatamente 3 digitos depois, no fim -> milhar (1.250)
+     4. no resto, o ponto e decimal  (1250.5, 1.5)                      */
+function n(v){
+  if(typeof v==="number") return isFinite(v)?v:0;
+  var s=String(v==null?"":v).replace(/[^\d,.-]/g,"");
+  if(!s) return 0;
+  if(s.indexOf(",")>-1){
+    s=s.replace(/\./g,"").replace(",",".");
+  } else {
+    var pontos=s.split(".").length-1;
+    if(pontos>1) s=s.replace(/\./g,"");
+    else if(pontos===1 && /\.\d{3}$/.test(s)) s=s.replace(".","");
+  }
+  var x=parseFloat(s);
+  return isFinite(x)?x:0;
+}
+function brl(v){
+  return "R$ "+(Math.round(n(v)*100)/100).toLocaleString("pt-BR",
+    {minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function pct(v){ return (Math.round(n(v)*10)/10).toLocaleString("pt-BR",
+  {minimumFractionDigits:1,maximumFractionDigits:1})+"%"; }
+function esc(s){ return String(s==null?"":s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* ------------------------------------------------------------ estado */
+var EST={ cliente:"", disponivel:"", linhas:[] };
+
+function linhaNova(){ return {ativo:"",valor:"",obs:""}; }
+
+function carregar(){
+  try{
+    var o=JSON.parse(localStorage.getItem(CHAVE)||"null");
+    if(o && Object.prototype.toString.call(o.linhas)==="[object Array]") EST=o;
+  }catch(e){}
+  if(!EST.linhas.length) EST.linhas=[linhaNova()];
+}
+function salvar(){
+  try{ localStorage.setItem(CHAVE, JSON.stringify(EST)); }catch(e){}
+}
+
+/* ------------------------------------------------------------ desenho
+   Redesenhar a tabela inteira a cada tecla tiraria o foco do campo, e
+   quem digita perderia a posicao do cursor. Por isso o corpo e montado
+   uma vez e so os numeros do topo sao atualizados a cada input.      */
+function linhaHTML(l,i){
+  return '<tr>'+
+    '<td><input value="'+esc(l.ativo)+'" placeholder="Ex.: CDB Banco Master 2029" '+
+      'oninput="setCampo('+i+',\'ativo\',this.value)"></td>'+
+    '<td class="val"><input class="num" inputmode="numeric" value="'+esc(l.valor)+'" '+
+      'placeholder="R$ 0,00" oninput="setCampo('+i+',\'valor\',this.value)" '+
+      'onblur="formatar('+i+',this)"></td>'+
+    '<td><input value="'+esc(l.obs)+'" placeholder="Vencimento, taxa, observação" '+
+      'oninput="setCampo('+i+',\'obs\',this.value)"></td>'+
+    '<td class="pct" id="pct'+i+'">—</td>'+
+    '<td class="x"><button class="bt-x" onclick="remover('+i+')" title="Remover">&times;</button></td>'+
+  '</tr>';
+}
+
+function montar(){
+  var c=document.getElementById("corpo");
+  c.innerHTML = EST.linhas.map(linhaHTML).join("");
+  if(!EST.linhas.length)
+    c.innerHTML='<tr class="vazia"><td colspan="5">Nenhum ativo lançado ainda.</td></tr>';
+  contas();
+}
+
+function setCampo(i,campo,valor){
+  if(!EST.linhas[i]) return;
+  EST.linhas[i][campo]=valor;
+  /* Linha nova assim que a ultima recebe conteudo: evita o clique a mais
+     no "Adicionar ativo" a cada ativo boletado.
+
+     A linha nova e ACRESCENTADA ao final, nunca por montar(). Refazer a
+     tabela inteira aqui destroi o campo em que a pessoa esta digitando:
+     a primeira tecla apagava o foco e "CDB Master" virava "C". Como so
+     acrescentamos no fim, os indices das linhas existentes continuam
+     valendo, e os handlers ja escritos seguem corretos.               */
+  var ult=EST.linhas[EST.linhas.length-1];
+  if(i===EST.linhas.length-1 && (ult.ativo.trim()||n(ult.valor))){
+    EST.linhas.push(linhaNova());
+    document.getElementById("corpo")
+      .insertAdjacentHTML("beforeend", linhaHTML(EST.linhas[EST.linhas.length-1], EST.linhas.length-1));
+  }
+  contas(); salvar();
+}
+function formatar(i,el){
+  var v=n(el.value);
+  if(v){ el.value=brl(v); EST.linhas[i].valor=el.value; salvar(); }
+}
+function addLinha(foco){
+  EST.linhas.push(linhaNova());
+  var c=document.getElementById("corpo");
+  if(EST.linhas.length===1) montar();
+  else c.insertAdjacentHTML("beforeend", linhaHTML(EST.linhas[EST.linhas.length-1], EST.linhas.length-1));
+  contas(); salvar();
+  if(foco){
+    var inputs=document.querySelectorAll("#corpo tr:last-child input");
+    if(inputs.length) inputs[0].focus();
+  }
+}
+function remover(i){
+  EST.linhas.splice(i,1);
+  if(!EST.linhas.length) EST.linhas=[linhaNova()];
+  montar(); salvar();
+}
+function limpar(){
+  if(!confirm("Isto apaga o cliente, o valor disponível e todos os ativos lançados. Confirma?")) return;
+  EST={cliente:"",disponivel:"",linhas:[linhaNova()]};
+  document.getElementById("cliente").value="";
+  document.getElementById("disponivel").value="";
+  montar(); salvar(); aviso("Tudo limpo.");
+}
+
+/* ------------------------------------------------------------- contas */
+function contas(){
+  var disp=n(EST.disponivel);
+  var bol=0, qtd=0;
+  EST.linhas.forEach(function(l){ var v=n(l.valor); if(v){ bol+=v; qtd++; } });
+  var rest=disp-bol;
+
+  document.getElementById("vDisp").textContent=brl(disp);
+  document.getElementById("vBol").textContent=brl(bol);
+  document.getElementById("vRest").textContent=brl(rest);
+
+  document.getElementById("peDisp").textContent = EST.cliente.trim()
+    ? EST.cliente.trim() : "informe o valor acima";
+  document.getElementById("peBol").textContent = qtd
+    ? (qtd===1?"1 ativo":qtd+" ativos") : "nenhum ativo lançado";
+
+  /* Cada linha mostra seu peso sobre o disponivel, que e a pergunta que
+     o assessor faz de verdade: "quanto isso representa da ordem?"     */
+  EST.linhas.forEach(function(l,i){
+    var el=document.getElementById("pct"+i);
+    if(!el) return;
+    var v=n(l.valor);
+    el.textContent = (v && disp) ? pct(v/disp*100) : "—";
+  });
+
+  var bloco=document.getElementById("blocoRest");
+  var pe=document.getElementById("peRest");
+  var barra=document.getElementById("barra");
+  var bi=document.getElementById("barraI");
+  var usado = disp ? (bol/disp*100) : 0;
+
+  bloco.className="bloco restante"; barra.className="barra";
+  bi.style.width=Math.max(0,Math.min(100,usado))+"%";
+
+  if(!disp){
+    pe.innerHTML="&nbsp;";
+  } else if(Math.abs(rest)<0.005){
+    bloco.className="bloco zerado"; barra.className="barra cheia";
+    pe.textContent="ordem fechada, 100% alocado";
+  } else if(rest<0){
+    bloco.className="bloco estourou"; barra.className="barra estourou";
+    bi.style.width="100%";
+    pe.textContent="passou "+brl(Math.abs(rest))+" do disponível";
+  } else {
+    pe.textContent=pct(usado)+" alocado";
+  }
+
+  desenharAviso(disp,bol,rest,qtd);
+}
+
+function desenharAviso(disp,bol,rest,qtd){
+  var el=document.getElementById("aviso");
+  if(!disp || !qtd){ el.innerHTML=""; return; }
+  if(rest<-0.005){
+    el.innerHTML='<div class="aviso alerta"><b>A soma passou do disponível.</b> '+
+      'Boletado '+brl(bol)+' contra '+brl(disp)+' disponíveis, '+brl(Math.abs(rest))+
+      ' a mais. Ajuste um dos valores antes de mandar para a mesa.</div>';
+  } else if(Math.abs(rest)<0.005){
+    el.innerHTML='<div class="aviso ok"><b>Fechou certo.</b> '+
+      'Os '+brl(disp)+' estão integralmente alocados em '+(qtd===1?"1 ativo":qtd+" ativos")+'.</div>';
+  } else {
+    el.innerHTML='<div class="aviso neutro">Faltam <b>'+brl(rest)+'</b> para fechar a ordem.</div>';
+  }
+}
+
+/* ------------------------------------------------------------- resumo */
+function resumoTexto(){
+  var disp=n(EST.disponivel), bol=0;
+  var linhas=EST.linhas.filter(function(l){ return l.ativo.trim()||n(l.valor); });
+  linhas.forEach(function(l){ bol+=n(l.valor); });
+  var rest=disp-bol;
+  var t=[];
+  t.push("BOLETAS — "+(EST.cliente.trim()||"cliente não informado"));
+  t.push("Disponível para alocar: "+brl(disp));
+  t.push("");
+  linhas.forEach(function(l){
+    t.push("• "+(l.ativo.trim()||"(sem ativo)")+" — "+brl(l.valor)+
+      (l.obs.trim()?"  ("+l.obs.trim()+")":""));
+  });
+  t.push("");
+  t.push("Boletado: "+brl(bol));
+  t.push("Restante a boletar: "+brl(rest));
+  if(rest<-0.005) t.push("ATENÇÃO: passou "+brl(Math.abs(rest))+" do disponível.");
+  return t.join("\n");
+}
+function copiarResumo(){
+  var txt=resumoTexto();
+  var pronto=function(){ aviso("Resumo copiado."); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(pronto, function(){ velhaCopia(txt); });
+  } else velhaCopia(txt);
+}
+/* Sem area de transferencia (http, permissao negada): textarea escondida
+   mais execCommand, que ainda funciona em todo navegador de escritorio. */
+function velhaCopia(txt){
+  var ta=document.createElement("textarea");
+  ta.value=txt; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); aviso("Resumo copiado."); }
+  catch(e){ aviso("Não consegui copiar. Selecione e copie à mão."); }
+  document.body.removeChild(ta);
+}
+function aviso(txt){
+  var m=document.getElementById("msg");
+  m.textContent=txt; m.className="on";
+  clearTimeout(aviso._t);
+  aviso._t=setTimeout(function(){ m.className=""; },2200);
+}
+
+/* --------------------------------------------------------- inicializa */
+carregar();
+document.getElementById("cliente").value=EST.cliente;
+document.getElementById("disponivel").value=EST.disponivel;
+document.getElementById("cliente").addEventListener("input",function(){
+  EST.cliente=this.value; contas(); salvar();
+});
+document.getElementById("disponivel").addEventListener("input",function(){
+  EST.disponivel=this.value; contas(); salvar();
+});
+document.getElementById("disponivel").addEventListener("blur",function(){
+  var v=n(this.value);
+  if(v){ this.value=brl(v); EST.disponivel=this.value; salvar(); }
+  contas();
+});
+montar();
+</script>
+</body>
+</html>

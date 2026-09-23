@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ágio e Troca de Ativos — Adami Captal</title>
+<style>
+:root{
+  --navy:#1B3A5F; --navy-d:#132B47; --ink:#16324F; --ink-2:#3C4C60;
+  --muted:#7A8698; --paper:#EDF0F4; --surface:#FFFFFF; --line:#DCE2EA;
+  --line-2:#EDF1F5; --gold:#C0A265; --gold-pale:#FBF6EA;
+  --green:#0A7344; --green-pale:#EDF7F1; --red:#B5563A; --red-pale:#FBEDE9;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;
+  padding:26px 20px 90px}
+.wrap{max-width:1120px;margin:0 auto}
+header.topo{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  flex-wrap:wrap;margin-bottom:22px}
+header.topo h1{font-family:var(--serif);font-size:25px;font-weight:600;color:var(--navy)}
+header.topo .sub{font-size:13px;color:var(--muted);margin-top:3px;max-width:70ch}
+.selo{font-size:11px;color:var(--muted)}
+
+.cartao{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:20px 22px;margin-bottom:18px}
+.cartao h2{font-family:var(--serif);font-size:16px;color:var(--navy);margin-bottom:3px}
+.cartao .ajuda{font-size:12.5px;color:var(--muted);margin-bottom:15px;max-width:74ch}
+
+.dois{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:780px){.dois{grid-template-columns:1fr}}
+.lado{border:1px solid var(--line);border-radius:9px;padding:16px 17px}
+.lado.antigo{background:#FAFBFC}
+.lado.novo{background:var(--gold-pale);border-color:rgba(192,162,101,.42)}
+.lado h3{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);
+  font-weight:700;margin-bottom:13px}
+.lado.novo h3{color:#7A6122}
+.campo{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.campo:last-child{margin-bottom:0}
+.campo label{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--muted);font-weight:600}
+.campo input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:7px;
+  font-size:14px;font-family:inherit;background:#fff;color:var(--ink);text-align:right;
+  font-variant-numeric:tabular-nums}
+.campo input:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(192,162,101,.16)}
+.campo .nota{font-size:11.5px;color:var(--muted);line-height:1.45}
+
+.painel{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;
+  margin-bottom:18px}
+.bloco{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.bloco .rot{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600}
+.bloco .val{font-family:var(--serif);font-size:25px;font-weight:700;color:var(--navy);
+  margin-top:5px;font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+.bloco .pe{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+.bloco.chave{border-color:rgba(192,162,101,.5);background:var(--gold-pale)}
+.bloco.chave .val{color:#7A6122}
+.bloco.ruim{border-color:rgba(181,86,58,.5);background:var(--red-pale)}
+.bloco.ruim .val{color:var(--red)}
+
+.grafico{width:100%;height:auto;display:block;background:#fff;border-radius:8px}
+.legenda{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:12.5px;color:var(--ink-2)}
+.legenda i{display:inline-block;width:13px;height:3px;border-radius:2px;margin-right:6px;
+  vertical-align:middle}
+
+table{width:100%;border-collapse:collapse;margin-top:4px;font-variant-numeric:tabular-nums}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
+  font-weight:600;text-align:right;padding:0 10px 8px;border-bottom:1px solid var(--line)}
+th:first-child{text-align:left}
+td{padding:8px 10px;border-bottom:1px solid var(--line-2);text-align:right;font-size:13.5px}
+td:first-child{text-align:left;color:var(--ink-2)}
+tr.virada td{background:var(--green-pale);font-weight:700;color:#0A5C38}
+td.neg{color:var(--red)}
+td.pos{color:var(--green)}
+
+.aviso{margin-top:15px;padding:12px 15px;border-radius:8px;font-size:13px;line-height:1.55}
+.aviso.ok{background:var(--green-pale);color:#0A5C38;border:1px solid rgba(10,115,68,.28)}
+.aviso.alerta{background:var(--red-pale);color:#8E4330;border:1px solid rgba(181,86,58,.3)}
+.aviso.neutro{background:var(--gold-pale);color:#7A6122;border:1px solid rgba(192,162,101,.34)}
+.premissa{font-size:12.5px;color:var(--ink-2);line-height:1.6;margin-top:7px}
+.premissa b{color:var(--navy)}
+
+.acoes{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+.btn{background:var(--navy);color:#fff;border:0;border-radius:7px;padding:10px 17px;
+  font-size:13.5px;font-family:inherit;cursor:pointer}
+.btn:hover{background:var(--navy-d)}
+.btn.claro{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.claro:hover{background:var(--line-2)}
+
+#awVoltar{position:fixed;bottom:18px;left:18px;z-index:99999;background:var(--navy);color:#fff;
+  border:0;border-radius:999px;padding:10px 18px;font:500 13px inherit;cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.92}
+#awVoltar:hover{background:var(--navy-d);opacity:1}
+@media print{
+  body{background:#fff;padding:0}
+  #awVoltar,.acoes{display:none!important}
+  .cartao,.bloco{border-color:#CCC;break-inside:avoid}
+  @page{size:A4;margin:16mm}
+}
+</style>
+</head>
+<body>
+
+<script>
+(function(){
+  var ok=false;
+  try{ var s=JSON.parse(localStorage.getItem("aw_sessao")||"null"); ok=!!(s&&s.access_token); }catch(e){}
+  if(!ok){ location.replace("index.html"); }
+})();
+</script>
+
+<div class="wrap">
+  <header class="topo">
+    <div>
+      <h1>Ágio e Troca de Ativos</h1>
+      <p class="sub">Em quanto tempo a taxa melhor do ativo novo compensa o deságio assumido
+        na saída antecipada do atual.</p>
+    </div>
+    <div class="selo" id="selo"></div>
+  </header>
+
+  <div class="cartao">
+    <div class="dois">
+      <div class="lado antigo">
+        <h3>Ativo atual</h3>
+        <div class="campo">
+          <label for="vAtual">Valor na curva hoje</label>
+          <input id="vAtual" inputmode="numeric" placeholder="R$ 0,00">
+          <span class="nota">Quanto o papel vale pela taxa contratada, sem marcação.</span>
+        </div>
+        <div class="campo">
+          <label for="tAtual">Taxa contratada (% a.a.)</label>
+          <input id="tAtual" inputmode="decimal" placeholder="0,00">
+        </div>
+      </div>
+
+      <div class="lado novo">
+        <h3>Ativo novo</h3>
+        <div class="campo">
+          <label for="vNovo">Valor da aplicação</label>
+          <input id="vNovo" inputmode="numeric" placeholder="R$ 0,00">
+          <span class="nota">Líquido de mercado, já com o deságio da saída descontado.</span>
+        </div>
+        <div class="campo">
+          <label for="tNovo">Taxa do novo ativo (% a.a.)</label>
+          <input id="tNovo" inputmode="decimal" placeholder="0,00">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="painel">
+    <div class="bloco" id="bDesagio">
+      <div class="rot">Deságio assumido</div>
+      <div class="val" id="vDesagio">—</div>
+      <div class="pe" id="peDesagio">diferença entre curva e mercado</div>
+    </div>
+    <div class="bloco chave" id="bCruz">
+      <div class="rot">Cruzamento das curvas</div>
+      <div class="val" id="vCruz">—</div>
+      <div class="pe" id="peCruz">quando o novo ultrapassa o atual</div>
+    </div>
+    <div class="bloco">
+      <div class="rot">Ganho em 5 anos</div>
+      <div class="val" id="vGanho">—</div>
+      <div class="pe" id="peGanho">diferença de patrimônio no mês 60</div>
+    </div>
+  </div>
+
+  <div class="cartao">
+    <h2>As duas curvas</h2>
+    <p class="ajuda">O atual segue pela taxa contratada. O novo parte mais embaixo, por causa do
+      deságio, e sobe mais rápido. O ponto onde as linhas se cruzam é quando a troca passa
+      a valer a pena.</p>
+    <canvas id="grafico" class="grafico" width="1080" height="380"></canvas>
+    <div class="legenda">
+      <span><i style="background:#7A8698"></i>Ativo atual</span>
+      <span><i style="background:#C0A265"></i>Ativo novo</span>
+      <span><i style="background:#0A7344"></i>Cruzamento</span>
+    </div>
+    <div id="aviso"></div>
+  </div>
+
+  <div class="cartao">
+    <h2>Evolução ano a ano</h2>
+    <p class="ajuda">Saldo dos dois ativos no fim de cada ano, e a diferença entre eles.</p>
+    <table>
+      <thead>
+        <tr><th>Ano</th><th>Ativo atual</th><th>Ativo novo</th><th>Diferença</th></tr>
+      </thead>
+      <tbody id="corpo"><tr><td colspan="4" style="text-align:center;color:#7A8698;padding:24px">Preencha os quatro campos acima.</td></tr></tbody>
+    </table>
+    <div class="acoes">
+      <button class="btn claro" onclick="window.print()">Imprimir</button>
+      <button class="btn claro" onclick="copiarResumo()">Copiar resumo</button>
+    </div>
+  </div>
+
+  <div class="cartao">
+    <h2>Premissas e cuidados</h2>
+    <p class="premissa"><b>Conservadorismo.</b> A conta considera apenas a rentabilidade contratada,
+      o carrego. Não entra o ganho de capital com marcação a mercado no ativo novo, que costuma
+      ser um dos principais motivos da troca e pode encurtar bastante o prazo de recuperação.</p>
+    <p class="premissa"><b>Regra de ouro.</b> Ao realizar prejuízo para girar a carteira, o ideal é
+      alocar em ativo com duration maior, que maximiza o efeito dos juros compostos e a
+      alavancagem na curva.</p>
+    <p class="premissa"><b>O que entra no valor da aplicação.</b> Use o valor líquido de mercado,
+      ou seja, o que entra de fato na conta depois da venda do ativo atual. O deságio já está
+      dentro dele.</p>
+    <p class="premissa"><b>Imposto.</b> A projeção é bruta. Se a troca tiver IR na saída, desconte
+      do valor da aplicação antes de lançar aqui.</p>
+  </div>
+</div>
+
+<button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
+
+<script>
+var VERSAO_AGIO="versão 2.75";
+document.getElementById("selo").textContent=VERSAO_AGIO;
+
+/* Leitura de numero em pt-BR. A regra ingenua ("se tem virgula, o ponto e
+   milhar") quebra no caso mais comum de todos: quem digita um milhao
+   escreve "1.000.000", sem virgula, e parseFloat devolve 1. Um real no
+   lugar de um milhao passa despercebido na tela e vai para a mesa.
+
+   Regra usada aqui, na ordem:
+     1. tem virgula  -> virgula e decimal, pontos sao milhar
+     2. mais de um ponto -> todos sao milhar  (1.000.000)
+     3. um ponto com exatamente 3 digitos depois, no fim -> milhar (1.250)
+     4. no resto, o ponto e decimal  (1250.5, 1.5)                      */
+function n(v){
+  if(typeof v==="number") return isFinite(v)?v:0;
+  var s=String(v==null?"":v).replace(/[^\d,.-]/g,"");
+  if(!s) return 0;
+  if(s.indexOf(",")>-1){
+    s=s.replace(/\./g,"").replace(",",".");
+  } else {
+    var pontos=s.split(".").length-1;
+    if(pontos>1) s=s.replace(/\./g,"");
+    else if(pontos===1 && /\.\d{3}$/.test(s)) s=s.replace(".","");
+  }
+  var x=parseFloat(s);
+  return isFinite(x)?x:0;
+}
+function brl(v){
+  return "R$ "+(Math.round(n(v)*100)/100).toLocaleString("pt-BR",
+    {minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function brlC(v){
+  var a=Math.abs(n(v));
+  if(a>=1e6) return "R$ "+(v/1e6).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+" mi";
+  if(a>=1e3) return "R$ "+(v/1e3).toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:0})+" mil";
+  return brl(v);
+}
+
+/* ---------------------------------------------------------------- motor
+   Taxa anual vira mensal por equivalencia composta, nao por divisao por
+   12: dividir superestima o carrego e antecipa o cruzamento.
+
+   O cruzamento tem forma fechada. Os dois saldos sao
+     atual(t) = Va * (1+ia)^t     novo(t) = Vn * (1+in)^t
+   e igualando, t = ln(Va/Vn) / ln((1+in)/(1+ia)), em anos.           */
+function mensal(taxaAnual){ return Math.pow(1+taxaAnual,1/12)-1; }
+
+function calcular(cfg){
+  var ia=mensal(cfg.taxaAtual), inn=mensal(cfg.taxaNova);
+  /* meses[k] tem que valer o saldo depois de k meses de carrego, com
+     meses[0] sendo hoje (sem carrego nenhum) -- senao "Ano 1" na tabela e
+     o "ganho em 5 anos" saem com um mes de carrego a menos do que o
+     rotulo promete. Por isso o saldo cresce ANTES de entrar no array,
+     nunca depois (mesmo ajuste que ja existe em liberdade.html). */
+  var meses=[{mes:0, atual:cfg.valorAtual, novo:cfg.valorNovo, dif:cfg.valorNovo-cfg.valorAtual}];
+  var mAtual=cfg.valorAtual, mNovo=cfg.valorNovo;
+  for(var m=1;m<=120;m++){
+    mAtual*=(1+ia); mNovo*=(1+inn);
+    meses.push({mes:m, atual:mAtual, novo:mNovo, dif:mNovo-mAtual});
+  }
+  /* Cruzamento fechado. So existe quando a taxa nova supera a atual e o
+     valor de entrada e menor: fora disso, ou nunca cruza, ou ja nasceu
+     na frente e nao ha o que recuperar.                              */
+  var cruzAnos=null, cruzMeses=null;
+  if(cfg.valorNovo>0 && cfg.valorAtual>0 && cfg.taxaNova>cfg.taxaAtual && cfg.valorNovo<cfg.valorAtual){
+    cruzAnos = Math.log(cfg.valorAtual/cfg.valorNovo) /
+               Math.log((1+cfg.taxaNova)/(1+cfg.taxaAtual));
+    cruzMeses = cruzAnos*12;
+  }
+  var desagio=cfg.valorAtual-cfg.valorNovo;
+  return {
+    meses:meses, cruzAnos:cruzAnos, cruzMeses:cruzMeses,
+    desagio:desagio,
+    desagioPct: cfg.valorAtual ? desagio/cfg.valorAtual*100 : 0,
+    ganho60: meses[60] ? meses[60].dif : 0,
+    jaNaFrente: cfg.valorNovo>=cfg.valorAtual && cfg.valorNovo>0,
+    semCruzar: cfg.valorNovo>0 && cfg.valorAtual>0 && cfg.taxaNova<=cfg.taxaAtual && cfg.valorNovo<cfg.valorAtual
+  };
+}
+
+/* --------------------------------------------------------------- tela */
+function ler(){
+  return {
+    valorAtual:n(document.getElementById("vAtual").value),
+    taxaAtual:n(document.getElementById("tAtual").value)/100,
+    valorNovo:n(document.getElementById("vNovo").value),
+    taxaNova:n(document.getElementById("tNovo").value)/100
+  };
+}
+function preenchido(c){ return c.valorAtual>0 && c.valorNovo>0 && c.taxaAtual>0 && c.taxaNova>0; }
+
+var ULTIMO=null;
+
+function render(){
+  var cfg=ler();
+  if(!preenchido(cfg)){
+    ULTIMO=null;
+    ["vDesagio","vCruz","vGanho"].forEach(function(id){
+      document.getElementById(id).textContent="—";
+    });
+    document.getElementById("bCruz").className="bloco chave";
+    document.getElementById("peCruz").textContent="quando o novo ultrapassa o atual";
+    document.getElementById("aviso").innerHTML="";
+    document.getElementById("corpo").innerHTML=
+      '<tr><td colspan="4" style="text-align:center;color:#7A8698;padding:24px">Preencha os quatro campos acima.</td></tr>';
+    limparGrafico();
+    return;
+  }
+  var d=calcular(cfg); ULTIMO={cfg:cfg,d:d};
+
+  document.getElementById("vDesagio").textContent=brl(d.desagio);
+  document.getElementById("peDesagio").textContent=
+    (d.desagio>0 ? d.desagioPct.toFixed(2).replace(".",",")+"% do valor na curva"
+                 : (d.desagio<0 ? "entrada acima da curva, sem deságio" : "sem deságio"));
+  document.getElementById("bDesagio").className="bloco"+(d.desagio>0?"":"");
+
+  var bc=document.getElementById("bCruz"), pc=document.getElementById("peCruz");
+  if(d.cruzMeses!==null){
+    var mm=Math.ceil(d.cruzMeses);
+    document.getElementById("vCruz").textContent=mm+(mm===1?" mês":" meses");
+    bc.className="bloco chave";
+    pc.textContent="cerca de "+d.cruzAnos.toFixed(1).replace(".",",")+" anos para empatar";
+  } else if(d.jaNaFrente){
+    document.getElementById("vCruz").textContent="imediato";
+    bc.className="bloco chave";
+    pc.textContent="entra sem deságio, já começa na frente";
+  } else {
+    document.getElementById("vCruz").textContent="não cruza";
+    bc.className="bloco ruim";
+    pc.textContent="a taxa nova não supera a atual";
+  }
+
+  document.getElementById("vGanho").textContent=brlC(d.ganho60);
+  document.getElementById("peGanho").textContent=
+    (d.ganho60>=0?"a favor da troca":"contra a troca")+" no mês 60";
+
+  tabela(d); grafico(d); aviso(d);
+}
+
+function tabela(d){
+  var h="";
+  for(var ano=1;ano<=10;ano++){
+    var i=ano*12;
+    var r=d.meses[i]; if(!r) break;
+    var virou = d.cruzMeses!==null && (ano*12)>=d.cruzMeses;
+    h+='<tr'+(virou?' class="virada"':'')+'><td>Ano '+ano+'</td>'+
+       '<td>'+brl(r.atual)+'</td><td>'+brl(r.novo)+'</td>'+
+       '<td class="'+(r.dif>=0?"pos":"neg")+'">'+(r.dif>=0?"+":"−")+brl(Math.abs(r.dif)).replace("R$ ","R$ ")+'</td></tr>';
+  }
+  document.getElementById("corpo").innerHTML=h;
+}
+
+function aviso(d){
+  var el=document.getElementById("aviso");
+  if(d.jaNaFrente){
+    el.innerHTML='<div class="aviso ok"><b>Não há deságio a recuperar.</b> '+
+      'O valor de entrada no ativo novo é igual ou maior que o da curva do atual, '+
+      'então a troca começa na frente desde o primeiro mês.</div>';
+  } else if(d.semCruzar){
+    el.innerHTML='<div class="aviso alerta"><b>As curvas não se cruzam.</b> '+
+      'A taxa do ativo novo não supera a do atual, então o deságio de '+brl(d.desagio)+
+      ' nunca é recuperado pelo carrego. Só faz sentido com ganho de marcação, '+
+      'que esta conta não considera.</div>';
+  } else if(d.cruzMeses!==null){
+    var mm=Math.ceil(d.cruzMeses);
+    var tom = mm<=36 ? "ok" : (mm<=60 ? "neutro" : "alerta");
+    var frase = mm<=36 ? "Prazo curto para recuperar."
+              : (mm<=60 ? "Prazo intermediário." : "Prazo longo para recuperar.");
+    el.innerHTML='<div class="aviso '+tom+'"><b>'+frase+'</b> '+
+      'O deságio de '+brl(d.desagio)+' é recuperado em '+mm+
+      (mm===1?" mês":" meses")+'. A partir daí, a troca passa a render mais. '+
+      'Confira se o prazo do ativo novo é maior que isso: recuperar depois do '+
+      'vencimento não recupera nada.</div>';
+  } else el.innerHTML="";
+}
+
+/* ------------------------------------------------------------ grafico
+   Desenhado no canvas, sem biblioteca. O eixo Y comeca no menor dos dois
+   valores iniciais e nao em zero: com zero na base, duas curvas que
+   diferem 20% ficam coladas e o cruzamento some.                      */
+function limparGrafico(){
+  var c=document.getElementById("grafico"), x=c.getContext("2d");
+  x.clearRect(0,0,c.width,c.height);
+  x.fillStyle="#7A8698"; x.font="15px -apple-system,Segoe UI,Arial";
+  x.textAlign="center";
+  x.fillText("Preencha os quatro campos para ver as curvas.", c.width/2, c.height/2);
+}
+function grafico(d){
+  var c=document.getElementById("grafico"), x=c.getContext("2d");
+  var L=64, R=22, T=22, B=40;
+  var W=c.width-L-R, H=c.height-T-B;
+  x.clearRect(0,0,c.width,c.height);
+
+  var serie=d.meses.slice(0,121);
+  var vals=[];
+  serie.forEach(function(p){ vals.push(p.atual); vals.push(p.novo); });
+  var min=Math.min.apply(null,vals), max=Math.max.apply(null,vals);
+  var folga=(max-min)*0.08||1; min-=folga; max+=folga;
+
+  var px=function(m){ return L + (m/120)*W; };
+  var py=function(v){ return T + H - ((v-min)/(max-min))*H; };
+
+  /* grade */
+  x.strokeStyle="#EDF1F5"; x.lineWidth=1;
+  x.fillStyle="#7A8698"; x.font="11px -apple-system,Segoe UI,Arial";
+  for(var k=0;k<=4;k++){
+    var v=min+(max-min)*k/4, y=py(v);
+    x.beginPath(); x.moveTo(L,y); x.lineTo(L+W,y); x.stroke();
+    x.textAlign="right";
+    x.fillText(brlC(v), L-8, y+4);
+  }
+  x.textAlign="center";
+  for(var a=0;a<=10;a+=2){
+    var xx=px(a*12);
+    x.fillText(a===0?"hoje":(a+"a"), xx, T+H+20);
+  }
+
+  var linha=function(campo,cor,largura){
+    x.strokeStyle=cor; x.lineWidth=largura; x.beginPath();
+    serie.forEach(function(p,i){
+      var X=px(p.mes), Y=py(p[campo]);
+      if(i===0) x.moveTo(X,Y); else x.lineTo(X,Y);
+    });
+    x.stroke();
+  };
+  linha("atual","#7A8698",2);
+  linha("novo","#C0A265",2.6);
+
+  /* marca do cruzamento */
+  if(d.cruzMeses!==null && d.cruzMeses<=120){
+    var cx=px(d.cruzMeses);
+    x.save();
+    x.setLineDash([5,4]); x.strokeStyle="#0A7344"; x.lineWidth=1.6;
+    x.beginPath(); x.moveTo(cx,T); x.lineTo(cx,T+H); x.stroke();
+    x.restore();
+    x.fillStyle="#0A7344"; x.font="600 12px -apple-system,Segoe UI,Arial";
+    x.textAlign = cx > L+W*0.72 ? "right" : "left";
+    x.fillText(Math.ceil(d.cruzMeses)+" meses", cx + (cx>L+W*0.72?-7:7), T+15);
+  }
+}
+
+function copiarResumo(){
+  if(!ULTIMO){ return; }
+  var d=ULTIMO.d, c=ULTIMO.cfg;
+  var t=[];
+  t.push("ÁGIO E TROCA DE ATIVOS");
+  t.push("Ativo atual: "+brl(c.valorAtual)+" a "+(c.taxaAtual*100).toFixed(2).replace(".",",")+"% a.a.");
+  t.push("Ativo novo: "+brl(c.valorNovo)+" a "+(c.taxaNova*100).toFixed(2).replace(".",",")+"% a.a.");
+  t.push("Deságio assumido: "+brl(d.desagio)+" ("+d.desagioPct.toFixed(2).replace(".",",")+"%)");
+  t.push(d.cruzMeses!==null
+    ? "Recupera em "+Math.ceil(d.cruzMeses)+" meses ("+d.cruzAnos.toFixed(1).replace(".",",")+" anos)"
+    : (d.jaNaFrente?"Sem deságio a recuperar":"As curvas não se cruzam pelo carrego"));
+  t.push("Diferença no mês 60: "+brl(d.ganho60));
+  t.push("");
+  t.push("Projeção pelo carrego contratado, sem marcação a mercado e sem IR.");
+  var txt=t.join("\n");
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt);
+}
+
+["vAtual","tAtual","vNovo","tNovo"].forEach(function(id){
+  document.getElementById(id).addEventListener("input",render);
+});
+["vAtual","vNovo"].forEach(function(id){
+  document.getElementById(id).addEventListener("blur",function(){
+    var v=n(this.value); if(v) this.value=brl(v); render();
+  });
+});
+limparGrafico();
+render();
+</script>
+</body>
+</html>

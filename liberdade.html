@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liberdade Financeira — Adami Captal</title>
+<style>
+:root{
+  --navy:#1B3A5F; --navy-d:#132B47; --ink:#16324F; --ink-2:#3C4C60;
+  --muted:#7A8698; --paper:#EDF0F4; --surface:#FFFFFF; --line:#DCE2EA;
+  --line-2:#EDF1F5; --gold:#C0A265; --gold-pale:#FBF6EA;
+  --green:#0A7344; --green-pale:#EDF7F1; --red:#B5563A; --red-pale:#FBEDE9;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;
+  padding:26px 20px 90px}
+.wrap{max-width:1120px;margin:0 auto}
+header.topo{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  flex-wrap:wrap;margin-bottom:22px}
+header.topo h1{font-family:var(--serif);font-size:25px;font-weight:600;color:var(--navy)}
+header.topo .sub{font-size:13px;color:var(--muted);margin-top:3px;max-width:70ch}
+.selo{font-size:11px;color:var(--muted)}
+
+.cartao{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  padding:20px 22px;margin-bottom:18px}
+.cartao h2{font-family:var(--serif);font-size:16px;color:var(--navy);margin-bottom:3px}
+.cartao .ajuda{font-size:12.5px;color:var(--muted);margin-bottom:15px;max-width:76ch}
+
+.campos{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:14px}
+.campo{display:flex;flex-direction:column;gap:5px}
+.campo label{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--muted);font-weight:600}
+.campo input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:7px;
+  font-size:14px;font-family:inherit;background:#fff;color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.campo input.num{text-align:right}
+.campo input:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 3px rgba(192,162,101,.16)}
+.campo .nota{font-size:11px;color:var(--muted)}
+
+.painel{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;
+  margin-bottom:18px}
+.bloco{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.bloco .rot{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:600}
+.bloco .val{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--navy);
+  margin-top:5px;font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+.bloco .pe{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+.bloco.chave{border-color:rgba(192,162,101,.5);background:var(--gold-pale)}
+.bloco.chave .val{color:#7A6122}
+.bloco.ok{border-color:rgba(10,115,68,.4);background:var(--green-pale)}
+.bloco.ok .val{color:var(--green)}
+.bloco.ruim{border-color:rgba(181,86,58,.5);background:var(--red-pale)}
+.bloco.ruim .val{color:var(--red)}
+
+.grafico{width:100%;height:auto;display:block;background:#fff;border-radius:8px}
+.legenda{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:12.5px;color:var(--ink-2)}
+.legenda i{display:inline-block;width:13px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);
+  font-weight:600;text-align:right;padding:0 9px 8px;border-bottom:1px solid var(--line)}
+th:first-child{text-align:left}
+td{padding:8px 9px;border-bottom:1px solid var(--line-2);text-align:right;font-size:13.5px}
+td:first-child{text-align:left;color:var(--ink-2);font-weight:600}
+td.destaque{background:var(--gold-pale);font-weight:700;color:#7A6122;
+  box-shadow:inset 0 0 0 1px rgba(192,162,101,.4)}
+td.neg{color:var(--red)}
+.tab-nota{font-size:12px;color:var(--muted);margin-top:9px;line-height:1.5}
+
+.aviso{margin-top:15px;padding:12px 15px;border-radius:8px;font-size:13px;line-height:1.55}
+.aviso.ok{background:var(--green-pale);color:#0A5C38;border:1px solid rgba(10,115,68,.28)}
+.aviso.alerta{background:var(--red-pale);color:#8E4330;border:1px solid rgba(181,86,58,.3)}
+.aviso.neutro{background:var(--gold-pale);color:#7A6122;border:1px solid rgba(192,162,101,.34)}
+.premissa{font-size:12.5px;color:var(--ink-2);line-height:1.6;margin-top:7px}
+.premissa b{color:var(--navy)}
+
+.acoes{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+.btn{background:var(--navy);color:#fff;border:0;border-radius:7px;padding:10px 17px;
+  font-size:13.5px;font-family:inherit;cursor:pointer}
+.btn:hover{background:var(--navy-d)}
+.btn.claro{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.claro:hover{background:var(--line-2)}
+
+#awVoltar{position:fixed;bottom:18px;left:18px;z-index:99999;background:var(--navy);color:#fff;
+  border:0;border-radius:999px;padding:10px 18px;font:500 13px inherit;cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.92}
+#awVoltar:hover{background:var(--navy-d);opacity:1}
+@media print{
+  body{background:#fff;padding:0}
+  #awVoltar,.acoes{display:none!important}
+  .cartao,.bloco{border-color:#CCC;break-inside:avoid}
+  @page{size:A4;margin:16mm}
+}
+</style>
+</head>
+<body>
+
+<script>
+(function(){
+  var ok=false;
+  try{ var s=JSON.parse(localStorage.getItem("aw_sessao")||"null"); ok=!!(s&&s.access_token); }catch(e){}
+  if(!ok){ location.replace("index.html"); }
+})();
+</script>
+
+<div class="wrap">
+  <header class="topo">
+    <div>
+      <h1>Liberdade Financeira</h1>
+      <p class="sub">Quanto o cliente precisa juntar para manter o padrão de vida, e quanto
+        pode retirar por mês depois disso. Tudo em termos reais, já descontada a inflação.</p>
+    </div>
+    <div class="selo" id="selo"></div>
+  </header>
+
+  <div class="cartao">
+    <h2>Dados do cliente</h2>
+    <p class="ajuda">A rentabilidade real sai da fórmula de Fisher a partir da nominal e da
+      inflação, então não precisa ser informada.</p>
+    <div class="campos">
+      <div class="campo">
+        <label for="nome">Nome</label>
+        <input id="nome" placeholder="Nome do cliente" autocomplete="off">
+      </div>
+      <div class="campo">
+        <label for="idade">Idade atual</label>
+        <input id="idade" class="num" inputmode="numeric" value="40">
+      </div>
+      <div class="campo">
+        <label for="idadeApos">Idade de aposentadoria</label>
+        <input id="idadeApos" class="num" inputmode="numeric" value="60">
+      </div>
+      <div class="campo">
+        <label for="expectativa">Expectativa de vida</label>
+        <input id="expectativa" class="num" inputmode="numeric" value="95">
+      </div>
+    </div>
+    <div class="campos" style="margin-top:14px">
+      <div class="campo">
+        <label for="patrimonio">Patrimônio atual</label>
+        <input id="patrimonio" class="num" inputmode="numeric" value="R$ 1.500.000,00">
+      </div>
+      <div class="campo">
+        <label for="aporte">Aporte mensal</label>
+        <input id="aporte" class="num" inputmode="numeric" value="R$ 7.500,00">
+      </div>
+      <div class="campo">
+        <label for="nominal">Rentabilidade nominal (% a.a.)</label>
+        <input id="nominal" class="num" inputmode="decimal" value="10">
+      </div>
+      <div class="campo">
+        <label for="inflacao">Inflação esperada (% a.a.)</label>
+        <input id="inflacao" class="num" inputmode="decimal" value="4">
+        <span class="nota" id="notaReal"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="painel">
+    <div class="bloco chave">
+      <div class="rot">Patrimônio na aposentadoria</div>
+      <div class="val" id="vPL">—</div>
+      <div class="pe" id="pePL">em valor de hoje</div>
+    </div>
+    <div class="bloco">
+      <div class="rot">Renda perpétua</div>
+      <div class="val" id="vPerp">—</div>
+      <div class="pe">vive dos juros, principal intacto</div>
+    </div>
+    <div class="bloco">
+      <div class="rot">Renda vitalícia</div>
+      <div class="val" id="vVit">—</div>
+      <div class="pe" id="peVit">consome o principal até o fim</div>
+    </div>
+    <div class="bloco" id="bMeta">
+      <div class="rot">Retirada desejada</div>
+      <div class="val" id="vMeta">—</div>
+      <div class="pe" id="peMeta">quanto o cliente quer por mês</div>
+    </div>
+  </div>
+
+  <div class="cartao">
+    <h2>Retirada desejada</h2>
+    <p class="ajuda">Informe quanto o cliente quer retirar por mês na aposentadoria, em valor
+      de hoje. O sistema diz se o plano atual sustenta isso.</p>
+    <div class="campos" style="max-width:280px">
+      <div class="campo">
+        <label for="retirada">Retirada mensal desejada</label>
+        <input id="retirada" class="num" inputmode="numeric" value="R$ 8.700,00">
+      </div>
+    </div>
+    <div id="aviso"></div>
+  </div>
+
+  <div class="cartao">
+    <h2>Monte financeiro</h2>
+    <p class="ajuda">A subida é a fase de acumulação, com aportes e juros. A descida ou a reta
+      é a aposentadoria: se a linha cai, o cliente consome principal; se fica reta, vive de renda.</p>
+    <canvas id="grafico" class="grafico" width="1080" height="380"></canvas>
+    <div class="legenda">
+      <span><i style="background:#C0A265"></i>Renda perpétua</span>
+      <span><i style="background:#3D6D9E"></i>Renda vitalícia</span>
+      <span><i style="background:#B5563A"></i>Retirada desejada</span>
+    </div>
+  </div>
+
+  <div class="cartao">
+    <h2>Sensibilidade — preservando o patrimônio</h2>
+    <p class="ajuda">Quanto dá para retirar por mês vivendo só dos juros reais, mantendo o
+      principal para a sucessão. Linhas são o aporte, colunas são a idade de aposentadoria.</p>
+    <table><thead id="cabA"></thead><tbody id="corpoA"></tbody></table>
+    <p class="tab-nota">A célula destacada é o plano atual do cliente.</p>
+  </div>
+
+  <div class="cartao">
+    <h2>Sensibilidade — consumindo o patrimônio</h2>
+    <p class="ajuda">Quanto dá para retirar por mês zerando o patrimônio exatamente na
+      expectativa de vida. Rende mais por mês, e não sobra nada.</p>
+    <table><thead id="cabB"></thead><tbody id="corpoB"></tbody></table>
+    <p class="tab-nota" id="notaB"></p>
+    <div class="acoes">
+      <button class="btn claro" onclick="window.print()">Imprimir</button>
+    </div>
+  </div>
+
+  <div class="cartao">
+    <h2>Premissas e cuidados</h2>
+    <p class="premissa"><b>Tudo em termos reais.</b> A rentabilidade real vem de
+      (1 + nominal) ÷ (1 + inflação) − 1. Como a projeção é real, os valores estão em poder de
+      compra de hoje: R$ 10 mil daqui a vinte anos compram o mesmo que R$ 10 mil hoje.</p>
+    <p class="premissa"><b>Risco de longevidade.</b> Na renda vitalícia, o patrimônio zera na
+      idade projetada. Se o cliente viver além disso, não há saldo. É a diferença central entre
+      as duas tabelas, e vale falar dela na reunião.</p>
+    <p class="premissa"><b>Imposto de renda.</b> A conta é bruta. O IR varia conforme o veículo,
+      então informe aportes e retiradas já líquidos, ou ajuste a rentabilidade para baixo.</p>
+    <p class="premissa"><b>Rentabilidade constante.</b> A projeção assume retorno real estável,
+      o que não acontece no mundo. Serve para dimensionar o esforço de poupança, não para
+      prometer resultado.</p>
+  </div>
+</div>
+
+<button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
+
+<script>
+var VERSAO_LIB="versão 2.75";
+document.getElementById("selo").textContent=VERSAO_LIB;
+
+/* Leitura de numero em pt-BR. A regra ingenua ("se tem virgula, o ponto e
+   milhar") quebra no caso mais comum de todos: quem digita um milhao
+   escreve "1.000.000", sem virgula, e parseFloat devolve 1. Um real no
+   lugar de um milhao passa despercebido na tela e vai para a mesa.
+
+   Regra usada aqui, na ordem:
+     1. tem virgula  -> virgula e decimal, pontos sao milhar
+     2. mais de um ponto -> todos sao milhar  (1.000.000)
+     3. um ponto com exatamente 3 digitos depois, no fim -> milhar (1.250)
+     4. no resto, o ponto e decimal  (1250.5, 1.5)                      */
+function n(v){
+  if(typeof v==="number") return isFinite(v)?v:0;
+  var s=String(v==null?"":v).replace(/[^\d,.-]/g,"");
+  if(!s) return 0;
+  if(s.indexOf(",")>-1){
+    s=s.replace(/\./g,"").replace(",",".");
+  } else {
+    var pontos=s.split(".").length-1;
+    if(pontos>1) s=s.replace(/\./g,"");
+    else if(pontos===1 && /\.\d{3}$/.test(s)) s=s.replace(".","");
+  }
+  var x=parseFloat(s);
+  return isFinite(x)?x:0;
+}
+function brl(v){
+  return "R$ "+(Math.round(n(v)*100)/100).toLocaleString("pt-BR",
+    {minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function brlC(v){
+  var a=Math.abs(n(v));
+  if(a>=1e6) return "R$ "+(v/1e6).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+" mi";
+  if(a>=1e3) return "R$ "+(v/1e3).toLocaleString("pt-BR",{maximumFractionDigits:0})+" mil";
+  return brl(v);
+}
+function brl0(v){
+  return "R$ "+Math.round(n(v)).toLocaleString("pt-BR");
+}
+
+/* ---------------------------------------------------------------- motor
+   Financeiras equivalentes as do Excel, na mesma convencao de sinal que a
+   planilha de origem usa (aporte e PV entram negativos, resultado sai
+   positivo), para os numeros baterem com o que a equipe ja conferiu.   */
+
+/* Valor futuro de um PV mais uma serie de aportes no fim de cada periodo. */
+function fv(taxa, periodos, aporte, pv){
+  if(periodos<=0) return pv;
+  if(taxa===0) return pv + aporte*periodos;
+  var f=Math.pow(1+taxa,periodos);
+  return pv*f + aporte*(f-1)/taxa;
+}
+/* Prestacao que zera um saldo em N periodos. */
+function pmt(taxa, periodos, vp){
+  if(periodos<=0) return 0;
+  if(taxa===0) return vp/periodos;
+  return vp*taxa/(1-Math.pow(1+taxa,-periodos));
+}
+/* Fisher: o ganho acima da inflacao, que e o unico que preserva padrao. */
+function taxaReal(nominal, inflacao){ return (1+nominal)/(1+inflacao)-1; }
+
+function calcular(c){
+  var real=taxaReal(c.nominal, c.inflacao);
+  var rm=Math.pow(1+real,1/12)-1;          /* mensal equivalente */
+  var mesesAcum=Math.max(0,(c.idadeApos-c.idade))*12;
+  var mesesUsu =Math.max(0,(c.expectativa-c.idadeApos))*12;
+
+  var pl=fv(rm, mesesAcum, c.aporte, c.patrimonio);
+  var perp = pl*rm;                         /* so os juros do mes */
+  var vit  = mesesUsu>0 ? pmt(rm, mesesUsu, pl) : 0;
+
+  return {real:real, rm:rm, mesesAcum:mesesAcum, mesesUsu:mesesUsu,
+          pl:pl, perp:perp, vit:vit,
+          capitalParaMeta: rm>0 ? c.retirada/rm : Infinity};
+}
+
+/* Trajetoria mes a mes para o grafico, com uma retirada fixa. */
+/* O ponto de virada tem que ser exatamente o mesmo patrimonio que os
+   cartoes mostram. Empurrar o saldo antes de guardar compunha um mes a
+   mais e a curva terminava acima do valor anunciado -- com a retirada
+   perpetua o grafico subia em vez de ficar reto.                      */
+function trajetoria(c, d, retiradaMensal){
+  var s=[c.patrimonio], saldo=c.patrimonio, m;
+  for(m=1;m<=d.mesesAcum;m++){
+    saldo=saldo*(1+d.rm)+c.aporte;
+    s.push(saldo);
+  }
+  for(m=1;m<=d.mesesUsu;m++){
+    saldo=saldo*(1+d.rm)-retiradaMensal;
+    if(saldo<0) saldo=0;
+    s.push(saldo);
+  }
+  return s;
+}
+
+/* ---------------------------------------------------------------- tela */
+function ler(){
+  return {
+    nome:document.getElementById("nome").value,
+    idade:n(document.getElementById("idade").value),
+    idadeApos:n(document.getElementById("idadeApos").value),
+    expectativa:n(document.getElementById("expectativa").value),
+    patrimonio:n(document.getElementById("patrimonio").value),
+    aporte:n(document.getElementById("aporte").value),
+    nominal:n(document.getElementById("nominal").value)/100,
+    inflacao:n(document.getElementById("inflacao").value)/100,
+    retirada:n(document.getElementById("retirada").value)
+  };
+}
+
+function render(){
+  var c=ler();
+  var valido = c.idade>0 && c.idadeApos>c.idade && c.expectativa>c.idadeApos && c.nominal>0;
+  var d=calcular(c);
+
+  document.getElementById("notaReal").textContent =
+    "Real: "+(d.real*100).toFixed(2).replace(".",",")+"% a.a.";
+
+  if(!valido){
+    ["vPL","vPerp","vVit","vMeta"].forEach(function(id){
+      document.getElementById(id).textContent="—";
+    });
+    document.getElementById("aviso").innerHTML=
+      '<div class="aviso alerta">Confira as idades: a de aposentadoria precisa ser maior '+
+      'que a atual, e a expectativa maior que a de aposentadoria.</div>';
+    return;
+  }
+
+  document.getElementById("vPL").textContent=brlC(d.pl);
+  document.getElementById("pePL").textContent =
+    "aos "+c.idadeApos+" anos, em valor de hoje";
+  document.getElementById("vPerp").textContent=brl0(d.perp);
+  document.getElementById("vVit").textContent=brl0(d.vit);
+  document.getElementById("peVit").textContent =
+    "zera aos "+c.expectativa+" anos";
+  document.getElementById("vMeta").textContent=brl0(c.retirada);
+
+  var b=document.getElementById("bMeta");
+  if(!c.retirada) b.className="bloco";
+  else if(c.retirada<=d.perp) b.className="bloco ok";
+  else if(c.retirada<=d.vit) b.className="bloco chave";
+  else b.className="bloco ruim";
+
+  avisar(c,d);
+  grafico(c,d);
+  sensibilidade(c,d);
+}
+
+function avisar(c,d){
+  var el=document.getElementById("aviso");
+  if(!c.retirada){ el.innerHTML=""; return; }
+  if(c.retirada<=d.perp){
+    el.innerHTML='<div class="aviso ok"><b>O plano sustenta a retirada sem tocar no principal.</b> '+
+      'Retirando '+brl0(c.retirada)+' por mês contra '+brl0(d.perp)+' de renda perpétua, '+
+      'o patrimônio segue intacto para a sucessão.</div>';
+  } else if(c.retirada<=d.vit){
+    var falta=d.capitalParaMeta-d.pl;
+    el.innerHTML='<div class="aviso neutro"><b>Sustenta, mas consumindo o patrimônio.</b> '+
+      brl0(c.retirada)+' por mês passa da renda perpétua de '+brl0(d.perp)+
+      ', então o saldo cai ao longo da aposentadoria e zera por volta dos '+c.expectativa+
+      ' anos. Para viver só de juros seriam necessários '+brlC(d.capitalParaMeta)+
+      ', ou seja, '+brlC(falta)+' a mais.</div>';
+  } else {
+    el.innerHTML='<div class="aviso alerta"><b>O plano atual não sustenta essa retirada.</b> '+
+      brl0(c.retirada)+' por mês está acima até da renda vitalícia de '+brl0(d.vit)+
+      ', então o dinheiro acaba antes dos '+c.expectativa+' anos. '+
+      'É preciso aportar mais, adiar a aposentadoria ou revisar o padrão.</div>';
+  }
+}
+
+/* -------------------------------------------------------- sensibilidade
+   As colunas saem da idade de aposentadoria do proprio cliente, nao de
+   uma faixa fixa. Com faixa fixa, um cliente de 65 anos via colunas de
+   45 e 50 e a tabela devolvia patrimonio negativo, que nao quer dizer
+   nada.                                                                */
+function colunasIdade(c){
+  var base=c.idadeApos, col=[], i;
+  for(i=-2;i<=2;i++){
+    var v=base+i*3;
+    if(v>c.idade && v<c.expectativa) col.push(v);
+  }
+  if(!col.length) col=[base];
+  return col;
+}
+var FATORES=[[0.5,"50% do aporte"],[0.75,"75% do aporte"],[1,"Aporte atual"],
+             [1.25,"125% do aporte"],[1.5,"150% do aporte"]];
+
+function sensibilidade(c,d){
+  var cols=colunasIdade(c);
+  var cab='<tr><th>Aporte mensal</th>'+cols.map(function(v){
+    return '<th>'+v+' anos</th>'; }).join("")+'</tr>';
+  document.getElementById("cabA").innerHTML=cab;
+  document.getElementById("cabB").innerHTML=cab;
+
+  var linhasA="", linhasB="";
+  FATORES.forEach(function(f){
+    var ap=c.aporte*f[0];
+    var celA="", celB="";
+    cols.forEach(function(idadeAp){
+      var mesesAc=(idadeAp-c.idade)*12;
+      var mesesUs=(c.expectativa-idadeAp)*12;
+      var pl=fv(d.rm, mesesAc, ap, c.patrimonio);
+      var perp=pl*d.rm;
+      var vit= mesesUs>0 ? pmt(d.rm, mesesUs, pl) : 0;
+      var atual = (f[0]===1 && idadeAp===c.idadeApos);
+      celA+='<td class="'+(atual?"destaque":(perp<0?"neg":""))+'">'+brl0(perp)+'</td>';
+      celB+='<td class="'+(atual?"destaque":(vit<0?"neg":""))+'">'+brl0(vit)+'</td>';
+    });
+    linhasA+='<tr><td>'+f[1]+'</td>'+celA+'</tr>';
+    linhasB+='<tr><td>'+f[1]+'</td>'+celB+'</tr>';
+  });
+  document.getElementById("corpoA").innerHTML=linhasA;
+  document.getElementById("corpoB").innerHTML=linhasB;
+  document.getElementById("notaB").textContent =
+    "O patrimônio chega a zero exatamente aos "+c.expectativa+" anos. "+
+    "Viver além disso deixa o cliente sem saldo.";
+}
+
+/* ------------------------------------------------------------- grafico */
+function grafico(c,d){
+  var cv=document.getElementById("grafico"), x=cv.getContext("2d");
+  var L=64,R=22,T=22,B=40, W=cv.width-L-R, H=cv.height-T-B;
+  x.clearRect(0,0,cv.width,cv.height);
+
+  var sPerp=trajetoria(c,d,d.perp);
+  var sVit =trajetoria(c,d,d.vit);
+  var sMeta=c.retirada?trajetoria(c,d,c.retirada):null;
+
+  var total=Math.max(sPerp.length,sVit.length,(sMeta?sMeta.length:0));
+  var max=0;
+  [sPerp,sVit,sMeta].forEach(function(s){
+    if(!s) return; s.forEach(function(v){ if(v>max) max=v; });
+  });
+  if(max<=0) max=1;
+
+  var px=function(i){ return L+(i/(total-1||1))*W; };
+  var py=function(v){ return T+H-(v/max)*H; };
+
+  x.strokeStyle="#EDF1F5"; x.lineWidth=1;
+  x.fillStyle="#7A8698"; x.font="11px -apple-system,Segoe UI,Arial";
+  for(var k=0;k<=4;k++){
+    var v=max*k/4, y=py(v);
+    x.beginPath(); x.moveTo(L,y); x.lineTo(L+W,y); x.stroke();
+    x.textAlign="right"; x.fillText(brlC(v), L-8, y+4);
+  }
+  /* marca da aposentadoria */
+  var xa=px(d.mesesAcum);
+  x.save(); x.setLineDash([5,4]); x.strokeStyle="#B9C3D0"; x.lineWidth=1.4;
+  x.beginPath(); x.moveTo(xa,T); x.lineTo(xa,T+H); x.stroke(); x.restore();
+  x.textAlign="center"; x.fillStyle="#7A8698";
+  x.fillText("aposenta ("+c.idadeApos+")", xa, T+H+20);
+  x.fillText(c.idade+" anos", L+14, T+H+20);
+  x.fillText(c.expectativa+" anos", L+W-18, T+H+20);
+
+  var linha=function(s,cor,larg){
+    if(!s) return;
+    x.strokeStyle=cor; x.lineWidth=larg; x.beginPath();
+    s.forEach(function(v,i){
+      var X=px(i), Y=py(v);
+      if(i===0) x.moveTo(X,Y); else x.lineTo(X,Y);
+    });
+    x.stroke();
+  };
+  linha(sVit,"#3D6D9E",2);
+  linha(sMeta,"#B5563A",2);
+  linha(sPerp,"#C0A265",2.6);
+}
+
+["nome","idade","idadeApos","expectativa","patrimonio","aporte","nominal","inflacao","retirada"]
+  .forEach(function(id){ document.getElementById(id).addEventListener("input",render); });
+["patrimonio","aporte","retirada"].forEach(function(id){
+  document.getElementById(id).addEventListener("blur",function(){
+    var v=n(this.value); if(v) this.value=brl(v); render();
+  });
+});
+render();
+</script>
+</body>
+</html>
