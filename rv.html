@@ -160,8 +160,6 @@
       </div>
       <div class="field"><label for="oObs">Observação</label>
         <input id="oObs" value="Ordem a mercado" oninput="desenhar()"></div>
-      <div class="fee-box"><label for="oFee">Fee de compra e venda (%)</label>
-        <input id="oFee" value="0,5" oninput="desenhar()"></div>
       <div class="derived" id="derOrdem"></div>
     </div>
 
@@ -176,8 +174,6 @@
       </div>
       <div class="field"><label for="obs">Observação</label>
         <input id="obs" value="Ordem lançada no preço de fechamento" oninput="desenhar()"></div>
-      <div class="fee-box"><label for="swFee">Fee de compra e venda (%)</label>
-        <input id="swFee" value="0,5" oninput="desenhar()"></div>
       <div class="derived" id="derSwing"></div>
     </div>
 
@@ -190,8 +186,6 @@
       </div>
       <div class="field"><label for="premio">Prêmio bruto (%)</label>
         <input id="premio" value="2,32" oninput="desenhar()"></div>
-      <div class="fee-box"><label for="fee">Fee de estruturação (%)</label>
-        <input id="fee" value="1" oninput="desenhar()"></div>
       <fieldset>
         <legend>Comparação com o CDI</legend>
         <div class="field"><label for="cdi">CDI bruto (% a.a.)</label>
@@ -226,9 +220,20 @@
       </fieldset>
       <div class="field"><label for="gPayoff">Como funciona (uma frase)</label>
         <input id="gPayoff" value="Protege a queda até 10% e mantém a alta até 18%." oninput="desenhar()"></div>
-      <div class="fee-box"><label for="gFee">Fee de estruturação (%)</label>
-        <input id="gFee" value="1" oninput="desenhar()"></div>
-      <div class="derived" id="derGenerica"></div>
+    </div>
+
+    <!-- Fee: sempre visível, igual pra qualquer tipo de operação. Uma
+         operação pode ter as duas pontas (estruturação e distribuição) ou
+         só uma — por isso os dois campos ficam abertos sempre, e o que
+         não se aplica fica em 0 e some sozinho da conta e do card. -->
+    <div class="fee-box">
+      <div class="row2">
+        <div class="field"><label for="feeEstrut">Fee de estruturação (%)</label>
+          <input id="feeEstrut" value="0" oninput="desenhar()"></div>
+        <div class="field"><label for="feeCV">Fee de compra e venda (%)</label>
+          <input id="feeCV" value="0" oninput="desenhar()"></div>
+      </div>
+      <div class="derived" id="derFee"></div>
     </div>
 
     <button class="btn" onclick="baixar()">Baixar imagem para o grupo</button>
@@ -268,7 +273,7 @@ LOGO_IMG.onload=function(){ LOGO_OK=true; try{ desenhar(); }catch(e){} };
 LOGO_IMG.onerror=function(){ LOGO_OK=false; };
 LOGO_IMG.src=LOGO_BRANCO;
 
-var VERSAO_RV="versão 2.77";
+var VERSAO_RV="versão 2.78";
 try{ document.getElementById("selVersao").textContent=VERSAO_RV; }catch(e){}
 var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
 var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
@@ -461,13 +466,22 @@ function ajustarIR(){
    o escritório, e quanto disso é repassado ao assessor. Compra/venda e
    estruturação têm partilha diferente com a corretora/emissor; do que
    sobra para o escritório, metade é sempre do assessor que fez a
-   operação — regra única, usada pelos quatro tipos de cálculo abaixo. */
+   operação. Os dois campos de fee ficam sempre abertos, independente do
+   tipo de operação — uma operação pode ter só uma ponta ou as duas, e
+   o que não se aplica fica em 0 e some sozinho da conta e do card. */
 var SPLIT_ESCRITORIO_CV=0.70;      // compra e venda: 70% do fee é receita do escritório
 var SPLIT_ESCRITORIO_ESTRUT=0.50;  // estruturação: 50% do fee é receita do escritório
 var SPLIT_ASSESSOR=0.50;           // do que fica com o escritório, metade é do assessor
 function partilhaFee(fee,splitEscritorio){
   var escritorio=fee*splitEscritorio;
   return {fee:fee,escritorio:escritorio,assessor:escritorio*SPLIT_ASSESSOR};
+}
+function calcFeeTotal(){
+  var estrut=partilhaFee(n('feeEstrut'),SPLIT_ESCRITORIO_ESTRUT);
+  var cv=partilhaFee(n('feeCV'),SPLIT_ESCRITORIO_CV);
+  return {estrut:estrut,cv:cv,
+    escritorio:estrut.escritorio+cv.escritorio,
+    assessor:estrut.assessor+cv.assessor};
 }
 function calcOrdem(){
   var dir=document.getElementById('direcao').value;
@@ -479,16 +493,15 @@ function calcOrdem(){
   var pStop = (temS && p>0) ? sinal*(st/p-1)*100 : null;
   var rr = (pAlvo!==null && pStop!==null && pStop<0) ? Math.abs(pAlvo/pStop) : null;
   return {dir:dir,sinal:sinal,p:p,al:al,st:st,temAlvo:temA,temStop:temS,
-          pAlvo:pAlvo,pStop:pStop,rr:rr,fee:partilhaFee(n('oFee'),SPLIT_ESCRITORIO_CV)};
+          pAlvo:pAlvo,pStop:pStop,rr:rr};
 }
 function calcSwing(){
   var a=n('atual'),al=n('alvo'),st=n('stop');
   var pAlvo=a>0?(al/a-1)*100:0,pStop=a>0?(st/a-1)*100:0;
-  return {a:a,al:al,st:st,pAlvo:pAlvo,pStop:pStop,rr:pStop<0?Math.abs(pAlvo/pStop):0,
-          fee:partilhaFee(n('swFee'),SPLIT_ESCRITORIO_CV)};
+  return {a:a,al:al,st:st,pAlvo:pAlvo,pStop:pStop,rr:pStop<0?Math.abs(pAlvo/pStop):0};
 }
 function calcCoupon(){
-  var d=diasAte('venc'),pr=n('premio'),fe=n('fee');
+  var d=diasAte('venc'),pr=n('premio'),fe=n('feeEstrut');
   var cdi=n('cdi'),irOp=n('irOp'),irCdi=n('irCdi');
   var liq=pr-fe;
   var anual=function(p){ return (Math.pow(1+p/100,365/d.dias)-1)*100; };
@@ -496,20 +509,7 @@ function calcCoupon(){
   var equiv=irCdi<100?aPosIR/(1-irCdi/100):0;
   return {pr:pr,fe:fe,liq:liq,dias:d.dias,data:d.data,barreira:n('barreira'),
     aBruto:aBruto,aPosFee:aPosFee,aPosIR:aPosIR,equiv:equiv,
-    cdi:cdi,cdiPosIR:cdi*(1-irCdi/100),doCDI:cdi>0?equiv/cdi*100:0,irOp:irOp,irCdi:irCdi,
-    fee:partilhaFee(fe,SPLIT_ESCRITORIO_ESTRUT)};
-}
-function calcGenerica(){
-  return {fee:partilhaFee(n('gFee'),SPLIT_ESCRITORIO_ESTRUT)};
-}
-/* Rótulo e partilha de fee do tipo atualmente selecionado, pro card e pro
-   painel lerem do mesmo lugar sem repetir o if/else de cada tipo. */
-function feeAtual(){
-  var r=tipoAtual().render;
-  if(r==='ordem')  return {rotulo:'Fee de compra e venda',f:calcOrdem().fee};
-  if(r==='swing')  return {rotulo:'Fee de compra e venda',f:calcSwing().fee};
-  if(r==='coupon') return {rotulo:'Fee de estruturação',f:calcCoupon().fee};
-  return {rotulo:'Fee de estruturação',f:calcGenerica().fee};
+    cdi:cdi,cdiPosIR:cdi*(1-irCdi/100),doCDI:cdi>0?equiv/cdi*100:0,irOp:irOp,irCdi:irCdi};
 }
 
 /* ===================== CANVAS ===================== */
@@ -621,7 +621,7 @@ function desenhar(){
       c.data.toLocaleDateString('pt-BR')+', o prêmio é pago no vencimento. Abaixo da barreira, '+
       'o investidor fica com o ativo.',M,694,W-2*M,36,
       '23px -apple-system,Helvetica,Arial,sans-serif',C.white);
-    txt(M,fim+54,'Prêmio bruto '+pctS(c.pr)+'  ·  fee '+pctS(c.fe)+'  ·  '+pctS(c.aPosIR,1)+
+    txt(M,fim+54,'Prêmio bruto '+pctS(c.pr)+'  ·  '+pctS(c.aPosIR,1)+
       ' a.a. no bolso contra CDI de '+pctS(c.cdiPosIR,1)+' a.a. no bolso',
       '19px -apple-system,Helvetica,Arial,sans-serif',C.muted);
   } else {
@@ -638,18 +638,31 @@ function desenhar(){
      O card vai pro assessor, nao pro cliente — o aviso de USO INTERNO logo
      abaixo e o que garante isso. Por ser informacao pro assessor, o fee
      precisa chamar atencao igual o resto do card: numero grande, nao uma
-     linha miuda perdida junto das outras.                               */
+     linha miuda perdida junto das outras. Uma operacao pode ter as duas
+     pontas de fee (estruturacao e compra/venda) ou so uma; a caixa mostra
+     so a(s) que tiver valor e soma tudo num unico "fee do assessor" —
+     nunca repete o mesmo numero em dois lugares do card.                */
   (function(){
-    var fa=feeAtual(), feeY=1080-86-42-96, feeH=76;
+    var f=calcFeeTotal(), partes=[];
+    /* Altura fixa sempre — o card ja e apertado em ordem/swing, e um
+       segundo renglon empurrando a caixa pra cima cortava a observacao
+       acima dela. Com as duas pontas preenchidas a linha fica mais
+       longa (sem o detalhe de escritorio, pra caber), nunca mais alta. */
+    if(f.estrut.fee>0) partes.push('Estruturação '+pctS(f.estrut.fee)+
+      (f.cv.fee>0?'':'  ·  escritório '+pctS(f.estrut.escritorio)));
+    if(f.cv.fee>0) partes.push('Compra/venda '+pctS(f.cv.fee)+
+      (f.estrut.fee>0?'':'  ·  escritório '+pctS(f.cv.escritorio)));
+    if(!partes.length) return;
+    var feeH=80, feeY=1080-86-42-20-feeH;
     g.fillStyle='rgba(201,162,75,.16)';
     g.fillRect(M,feeY,W-2*M,feeH);
     g.strokeStyle='rgba(201,162,75,.55)'; g.lineWidth=1.4;
     g.strokeRect(M+0.7,feeY+0.7,W-2*M-1.4,feeH-1.4);
-    txt(M+26,feeY+30,fa.rotulo.toUpperCase(),'600 15px -apple-system,Helvetica,Arial,sans-serif',C.gold,'left',1.8);
-    txt(M+26,feeY+56,pctS(fa.f.fee)+'  ·  escritório '+pctS(fa.f.escritorio),
-        '18px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight,'left');
+    txt(M+26,feeY+28,'FEE', '600 13px -apple-system,Helvetica,Arial,sans-serif',C.gold,'left',1.8);
+    txt(M+26,feeY+55,partes.join('   +   '),
+        '16px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight,'left');
     txt(W-M-26,feeY+28,'FEE DO ASSESSOR','13px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight,'right',1.6);
-    txt(W-M-26,feeY+62,pctS(fa.f.assessor),'bold 34px Georgia,serif',C.gold,'right');
+    txt(W-M-26,feeY+feeH-22,pctS(f.assessor),'bold 34px Georgia,serif',C.gold,'right');
   })();
 
   /* ===== marcacao de uso interno =====
@@ -675,13 +688,18 @@ function desenhar(){
 
   painel();
 }
-/* Linhas de fee/comissão, iguais nos quatro tipos — só muda o rótulo do
-   fee em si (compra e venda vs. estruturação) e a partilha por trás. */
-function linhasFee(rotuloFee,f){
-  return '<span class="sep"></span>'+
-    '<div><span class="k">'+rotuloFee+'</span><span class="v">'+pctS(f.fee)+'</span></div>'+
-    '<div><span class="k">Fee para o escritório</span><span class="v">'+pctS(f.escritorio)+'</span></div>'+
+/* Caixa de fee: sempre a mesma, nos quatro tipos — lê os dois campos
+   direto, mostra só a(s) linha(s) preenchida(s) e o total do assessor. */
+function renderFee(){
+  var f=calcFeeTotal(), h='';
+  if(f.estrut.fee>0) h+='<div><span class="k">Fee de estruturação</span><span class="v">'+pctS(f.estrut.fee)+'</span></div>'+
+    '<div><span class="k">Fee para o escritório</span><span class="v">'+pctS(f.estrut.escritorio)+'</span></div>';
+  if(f.cv.fee>0) h+='<div><span class="k">Fee de compra e venda</span><span class="v">'+pctS(f.cv.fee)+'</span></div>'+
+    '<div><span class="k">Fee para o escritório</span><span class="v">'+pctS(f.cv.escritorio)+'</span></div>';
+  if(f.estrut.fee>0||f.cv.fee>0) h+='<span class="sep"></span>'+
     '<div><span class="k">Fee líquido do assessor</span><span class="v pos">'+pctS(f.assessor)+'</span></div>';
+  else h='<div class="k" style="padding:4px 0">Nenhum fee lançado ainda.</div>';
+  document.getElementById('derFee').innerHTML=h;
 }
 function painel(){
   var T=tipoAtual(),av=document.getElementById('aviso');
@@ -693,7 +711,6 @@ function painel(){
     if(o.pStop!==null) h+='<div><span class="k">Risco até o stop</span><span class="v '+(o.pStop>=0?'pos':'neg')+'">'+pct(o.pStop)+'</span></div>';
     h+='<div><span class="k">Risco / retorno</span><span class="v'+
        (o.rr!==null&&o.rr<1.5?' warn':'')+'">'+(o.rr!==null?num(o.rr)+' : 1':'—')+'</span></div>';
-    h+=linhasFee('Fee de compra e venda',o.fee);
     document.getElementById('derOrdem').innerHTML=h;
     av.textContent = !o.temStop
       ? 'Ordem sem stop: a perda não tem limite definido. Confirme se é intencional.'
@@ -704,8 +721,7 @@ function painel(){
       '<div><span class="k">Ganho até o alvo</span><span class="v">'+pct(d.pAlvo)+'</span></div>'+
       '<div><span class="k">Risco até o stop</span><span class="v">'+pct(d.pStop)+'</span></div>'+
       '<div><span class="k">Risco / retorno</span><span class="v'+(fraco?' warn':'')+'">'+
-        (d.rr>0?num(d.rr)+' : 1':'—')+'</span></div>'+
-      linhasFee('Fee de compra e venda',d.fee);
+        (d.rr>0?num(d.rr)+' : 1':'—')+'</span></div>';
     av.textContent=fraco?'Risco/retorno abaixo de 1,5:1 — ganho pequeno frente ao risco assumido.':'';
   } else if(T.render==='coupon'){
     var c=calcCoupon();
@@ -719,57 +735,53 @@ function painel(){
       '<span class="sep"></span>'+
       '<div><span class="k">CDI no bolso (IR '+pctS(c.irCdi,1)+')</span><span class="v">'+pctS(c.cdiPosIR,1)+' a.a.</span></div>'+
       '<div><span class="k">Gross up: CDI bruto equivalente</span><span class="v">'+pctS(c.equiv,1)+' a.a.</span></div>'+
-      '<div><span class="k">Percentual do CDI</span><span class="v'+(c.doCDI<100?' warn':'')+'">'+pctS(c.doCDI,0)+'</span></div>'+
-      linhasFee('Fee de estruturação',c.fee);
+      '<div><span class="k">Percentual do CDI</span><span class="v'+(c.doCDI<100?' warn':'')+'">'+pctS(c.doCDI,0)+'</span></div>';
     av.textContent=c.liq<=0
       ?'O fee consome todo o prêmio: o cliente assume o risco da barreira sem retorno.'
       :(c.doCDI<100?'Rende menos que o CDI mesmo com a vantagem tributária — e com risco de ação.':'');
-  } else if(T.render==='generica'){
-    var ge=calcGenerica();
-    document.getElementById('derGenerica').innerHTML=linhasFee('Fee de estruturação',ge.fee).replace('<span class="sep"></span>','');
-    av.textContent='';
   } else av.textContent='';
+  renderFee();
 }
 
 /* ===================== REGISTRO ===================== */
 function registrar(){
   var T=tipoAtual(), tk=s('ticker');
   if(!tk){ alert('Informe o ativo antes de registrar.'); return; }
+  var f=calcFeeTotal();
   var reg={ tipo:T.id, ativo:tk, empresa:s('empresa'), status:'aberta',
             criado_por:(SESSAO&&SESSAO.id)||null };
 
   if(T.render==='ordem'){
     var o=calcOrdem();
     reg.params={direcao:o.dir,preco:o.p,alvo:o.temAlvo?o.al:null,stop:o.temStop?o.st:null,
-               pAlvo:o.pAlvo,pStop:o.pStop,rr:o.rr,temStop:o.temStop,obs:s('oObs'),
-               feeCompraVenda:o.fee.fee,feeEscritorio:o.fee.escritorio,feeAssessor:o.fee.assessor};
+               pAlvo:o.pAlvo,pStop:o.pStop,rr:o.rr,temStop:o.temStop,obs:s('oObs')};
     reg.resumo=(o.dir==='compra'?'Compra':'Venda')+' a '+moeda(o.p)+
       (o.temAlvo&&o.pAlvo!==null?' · alvo '+pct(o.pAlvo):'')+
       (o.temStop&&o.pStop!==null?' · stop '+pct(o.pStop):' · sem stop')+
-      (o.rr!==null?' · R/R '+num(o.rr)+':1':'')+
-      ' · fee assessor '+pctS(o.fee.assessor);
+      (o.rr!==null?' · R/R '+num(o.rr)+':1':'');
   } else if(T.render==='swing'){
     var d=calcSwing();
-    reg.params={entrada:d.a,alvo:d.al,stop:d.st,pAlvo:d.pAlvo,pStop:d.pStop,rr:d.rr,obs:s('obs'),
-               feeCompraVenda:d.fee.fee,feeEscritorio:d.fee.escritorio,feeAssessor:d.fee.assessor};
+    reg.params={entrada:d.a,alvo:d.al,stop:d.st,pAlvo:d.pAlvo,pStop:d.pStop,rr:d.rr,obs:s('obs')};
     reg.resumo='Entrada '+moeda(d.a)+' · alvo '+pct(d.pAlvo)+' · stop '+pct(d.pStop)+
-              ' · R/R '+num(d.rr)+':1 · fee assessor '+pctS(d.fee.assessor);
+              ' · R/R '+num(d.rr)+':1';
   } else if(T.render==='coupon'){
     var c=calcCoupon();
     reg.params={venc:s('venc'),barreira:c.barreira,premio:c.pr,fee:c.fe,liq:c.liq,
-               dias:c.dias,aPosIR:c.aPosIR,doCDI:c.doCDI,
-               feeEscritorio:c.fee.escritorio,feeAssessor:c.fee.assessor};
+               dias:c.dias,aPosIR:c.aPosIR,doCDI:c.doCDI};
     reg.resumo='Barreira −'+pctS(c.barreira,0)+' · prêmio líquido '+pctS(c.liq)+
-              ' · '+pctS(c.doCDI,0)+' do CDI · vence '+c.data.toLocaleDateString('pt-BR')+
-              ' · fee assessor '+pctS(c.fee.assessor);
+              ' · '+pctS(c.doCDI,0)+' do CDI · vence '+c.data.toLocaleDateString('pt-BR');
   } else {
-    var ge=calcGenerica();
     reg.params={venc:s('gVenc'),r1:s('gR1'),v1:s('gV1'),r2:s('gR2'),v2:s('gV2'),
-               r3:s('gR3'),v3:s('gV3'),payoff:s('gPayoff'),
-               feeEstruturacao:ge.fee.fee,feeEscritorio:ge.fee.escritorio,feeAssessor:ge.fee.assessor};
-    reg.resumo=s('gR1')+' '+s('gV1')+' · '+s('gR2')+' '+s('gV2')+' · '+s('gR3')+' '+s('gV3')+
-              ' · fee assessor '+pctS(ge.fee.assessor);
+               r3:s('gR3'),v3:s('gV3'),payoff:s('gPayoff')};
+    reg.resumo=s('gR1')+' '+s('gV1')+' · '+s('gR2')+' '+s('gV2')+' · '+s('gR3')+' '+s('gV3');
   }
+  /* Fee fica de fora do if/else: os dois campos sao os mesmos pra
+     qualquer tipo de operacao agora. */
+  reg.params.feeEstruturacao=f.estrut.fee;
+  reg.params.feeCompraVenda=f.cv.fee;
+  reg.params.feeEscritorio=f.escritorio;
+  reg.params.feeAssessor=f.assessor;
+  if(f.assessor>0) reg.resumo+=' · fee assessor '+pctS(f.assessor);
   var btn=document.getElementById('btnReg'); if(btn) btn.disabled=true;
   api("rv_operacoes",{method:"POST",body:reg,prefer:"return=representation"})
     .then(function(){
