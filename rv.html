@@ -101,6 +101,12 @@
   .filtro-linha{display:grid;grid-template-columns:1.6fr 1fr 1fr auto auto;gap:8px;align-items:center}
   @media(max-width:700px){.filtro-linha{grid-template-columns:1fr}}
   .fecha{background:#FBF6EA;border:1px solid #E8DBBB;border-radius:10px;padding:12px 14px;margin-top:10px}
+  /* Caixa de destaque para o fee: mesmo tom de atenção do .fecha, mas fica
+     dentro do formulário — sem isso o campo de fee se perdia junto dos
+     outros e passava batido na hora de preencher. */
+  .fee-box{background:#FBF6EA;border:1px solid #E8DBBB;border-radius:10px;padding:12px 14px;margin-bottom:12px}
+  .fee-box label{color:#8A6D1F;font-weight:700}
+  .fee-box input{border-color:#E8DBBB;background:#fff}
   #awVoltar{position:fixed;bottom:18px;left:18px;z-index:99999;background:#1B3A5F;color:#fff;border:0;
   border-radius:999px;padding:10px 18px;font:500 13px "Segoe UI",system-ui,Arial,sans-serif;cursor:pointer;
   box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.92}
@@ -154,7 +160,7 @@
       </div>
       <div class="field"><label for="oObs">Observação</label>
         <input id="oObs" value="Ordem a mercado" oninput="desenhar()"></div>
-      <div class="field"><label for="oFee">Fee de compra e venda (%)</label>
+      <div class="fee-box"><label for="oFee">Fee de compra e venda (%)</label>
         <input id="oFee" value="0,5" oninput="desenhar()"></div>
       <div class="derived" id="derOrdem"></div>
     </div>
@@ -170,7 +176,7 @@
       </div>
       <div class="field"><label for="obs">Observação</label>
         <input id="obs" value="Ordem lançada no preço de fechamento" oninput="desenhar()"></div>
-      <div class="field"><label for="swFee">Fee de compra e venda (%)</label>
+      <div class="fee-box"><label for="swFee">Fee de compra e venda (%)</label>
         <input id="swFee" value="0,5" oninput="desenhar()"></div>
       <div class="derived" id="derSwing"></div>
     </div>
@@ -182,12 +188,10 @@
         <div class="field"><label for="barreira">Barreira de baixa (%)</label>
           <input id="barreira" value="12" oninput="desenhar()"></div>
       </div>
-      <div class="row2">
-        <div class="field"><label for="premio">Prêmio bruto (%)</label>
-          <input id="premio" value="2,32" oninput="desenhar()"></div>
-        <div class="field"><label for="fee">Fee de estruturação (%)</label>
-          <input id="fee" value="1" oninput="desenhar()"></div>
-      </div>
+      <div class="field"><label for="premio">Prêmio bruto (%)</label>
+        <input id="premio" value="2,32" oninput="desenhar()"></div>
+      <div class="fee-box"><label for="fee">Fee de estruturação (%)</label>
+        <input id="fee" value="1" oninput="desenhar()"></div>
       <fieldset>
         <legend>Comparação com o CDI</legend>
         <div class="field"><label for="cdi">CDI bruto (% a.a.)</label>
@@ -222,7 +226,7 @@
       </fieldset>
       <div class="field"><label for="gPayoff">Como funciona (uma frase)</label>
         <input id="gPayoff" value="Protege a queda até 10% e mantém a alta até 18%." oninput="desenhar()"></div>
-      <div class="field"><label for="gFee">Fee de estruturação (%)</label>
+      <div class="fee-box"><label for="gFee">Fee de estruturação (%)</label>
         <input id="gFee" value="1" oninput="desenhar()"></div>
       <div class="derived" id="derGenerica"></div>
     </div>
@@ -264,7 +268,7 @@ LOGO_IMG.onload=function(){ LOGO_OK=true; try{ desenhar(); }catch(e){} };
 LOGO_IMG.onerror=function(){ LOGO_OK=false; };
 LOGO_IMG.src=LOGO_BRANCO;
 
-var VERSAO_RV="versão 2.76";
+var VERSAO_RV="versão 2.77";
 try{ document.getElementById("selVersao").textContent=VERSAO_RV; }catch(e){}
 var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
 var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
@@ -498,6 +502,15 @@ function calcCoupon(){
 function calcGenerica(){
   return {fee:partilhaFee(n('gFee'),SPLIT_ESCRITORIO_ESTRUT)};
 }
+/* Rótulo e partilha de fee do tipo atualmente selecionado, pro card e pro
+   painel lerem do mesmo lugar sem repetir o if/else de cada tipo. */
+function feeAtual(){
+  var r=tipoAtual().render;
+  if(r==='ordem')  return {rotulo:'Fee de compra e venda',f:calcOrdem().fee};
+  if(r==='swing')  return {rotulo:'Fee de compra e venda',f:calcSwing().fee};
+  if(r==='coupon') return {rotulo:'Fee de estruturação',f:calcCoupon().fee};
+  return {rotulo:'Fee de estruturação',f:calcGenerica().fee};
+}
 
 /* ===================== CANVAS ===================== */
 function txt(x,y,t,font,cor,align,tr){
@@ -621,6 +634,24 @@ function desenhar(){
     linha(M,630,W-M,'rgba(255,255,255,.13)',1);
     quebra(s('gPayoff'),M,694,W-2*M,36,'23px -apple-system,Helvetica,Arial,sans-serif',C.white);
   }
+  /* ===== fee, em caixa propria e bem visivel =====
+     O card vai pro assessor, nao pro cliente — o aviso de USO INTERNO logo
+     abaixo e o que garante isso. Por ser informacao pro assessor, o fee
+     precisa chamar atencao igual o resto do card: numero grande, nao uma
+     linha miuda perdida junto das outras.                               */
+  (function(){
+    var fa=feeAtual(), feeY=1080-86-42-96, feeH=76;
+    g.fillStyle='rgba(201,162,75,.16)';
+    g.fillRect(M,feeY,W-2*M,feeH);
+    g.strokeStyle='rgba(201,162,75,.55)'; g.lineWidth=1.4;
+    g.strokeRect(M+0.7,feeY+0.7,W-2*M-1.4,feeH-1.4);
+    txt(M+26,feeY+30,fa.rotulo.toUpperCase(),'600 15px -apple-system,Helvetica,Arial,sans-serif',C.gold,'left',1.8);
+    txt(M+26,feeY+56,pctS(fa.f.fee)+'  ·  escritório '+pctS(fa.f.escritorio),
+        '18px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight,'left');
+    txt(W-M-26,feeY+28,'FEE DO ASSESSOR','13px -apple-system,Helvetica,Arial,sans-serif',C.mutedLight,'right',1.6);
+    txt(W-M-26,feeY+62,pctS(fa.f.assessor),'bold 34px Georgia,serif',C.gold,'right');
+  })();
+
   /* ===== marcacao de uso interno =====
      O card circula por WhatsApp e vira print. A marca precisa sobreviver
      a recorte, entao aparece em DOIS lugares: etiqueta no topo e faixa
