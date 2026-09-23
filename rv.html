@@ -14,38 +14,38 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--cream);font-family:var(--sans);color:var(--ink)}
   header{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:16px}
-  header .mark{font-family:var(--serif);font-size:17px;letter-spacing:2px}
-  header .sub{font-size:12px;color:#9FB0CC}
+  header .mark{font-family:var(--serif);font-size:18px;letter-spacing:2px}
+  header .sub{font-size:13px;color:#9FB0CC}
   header nav{margin-left:auto;display:flex;gap:6px}
   header nav button{background:transparent;border:1px solid rgba(255,255,255,.25);color:#C9D4E6;
-    padding:7px 14px;border-radius:8px;font-size:12.5px;cursor:pointer;font-family:var(--sans)}
+    padding:8px 15px;border-radius:8px;font-size:13.5px;cursor:pointer;font-family:var(--sans)}
   header nav button.on{background:var(--gold);border-color:var(--gold);color:#26313F;font-weight:600}
 
   .layout{display:grid;grid-template-columns:420px 1fr;gap:24px;padding:24px;align-items:start}
   @media(max-width:900px){.layout{grid-template-columns:1fr}}
   .wrap{padding:24px;max-width:1080px;margin:0 auto}
   .pane{background:#fff;border:1px solid #E3E7EE;border-radius:14px;padding:20px}
-  .pane h2{font-family:var(--serif);color:var(--navy);font-size:16px;margin:0 0 14px}
+  .pane h2{font-family:var(--serif);color:var(--navy);font-size:18px;margin:0 0 14px}
 
   .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
-  .tab{padding:8px 12px;border:1px solid #D8DEE8;background:#fff;border-radius:8px;
-       font-size:12.5px;cursor:pointer;color:var(--muted);font-family:var(--sans)}
+  .tab{padding:9px 13px;border:1px solid #D8DEE8;background:#fff;border-radius:8px;
+       font-size:13.5px;cursor:pointer;color:var(--muted);font-family:var(--sans)}
   .tab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 
-  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+  label{display:block;font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;
         color:var(--muted);margin:0 0 4px}
-  input,select{width:100%;padding:9px 10px;border:1px solid #D8DEE8;border-radius:8px;
-        font-size:14px;font-family:var(--sans);color:var(--ink);background:#fff}
+  input,select{width:100%;padding:10px 11px;border:1px solid #D8DEE8;border-radius:8px;
+        font-size:15.5px;font-family:var(--sans);color:var(--ink);background:#fff}
   input:focus,select:focus{outline:2px solid var(--gold);outline-offset:-1px;border-color:var(--gold)}
   .field{margin-bottom:12px}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .row3{display:grid;grid-template-columns:1.4fr 1fr auto;gap:8px;align-items:end}
 
   fieldset{border:1px solid #E3E7EE;border-radius:10px;padding:14px;margin:0 0 12px}
-  legend{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:0 6px}
+  legend{font-size:12.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:0 6px}
 
   .derived{background:var(--navy-pale);border-radius:10px;padding:12px 14px;margin-top:6px}
-  .derived div{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0}
+  .derived div{display:flex;justify-content:space-between;font-size:14px;padding:4px 0}
   .derived .k{color:var(--muted)}
   .derived .v{font-family:var(--serif);color:var(--navy);font-weight:bold}
   .derived .v.warn{color:var(--red)}
@@ -53,50 +53,50 @@
   .derived .v.neg{color:var(--red)}
   .sep{display:block;border-top:1px solid #D8DEE8;margin:7px 0}
 
-  .btn{width:100%;padding:11px;border:0;border-radius:9px;background:var(--navy);color:#fff;
-       font-size:13.5px;cursor:pointer;margin-top:10px;font-family:var(--sans)}
+  .btn{width:100%;padding:12px;border:0;border-radius:9px;background:var(--navy);color:#fff;
+       font-size:14.5px;cursor:pointer;margin-top:10px;font-family:var(--sans)}
   .btn:hover{background:#24365C}
   .btn.ghost{background:#fff;color:var(--navy);border:1px solid #D8DEE8}
   .btn.gold{background:var(--gold);color:#26313F;font-weight:600}
   .btn.gold:hover{background:#D9B45F}
-  .btn.mini{width:auto;padding:8px 12px;font-size:12px;margin:0}
+  .btn.mini{width:auto;padding:9px 13px;font-size:13px;margin:0}
 
   canvas{width:100%;max-width:540px;height:auto;border-radius:12px;
          box-shadow:0 6px 24px rgba(27,42,74,.16);display:block}
-  .hint{font-size:11.5px;color:var(--muted);margin-top:12px;line-height:1.55}
-  .alerta{font-size:12px;color:var(--red);margin-top:10px;line-height:1.5;min-height:1em}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.55}
+  .alerta{font-size:13px;color:var(--red);margin-top:10px;line-height:1.5;min-height:1em}
 
   /* histórico */
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px}
   .stat{background:#fff;border:1px solid #E3E7EE;border-radius:12px;padding:14px 16px}
-  .stat .n{font-family:var(--serif);font-size:26px;color:var(--navy);font-weight:bold}
+  .stat .n{font-family:var(--serif);font-size:28px;color:var(--navy);font-weight:bold}
   .stat .n.pos{color:var(--green)} .stat .n.neg{color:var(--red)}
-  .stat .l{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:3px}
+  .stat .l{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-top:3px}
 
   .op{background:#fff;border:1px solid #E3E7EE;border-radius:12px;padding:16px 18px;margin-bottom:12px}
   .op-top{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-  .op-tk{font-family:var(--serif);font-size:22px;font-weight:bold;color:var(--navy)}
-  .op-tipo{font-size:11px;letter-spacing:1px;color:var(--gold);text-transform:uppercase}
-  .op-data{font-size:12px;color:var(--muted);margin-left:auto}
-  .badge{font-size:11px;padding:3px 9px;border-radius:20px;letter-spacing:.4px}
+  .op-tk{font-family:var(--serif);font-size:24px;font-weight:bold;color:var(--navy)}
+  .op-tipo{font-size:12px;letter-spacing:1px;color:var(--gold);text-transform:uppercase}
+  .op-data{font-size:13px;color:var(--muted);margin-left:auto}
+  .badge{font-size:12px;padding:4px 10px;border-radius:20px;letter-spacing:.4px}
   .badge.aberta{background:#EAF0FA;color:#3D5178}
   .badge.ganho{background:#E7F0E7;color:#3F5C3F}
   .badge.perda{background:#F8E9E5;color:#8E402A}
   .badge.neutra{background:#EFEFEF;color:#6A6A6A}
-  .op-res{font-size:13px;color:var(--muted);margin:8px 0 0}
+  .op-res{font-size:14px;color:var(--muted);margin:8px 0 0}
   .op-res b{font-family:var(--serif);color:var(--ink)}
 
   .aloc{margin-top:12px;border-top:1px solid #EDF0F5;padding-top:12px}
-  .aloc table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
-  .aloc td{padding:5px 0;border-bottom:1px solid #F2F4F8}
+  .aloc table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:8px}
+  .aloc td{padding:6px 0;border-bottom:1px solid #F2F4F8}
   .aloc td.num{text-align:right;font-family:var(--serif)}
   .aloc td.x{width:26px;text-align:right}
-  .aloc .rm{border:0;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1}
+  .aloc .rm{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1}
   .aloc .rm:hover{color:var(--red)}
-  .aloc-tot{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);
+  .aloc-tot{display:flex;justify-content:space-between;font-size:13.5px;color:var(--muted);
     padding-top:6px;border-top:1px solid #E3E7EE}
   .aloc-tot b{font-family:var(--serif);color:var(--navy)}
-  .vazio{color:var(--muted);font-size:12.5px;padding:8px 0}
+  .vazio{color:var(--muted);font-size:13.5px;padding:8px 0}
   .acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   .filtro-linha{display:grid;grid-template-columns:1.6fr 1fr 1fr auto auto;gap:8px;align-items:center}
   @media(max-width:700px){.filtro-linha{grid-template-columns:1fr}}
@@ -154,6 +154,8 @@
       </div>
       <div class="field"><label for="oObs">Observação</label>
         <input id="oObs" value="Ordem a mercado" oninput="desenhar()"></div>
+      <div class="field"><label for="oFee">Fee de compra e venda (%)</label>
+        <input id="oFee" value="0,5" oninput="desenhar()"></div>
       <div class="derived" id="derOrdem"></div>
     </div>
 
@@ -168,6 +170,8 @@
       </div>
       <div class="field"><label for="obs">Observação</label>
         <input id="obs" value="Ordem lançada no preço de fechamento" oninput="desenhar()"></div>
+      <div class="field"><label for="swFee">Fee de compra e venda (%)</label>
+        <input id="swFee" value="0,5" oninput="desenhar()"></div>
       <div class="derived" id="derSwing"></div>
     </div>
 
@@ -218,6 +222,9 @@
       </fieldset>
       <div class="field"><label for="gPayoff">Como funciona (uma frase)</label>
         <input id="gPayoff" value="Protege a queda até 10% e mantém a alta até 18%." oninput="desenhar()"></div>
+      <div class="field"><label for="gFee">Fee de estruturação (%)</label>
+        <input id="gFee" value="1" oninput="desenhar()"></div>
+      <div class="derived" id="derGenerica"></div>
     </div>
 
     <button class="btn" onclick="baixar()">Baixar imagem para o grupo</button>
@@ -257,7 +264,7 @@ LOGO_IMG.onload=function(){ LOGO_OK=true; try{ desenhar(); }catch(e){} };
 LOGO_IMG.onerror=function(){ LOGO_OK=false; };
 LOGO_IMG.src=LOGO_BRANCO;
 
-var VERSAO_RV="versão 2.75";
+var VERSAO_RV="versão 2.76";
 try{ document.getElementById("selVersao").textContent=VERSAO_RV; }catch(e){}
 var SB_URL="https://ghxjqmjtmbqzvogwzylo.supabase.co";
 var SB_KEY="sb_publishable_-M5rRFdjNXtFr1td-NVWPQ_GGkd_liB";
@@ -446,6 +453,18 @@ function ajustarIR(){
 }
 
 /* ===================== CÁLCULOS ===================== */
+/* Comissionamento: quanto do fee cobrado do cliente fica de receita para
+   o escritório, e quanto disso é repassado ao assessor. Compra/venda e
+   estruturação têm partilha diferente com a corretora/emissor; do que
+   sobra para o escritório, metade é sempre do assessor que fez a
+   operação — regra única, usada pelos quatro tipos de cálculo abaixo. */
+var SPLIT_ESCRITORIO_CV=0.70;      // compra e venda: 70% do fee é receita do escritório
+var SPLIT_ESCRITORIO_ESTRUT=0.50;  // estruturação: 50% do fee é receita do escritório
+var SPLIT_ASSESSOR=0.50;           // do que fica com o escritório, metade é do assessor
+function partilhaFee(fee,splitEscritorio){
+  var escritorio=fee*splitEscritorio;
+  return {fee:fee,escritorio:escritorio,assessor:escritorio*SPLIT_ASSESSOR};
+}
 function calcOrdem(){
   var dir=document.getElementById('direcao').value;
   var sinal = dir==='compra' ? 1 : -1;
@@ -456,12 +475,13 @@ function calcOrdem(){
   var pStop = (temS && p>0) ? sinal*(st/p-1)*100 : null;
   var rr = (pAlvo!==null && pStop!==null && pStop<0) ? Math.abs(pAlvo/pStop) : null;
   return {dir:dir,sinal:sinal,p:p,al:al,st:st,temAlvo:temA,temStop:temS,
-          pAlvo:pAlvo,pStop:pStop,rr:rr};
+          pAlvo:pAlvo,pStop:pStop,rr:rr,fee:partilhaFee(n('oFee'),SPLIT_ESCRITORIO_CV)};
 }
 function calcSwing(){
   var a=n('atual'),al=n('alvo'),st=n('stop');
   var pAlvo=a>0?(al/a-1)*100:0,pStop=a>0?(st/a-1)*100:0;
-  return {a:a,al:al,st:st,pAlvo:pAlvo,pStop:pStop,rr:pStop<0?Math.abs(pAlvo/pStop):0};
+  return {a:a,al:al,st:st,pAlvo:pAlvo,pStop:pStop,rr:pStop<0?Math.abs(pAlvo/pStop):0,
+          fee:partilhaFee(n('swFee'),SPLIT_ESCRITORIO_CV)};
 }
 function calcCoupon(){
   var d=diasAte('venc'),pr=n('premio'),fe=n('fee');
@@ -472,7 +492,11 @@ function calcCoupon(){
   var equiv=irCdi<100?aPosIR/(1-irCdi/100):0;
   return {pr:pr,fe:fe,liq:liq,dias:d.dias,data:d.data,barreira:n('barreira'),
     aBruto:aBruto,aPosFee:aPosFee,aPosIR:aPosIR,equiv:equiv,
-    cdi:cdi,cdiPosIR:cdi*(1-irCdi/100),doCDI:cdi>0?equiv/cdi*100:0,irOp:irOp,irCdi:irCdi};
+    cdi:cdi,cdiPosIR:cdi*(1-irCdi/100),doCDI:cdi>0?equiv/cdi*100:0,irOp:irOp,irCdi:irCdi,
+    fee:partilhaFee(fe,SPLIT_ESCRITORIO_ESTRUT)};
+}
+function calcGenerica(){
+  return {fee:partilhaFee(n('gFee'),SPLIT_ESCRITORIO_ESTRUT)};
 }
 
 /* ===================== CANVAS ===================== */
@@ -620,6 +644,14 @@ function desenhar(){
 
   painel();
 }
+/* Linhas de fee/comissão, iguais nos quatro tipos — só muda o rótulo do
+   fee em si (compra e venda vs. estruturação) e a partilha por trás. */
+function linhasFee(rotuloFee,f){
+  return '<span class="sep"></span>'+
+    '<div><span class="k">'+rotuloFee+'</span><span class="v">'+pctS(f.fee)+'</span></div>'+
+    '<div><span class="k">Fee para o escritório</span><span class="v">'+pctS(f.escritorio)+'</span></div>'+
+    '<div><span class="k">Fee líquido do assessor</span><span class="v pos">'+pctS(f.assessor)+'</span></div>';
+}
 function painel(){
   var T=tipoAtual(),av=document.getElementById('aviso');
   if(T.render==='ordem'){
@@ -630,6 +662,7 @@ function painel(){
     if(o.pStop!==null) h+='<div><span class="k">Risco até o stop</span><span class="v '+(o.pStop>=0?'pos':'neg')+'">'+pct(o.pStop)+'</span></div>';
     h+='<div><span class="k">Risco / retorno</span><span class="v'+
        (o.rr!==null&&o.rr<1.5?' warn':'')+'">'+(o.rr!==null?num(o.rr)+' : 1':'—')+'</span></div>';
+    h+=linhasFee('Fee de compra e venda',o.fee);
     document.getElementById('derOrdem').innerHTML=h;
     av.textContent = !o.temStop
       ? 'Ordem sem stop: a perda não tem limite definido. Confirme se é intencional.'
@@ -640,7 +673,8 @@ function painel(){
       '<div><span class="k">Ganho até o alvo</span><span class="v">'+pct(d.pAlvo)+'</span></div>'+
       '<div><span class="k">Risco até o stop</span><span class="v">'+pct(d.pStop)+'</span></div>'+
       '<div><span class="k">Risco / retorno</span><span class="v'+(fraco?' warn':'')+'">'+
-        (d.rr>0?num(d.rr)+' : 1':'—')+'</span></div>';
+        (d.rr>0?num(d.rr)+' : 1':'—')+'</span></div>'+
+      linhasFee('Fee de compra e venda',d.fee);
     av.textContent=fraco?'Risco/retorno abaixo de 1,5:1 — ganho pequeno frente ao risco assumido.':'';
   } else if(T.render==='coupon'){
     var c=calcCoupon();
@@ -654,10 +688,15 @@ function painel(){
       '<span class="sep"></span>'+
       '<div><span class="k">CDI no bolso (IR '+pctS(c.irCdi,1)+')</span><span class="v">'+pctS(c.cdiPosIR,1)+' a.a.</span></div>'+
       '<div><span class="k">Gross up: CDI bruto equivalente</span><span class="v">'+pctS(c.equiv,1)+' a.a.</span></div>'+
-      '<div><span class="k">Percentual do CDI</span><span class="v'+(c.doCDI<100?' warn':'')+'">'+pctS(c.doCDI,0)+'</span></div>';
+      '<div><span class="k">Percentual do CDI</span><span class="v'+(c.doCDI<100?' warn':'')+'">'+pctS(c.doCDI,0)+'</span></div>'+
+      linhasFee('Fee de estruturação',c.fee);
     av.textContent=c.liq<=0
       ?'O fee consome todo o prêmio: o cliente assume o risco da barreira sem retorno.'
       :(c.doCDI<100?'Rende menos que o CDI mesmo com a vantagem tributária — e com risco de ação.':'');
+  } else if(T.render==='generica'){
+    var ge=calcGenerica();
+    document.getElementById('derGenerica').innerHTML=linhasFee('Fee de estruturação',ge.fee).replace('<span class="sep"></span>','');
+    av.textContent='';
   } else av.textContent='';
 }
 
@@ -671,26 +710,34 @@ function registrar(){
   if(T.render==='ordem'){
     var o=calcOrdem();
     reg.params={direcao:o.dir,preco:o.p,alvo:o.temAlvo?o.al:null,stop:o.temStop?o.st:null,
-               pAlvo:o.pAlvo,pStop:o.pStop,rr:o.rr,temStop:o.temStop,obs:s('oObs')};
+               pAlvo:o.pAlvo,pStop:o.pStop,rr:o.rr,temStop:o.temStop,obs:s('oObs'),
+               feeCompraVenda:o.fee.fee,feeEscritorio:o.fee.escritorio,feeAssessor:o.fee.assessor};
     reg.resumo=(o.dir==='compra'?'Compra':'Venda')+' a '+moeda(o.p)+
       (o.temAlvo&&o.pAlvo!==null?' · alvo '+pct(o.pAlvo):'')+
       (o.temStop&&o.pStop!==null?' · stop '+pct(o.pStop):' · sem stop')+
-      (o.rr!==null?' · R/R '+num(o.rr)+':1':'');
+      (o.rr!==null?' · R/R '+num(o.rr)+':1':'')+
+      ' · fee assessor '+pctS(o.fee.assessor);
   } else if(T.render==='swing'){
     var d=calcSwing();
-    reg.params={entrada:d.a,alvo:d.al,stop:d.st,pAlvo:d.pAlvo,pStop:d.pStop,rr:d.rr,obs:s('obs')};
+    reg.params={entrada:d.a,alvo:d.al,stop:d.st,pAlvo:d.pAlvo,pStop:d.pStop,rr:d.rr,obs:s('obs'),
+               feeCompraVenda:d.fee.fee,feeEscritorio:d.fee.escritorio,feeAssessor:d.fee.assessor};
     reg.resumo='Entrada '+moeda(d.a)+' · alvo '+pct(d.pAlvo)+' · stop '+pct(d.pStop)+
-              ' · R/R '+num(d.rr)+':1';
+              ' · R/R '+num(d.rr)+':1 · fee assessor '+pctS(d.fee.assessor);
   } else if(T.render==='coupon'){
     var c=calcCoupon();
     reg.params={venc:s('venc'),barreira:c.barreira,premio:c.pr,fee:c.fe,liq:c.liq,
-               dias:c.dias,aPosIR:c.aPosIR,doCDI:c.doCDI};
+               dias:c.dias,aPosIR:c.aPosIR,doCDI:c.doCDI,
+               feeEscritorio:c.fee.escritorio,feeAssessor:c.fee.assessor};
     reg.resumo='Barreira −'+pctS(c.barreira,0)+' · prêmio líquido '+pctS(c.liq)+
-              ' · '+pctS(c.doCDI,0)+' do CDI · vence '+c.data.toLocaleDateString('pt-BR');
+              ' · '+pctS(c.doCDI,0)+' do CDI · vence '+c.data.toLocaleDateString('pt-BR')+
+              ' · fee assessor '+pctS(c.fee.assessor);
   } else {
+    var ge=calcGenerica();
     reg.params={venc:s('gVenc'),r1:s('gR1'),v1:s('gV1'),r2:s('gR2'),v2:s('gV2'),
-               r3:s('gR3'),v3:s('gV3'),payoff:s('gPayoff')};
-    reg.resumo=s('gR1')+' '+s('gV1')+' · '+s('gR2')+' '+s('gV2')+' · '+s('gR3')+' '+s('gV3');
+               r3:s('gR3'),v3:s('gV3'),payoff:s('gPayoff'),
+               feeEstruturacao:ge.fee.fee,feeEscritorio:ge.fee.escritorio,feeAssessor:ge.fee.assessor};
+    reg.resumo=s('gR1')+' '+s('gV1')+' · '+s('gR2')+' '+s('gV2')+' · '+s('gR3')+' '+s('gV3')+
+              ' · fee assessor '+pctS(ge.fee.assessor);
   }
   var btn=document.getElementById('btnReg'); if(btn) btn.disabled=true;
   api("rv_operacoes",{method:"POST",body:reg,prefer:"return=representation"})
