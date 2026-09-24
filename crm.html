@@ -7502,6 +7502,62 @@ function computeProducaoStats(leads, users){
   return { porProduto, porEspecialista, maxProduto, maxEspecialista };
 }
 
+/* Quem indicou o negócio, não quem fechou. "Por especialista" acima mede
+   quem atende; isto mede quem trouxe o negócio pra mesa — o dono do lead
+   na jornada de onde a indicação partiu (origemLeadId). Lido em `leads`
+   bruto, não em `jornada` já filtrado, porque um recorte de temperatura
+   não deve esconder quem originou o negócio.
+   "Indicados" conta pela data de criação do negócio; "fechados" reaproveita
+   o recorte de período que a tela já aplicou (todo negócio com ganho no
+   array já tem ganhoEm dentro do período, por como dentroDoPeriodo é feita
+   lá em cima). Sem separar as duas datas, um negócio indicado num mês e
+   fechado no seguinte contaria como indicação no mês errado. */
+function computeIndicacaoRanking(negocios, leads, filtros, users){
+  const porId = new Map(ativos(leads).map(l => [l.id, l]));
+  const assessorDe = (l) => {
+    const origem = l.origemLeadId ? porId.get(l.origemLeadId) : null;
+    return origem ? origem.responsavelId : null;
+  };
+  const criadoNoPeriodo = (l) => {
+    const ts = l.criadoEm || 0;
+    if(!ts) return false;
+    if(filtros.periodo === 'custom'){
+      if(filtros.de && ts < new Date(filtros.de + 'T00:00:00').getTime()) return false;
+      if(filtros.ate && ts > new Date(filtros.ate + 'T23:59:59').getTime()) return false;
+      return true;
+    }
+    if(filtros.periodo === 'all') return true;
+    return ts >= inicioDoPeriodo(filtros.periodo);
+  };
+
+  const mapa = new Map();
+  const linha = (id) => {
+    if(!mapa.has(id)) mapa.set(id, { id, indicados:0, fechados:0, valorFechado:0 });
+    return mapa.get(id);
+  };
+  negocios.forEach(l => {
+    const assessorId = assessorDe(l);
+    if(!assessorId) return;
+    if(criadoNoPeriodo(l)) linha(assessorId).indicados += 1;
+    if(l.ganho){
+      const row = linha(assessorId);
+      row.fechados += 1;
+      row.valorFechado += parseValor(l.valorFechado) || parseValor(l.valorPotencial) || 0;
+    }
+  });
+
+  const comNome = Array.from(mapa.values())
+    .map(r => ({ ...r, nome: (users.find(u => u.id === r.id) || {}).nome || '—' }));
+  const porIndicados = comNome.filter(r => r.indicados > 0).sort((a,b) => b.indicados - a.indicados);
+  const porFechados = comNome.filter(r => r.fechados > 0).sort((a,b) => b.fechados - a.fechados);
+
+  return {
+    porIndicados, porFechados,
+    maxIndicados: Math.max(1, ...porIndicados.map(r => r.indicados)),
+    maxFechados: Math.max(1, ...porFechados.map(r => r.fechados)),
+  };
+}
+
 function computeKpiStats(scopedLeads, allLeads, users){
   const ativos = scopedLeads.filter(l => !l.perdido && !l.ganho);
   const ganhos = scopedLeads.filter(l => l.ganho);
@@ -7984,6 +8040,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
   const nomeCurto = (id) => ((users.find(u => u.id === id) || {}).nome || '—').split(' ')[0];
   const prod = useMemo(() => computeProducaoStats(negocios, users), [negocios, users]);
   const evolucao = useMemo(() => computeKpiStats(negocios, negocios, users), [negocios, users]);
+  const indicacao = useMemo(() => computeIndicacaoRanking(negocios, leads, filtros, users), [negocios, leads, filtros, users]);
 
   const valorDe = (l) => parseValor(l.valorFechado) || parseValor(l.valorPotencial) || 0;
   const fechados = negocios.filter(l => l.ganho);
@@ -8184,7 +8241,39 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
         )
       ),
 
-      h(ProducaoSecoes,{ leads: negocios, users })
+      h(ProducaoSecoes,{ leads: negocios, users }),
+
+      /* Quem atende (acima, em ProducaoSecoes) é diferente de quem indicou.
+         Isto é leitura de gestão sobre a assessoria, por isso só aparece
+         aqui, no painel do admin. */
+      h('div',{className:'painel-secao'},
+        h('span',{className:'painel-secao-nome'},'Quem indicou'),
+        h('span',{className:'painel-secao-desc'},'negócios indicados e fechados, por assessor de origem')
+      ),
+      (indicacao.porIndicados.length === 0 && indicacao.porFechados.length === 0)
+        ? h('div',{className:'painel-caixa'},
+            h('div',{className:'empty-kpi'},'Nenhum negócio com assessor de origem identificado neste recorte.'))
+        : h('div',{className:'painel-duplo'},
+            h('div',{className:'painel-caixa'},
+              h('div',{className:'painel-caixa-titulo'},'Negócios indicados', h('span',null,'no recorte')),
+              indicacao.porIndicados.length === 0
+                ? h('div',{className:'empty-kpi'},'Nenhuma indicação no recorte.')
+                : indicacao.porIndicados.map((r,i) => h(BarRow,{
+                    key:r.id, label:r.nome, value:r.indicados, max:indicacao.maxIndicados, posicao:i+1,
+                    display: r.indicados + (r.indicados === 1 ? ' negócio' : ' negócios'),
+                    color:'var(--primary)' }))
+            ),
+            h('div',{className:'painel-caixa'},
+              h('div',{className:'painel-caixa-titulo'},'Negócios fechados', h('span',null,'por quem indicou')),
+              indicacao.porFechados.length === 0
+                ? h('div',{className:'empty-kpi'},'Nenhum fechamento no recorte.')
+                : indicacao.porFechados.map((r,i) => h(BarRow,{
+                    key:r.id, label:r.nome, value:r.fechados, max:indicacao.maxFechados, posicao:i+1,
+                    display: r.fechados + (r.fechados === 1 ? ' negócio' : ' negócios'),
+                    secundario: r.valorFechado > 0 ? fmtBRLCompact(r.valorFechado) : null,
+                    color:'var(--success)' }))
+            )
+          )
     )
   );
 }
@@ -10930,7 +11019,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.75";
+var VERSAO_CRM="versão 2.76";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
