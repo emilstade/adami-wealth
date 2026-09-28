@@ -1803,14 +1803,20 @@
   .temp-dot{
     width:7px;height:7px;border-radius:50%;flex-shrink:0;display:inline-block;
   }
-  /* Temperatura e grupo familiar são dois elementos inline seguidos, sem nó de
-     texto entre eles: sem esta margem as duas palavras encostam. */
-  .card-temp{
-    display:inline-flex;align-items:center;gap:5px;margin-top:6px;margin-right:10px;
-    font-size:10.5px;font-weight:600;letter-spacing:.02em;color:var(--ink-muted);
-    text-transform:uppercase;vertical-align:middle;
+  /* Selos curtos do card do quadro (temperatura, grupo, aniversário, urgência
+     imediata) andam juntos numa faixa só que quebra linha sozinha — ver
+     .card-chips. Sem isso cada selo era uma linha inteira do card, e a soma
+     deixava o card do quadro com uma "escadinha" pesada de ler. */
+  .card-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;}
+  .card-chip{
+    display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:10px;
+    font-size:10.5px;font-weight:600;white-space:nowrap;
+    background:var(--bg);border:1px solid var(--border);
   }
-  .card-temp + .card-grupo{vertical-align:middle;}
+  .card-temp{
+    font-size:10.5px;font-weight:600;letter-spacing:.02em;color:var(--ink-muted);
+    text-transform:uppercase;
+  }
   .temp-chip{display:inline-flex;align-items:center;gap:6px;}
   /* No chip selecionado o fundo é navy: o ponto ganha um anel para não sumir. */
   .temp-chip.ativo .temp-dot{box-shadow:0 0 0 1.5px rgba(255,255,255,.55);}
@@ -1936,10 +1942,7 @@
   }
 
   /* Marcador no card do quadro */
-  .card-grupo{
-    display:inline-block;margin-top:6px;font-size:10.5px;color:var(--gold);
-    font-weight:600;letter-spacing:.02em;
-  }
+  .card-grupo{font-size:10.5px;color:var(--gold);font-weight:600;letter-spacing:.02em;}
 
   /* ---------- Ficha do cliente ---------- */
   .ficha{display:flex;flex-direction:column;gap:var(--space-4);margin-bottom:var(--space-2);}
@@ -2038,10 +2041,7 @@
     margin:9px 0 0;padding-top:9px;border-top:1px solid #E8DCB8;
     font-size:12.5px;line-height:1.5;color:var(--ink);white-space:pre-wrap;
   }
-  .card-urgente{
-    display:inline-block;margin-top:6px;padding:2px 7px;border-radius:10px;
-    background:var(--danger-tint);color:var(--danger);font-size:10.5px;font-weight:600;
-  }
+  .card-urgente{background:var(--danger-tint);color:var(--danger);}
 
   /* Ações e histórico na tela de encerrados */
   .lost-row-acoes{display:flex;gap:8px;flex-shrink:0;align-items:center;}
@@ -2061,10 +2061,7 @@
   }
 
   /* Aniversário: presente só no dia */
-  .card-aniversario{
-    display:inline-block;margin-top:6px;padding:3px 8px;border-radius:10px;
-    background:var(--gold-tint);color:#6E5719;font-size:10.5px;font-weight:600;
-  }
+  .card-aniversario{background:var(--gold-tint);color:#6E5719;}
   .ficha-linha.festa .ficha-valor{color:#6E5719;font-weight:600;}
   .ficha-idade{color:var(--ink-faint);font-weight:400;}
   .ficha-hoje{
@@ -4926,6 +4923,20 @@ function LeadCard({ lead, onOpen, onDragStart, onDragEnd, dragging, ownerName, s
   const proxima = nextStage(lead);
   const hojeCard = todayISO();
   const urgentes = alertasUrgentes(lead, hojeCard);
+  const temp = temperaturaDe(lead);
+  const aniversario = aniversarioHoje(lead, hojeCard);
+  /* Selos curtos do card (temperatura, grupo, aniversário, urgência imediata)
+     juntos numa faixa só — ver comentário de .card-chips no CSS. */
+  const chips = [];
+  if(aniversario) chips.push(h('span',{className:'card-chip card-aniversario', key:'aniv'},
+    '🎂 ' + (lead.tipoPessoa === 'PJ' ? 'Aniversário de ' + aniversarianteDe(lead) : 'Aniversário hoje')
+    + (idadeEm(lead, hojeCard) ? ' · ' + idadeEm(lead, hojeCard) + ' anos' : '')));
+  if(temp) chips.push(h('span',{className:'card-chip card-temp', key:'temp',
+      title: (clienteDaBase(lead) && valorCaptacaoNaMoeda(lead) > 0) ? 'Pipe da captação em negociação' : 'Pipe de relacionamento'},
+    h('span',{className:'temp-dot', style:{background:temp.cor}}), temp.label));
+  if(lead.grupoFamiliar) chips.push(h('span',{className:'card-chip card-grupo', key:'grupo'}, lead.grupoFamiliar));
+  if(lead.briefing && lead.briefing.urgencia === 'Imediata') chips.push(
+    h('span',{className:'card-chip card-urgente', key:'urg'},'Urgência imediata'));
   /* role/tabIndex em vez de <button> porque o card contém botões próprios,
      e botão dentro de botão é HTML inválido. */
   return h('div', {
@@ -4982,23 +4993,7 @@ function LeadCard({ lead, onOpen, onDragStart, onDragEnd, dragging, ownerName, s
         h(Icon,{path:'M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z', size:11}),
         h('span',null,'Indicação pendente')
       ) : null,
-      /* Só no dia: um lembrete permanente viraria ruído. */
-      aniversarioHoje(lead, hojeCard) ? h('p',{className:'card-aniversario'},
-        '🎂 ' + (lead.tipoPessoa === 'PJ'
-          ? 'Aniversário de ' + aniversarianteDe(lead)
-          : 'Aniversário hoje')
-        + (idadeEm(lead, hojeCard) ? ' · ' + idadeEm(lead, hojeCard) + ' anos' : '')
-      ) : null,
-      /* Temperatura no quadro: quem varre a coluna procura justamente por
-         quem está quente. Escondê-la atrás do hover anularia o campo. */
-      temperaturaDe(lead) ? h('div',{className:'card-temp',
-          title: (clienteDaBase(lead) && valorCaptacaoNaMoeda(lead) > 0) ? 'Pipe da captação em negociação' : 'Pipe de relacionamento'},
-        h('span',{className:'temp-dot', style:{background:temperaturaDe(lead).cor}}),
-        temperaturaDe(lead).label
-      ) : null,
-      lead.grupoFamiliar ? h('p',{className:'card-grupo'}, lead.grupoFamiliar) : null,
-      (lead.briefing && lead.briefing.urgencia === 'Imediata')
-        ? h('p',{className:'card-urgente'},'Urgência imediata') : null,
+      chips.length > 0 ? h('div',{className:'card-chips'}, chips) : null,
       (lead.tipoPessoa === 'PJ' && lead.contatoNome)
         ? h('p',{className:'lead-card-deal'}, lead.contatoNome, lead.contatoCargo ? ' · ' + lead.contatoCargo : '')
         : (lead.oportunidade ? h('p',{className:'lead-card-deal'}, lead.oportunidade) : null),
@@ -11316,7 +11311,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.77";
+var VERSAO_CRM="versão 2.78";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>

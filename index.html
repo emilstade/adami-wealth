@@ -167,6 +167,15 @@ input,select,textarea{font-family:inherit;font-size:13px}
 .eqfoot{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:12px}
 .eqmsg{font-size:12.5px;color:#8A93A6;min-height:1em}
 .eqmsg.err{color:#B5563A}
+.mfa-qr{display:flex;align-items:center;gap:18px;margin-bottom:18px;flex-wrap:wrap}
+.mfa-qr img{border:1px solid var(--line);border-radius:6px;background:#fff;padding:8px}
+.mfa-secreto{font-size:12px;color:#7D8A9B;max-width:220px}
+.mfa-secreto code{display:block;margin-top:6px;font-size:13px;letter-spacing:.04em;
+  background:#F4F6F9;padding:7px 9px;border-radius:4px;word-break:break-all;color:#12263F}
+.mfa-status{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12.5px;
+  font-weight:600;margin-bottom:12px}
+.mfa-status.on{background:#E6F1EC;color:#2F7A56}
+.mfa-status.off{background:#F4F6F9;color:#7D8A9B}
 .hub-top .sai{background:transparent;border:1px solid #35516F;color:#C3D2E2;border-radius:3px;padding:8px 16px}
 .hub-top .sai:hover{background:#1B3A5F;color:#fff}
 .hub-body{max-width:1040px;margin:0 auto;padding:64px 40px 80px}
@@ -582,6 +591,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 </main>
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
+<script src="vendor/supabase-js-2.min.js"></script>
 <script>
 /* ============ conexão e sessão ============ */
 /* ============================================================
@@ -682,6 +692,25 @@ function renovar(){
   });
 }
 
+/* ===================== Verificação em duas etapas (MFA) =====================
+   O login em si continua pela API crua, como sempre (entrar()). A parte de MFA
+   é a única que usa o SDK supabase-js: o protocolo de enroll/challenge/verify
+   tem detalhe demais (QR code, id de desafio) para reimplementar na mão sem
+   arriscar um bug de segurança. persistSession:false porque este cliente é só
+   uma ferramenta para chamar o auth — a sessão de verdade continua vivendo em
+   aw_sessao, do jeito que o resto do app já espera. */
+var SB_MFA=null;
+function sbAuth(){
+  if(!SB_MFA) SB_MFA=window.supabase.createClient(SB_URL,SB_KEY,
+    {auth:{persistSession:false,autoRefreshToken:false}});
+  return SB_MFA;
+}
+function sbComSessao(){
+  var sb=sbAuth();
+  return sb.auth.setSession({access_token:SESSAO.access_token,refresh_token:SESSAO.refresh_token})
+    .then(function(){ return sb; });
+}
+
 /* ===================== EQUIPE (somente o supremo) =====================
    A escrita em admin/mesa_rv esta bloqueada na API de proposito.
    Toda mudanca passa pela funcao definir_privilegio no banco, que
@@ -728,6 +757,121 @@ function pintarEquipe(aviso){
   pintar(h + (ABA_EQ==="equipe" ? blocoEquipe() : blocoConvite()) +
     '<div class="eqfoot"><span class="eqmsg" id="eqmsg"></span>'+
     '<button class="btn" onclick="fecharEquipe()">Fechar</button></div>');
+}
+
+/* ===================== Segurança (verificação em duas etapas) =====================
+   Autoatendimento: cada pessoa liga e desliga a própria, ninguém liga para
+   outra. Fica de fora da tela de Equipe de propósito — Equipe é sobre quem
+   tem conta, isto é sobre a conta de quem está olhando. */
+var MFA_FATORES=null, MFA_ENROLANDO=null, MFA_ERRO="";
+function abrirSeguranca(){
+  if(!document.getElementById("segv")){
+    var d=document.createElement("div");
+    d.id="segv"; d.className="eqv";
+    d.onclick=function(e){ if(e.target===d) fecharSeguranca(); };
+    d.innerHTML='<div class="eqx" id="segx"></div>';
+    document.body.appendChild(d);
+  }
+  document.getElementById("segv").style.display="flex";
+  MFA_FATORES=null; MFA_ENROLANDO=null; MFA_ERRO="";
+  pintarSeguranca('<h2>Segurança</h2><p class="eqsub">Carregando…</p>');
+  sbComSessao().then(function(sb){ return sb.auth.mfa.listFactors(); }).then(function(r){
+    if(r.error) throw r.error;
+    MFA_FATORES=r.data.totp||[];
+    pintarSeguranca(telaSeguranca());
+  }).catch(function(err){
+    pintarSeguranca('<h2>Segurança</h2><p class="eqsub err">'+esc(err.message||String(err))+'</p>'+
+      '<div class="eqfoot"><span></span><button class="btn" onclick="fecharSeguranca()">Fechar</button></div>');
+  });
+}
+function fecharSeguranca(){
+  var pendente=MFA_ENROLANDO;
+  var d=document.getElementById("segv"); if(d) d.style.display="none";
+  MFA_ENROLANDO=null; MFA_ERRO="";
+  /* Sair sem confirmar o código não deixa fator pela metade pendurado na conta. */
+  if(pendente) sbComSessao().then(function(sb){ return sb.auth.mfa.unenroll({factorId:pendente.factorId}); }).catch(function(){});
+}
+function pintarSeguranca(html){ var x=document.getElementById("segx"); if(x) x.innerHTML=html; }
+
+function telaSeguranca(){
+  var ativo=(MFA_FATORES||[]).filter(function(f){ return f.status==='verified'; })[0];
+  var h='<h2>Segurança</h2>'+
+    '<p class="eqsub">Verificação em duas etapas: além da senha, um código de 6 números gerado '+
+    'no aplicativo autenticador do seu celular a cada login.</p>';
+  if(MFA_ERRO) h+='<p class="eqsub err">'+esc(MFA_ERRO)+'</p>';
+
+  if(MFA_ENROLANDO){
+    h+='<div class="mfa-qr">'+
+        '<img src="'+MFA_ENROLANDO.qrCode+'" alt="QR code para o aplicativo autenticador" width="176" height="176">'+
+        '<div class="mfa-secreto"><span>Não consegue escanear? Digite manualmente no aplicativo:</span>'+
+          '<code>'+esc(MFA_ENROLANDO.secret)+'</code></div>'+
+      '</div>'+
+      '<label for="mfaAtivarCodigo">Código do aplicativo</label>'+
+      '<div class="campo"><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" '+
+        'id="mfaAtivarCodigo" placeholder="000000" onkeydown="if(event.key===\'Enter\')confirmarEnrolamento()"></div>'+
+      '<div class="eqfoot"><span class="eqmsg" id="eqmsg"></span>'+
+        '<span><button class="btn" onclick="cancelarEnrolamento()">Cancelar</button> '+
+        '<button class="btn" onclick="confirmarEnrolamento()">Ativar</button></span></div>';
+  } else if(ativo){
+    h+='<div class="mfa-status on">Ativada</div><br>'+
+      '<div class="eqfoot"><span class="eqmsg" id="eqmsg"></span>'+
+        '<span><button class="btn" onclick="desativarMfa(\''+ativo.id+'\')">Desativar</button> '+
+        '<button class="btn" onclick="fecharSeguranca()">Fechar</button></span></div>';
+  } else {
+    h+='<div class="mfa-status off">Desativada</div><br>'+
+      '<div class="eqfoot"><span class="eqmsg" id="eqmsg"></span>'+
+        '<span><button class="btn" onclick="iniciarEnrolamento()">Ativar</button> '+
+        '<button class="btn" onclick="fecharSeguranca()">Fechar</button></span></div>';
+  }
+  return h;
+}
+
+function iniciarEnrolamento(){
+  MFA_ERRO="";
+  sbComSessao().then(function(sb){ return sb.auth.mfa.enroll({factorType:'totp'}); }).then(function(r){
+    if(r.error) throw r.error;
+    MFA_ENROLANDO={ factorId:r.data.id, qrCode:r.data.totp.qr_code, secret:r.data.totp.secret };
+    pintarSeguranca(telaSeguranca());
+    setTimeout(function(){ var i=document.getElementById("mfaAtivarCodigo"); if(i) i.focus(); },0);
+  }).catch(function(err){
+    MFA_ERRO=err.message||String(err);
+    pintarSeguranca(telaSeguranca());
+  });
+}
+function cancelarEnrolamento(){
+  var pendente=MFA_ENROLANDO;
+  MFA_ENROLANDO=null; MFA_ERRO="";
+  if(pendente) sbComSessao().then(function(sb){ return sb.auth.mfa.unenroll({factorId:pendente.factorId}); }).catch(function(){});
+  pintarSeguranca(telaSeguranca());
+}
+function confirmarEnrolamento(){
+  if(!MFA_ENROLANDO) return;
+  var codigo=(document.getElementById("mfaAtivarCodigo").value||"").trim();
+  if(codigo.length!==6){ MFA_ERRO="Digite os 6 números do aplicativo."; pintarSeguranca(telaSeguranca()); return; }
+  var factorId=MFA_ENROLANDO.factorId;
+  sbComSessao().then(function(sb){
+    return sb.auth.mfa.challenge({factorId:factorId}).then(function(ch){
+      if(ch.error) throw ch.error;
+      return sb.auth.mfa.verify({factorId:factorId,challengeId:ch.data.id,code:codigo});
+    });
+  }).then(function(v){
+    if(v.error) throw v.error;
+    MFA_ENROLANDO=null; MFA_ERRO="";
+    abrirSeguranca();
+  }).catch(function(err){
+    MFA_ERRO="Código inválido ou expirado. Tente de novo.";
+    pintarSeguranca(telaSeguranca());
+  });
+}
+function desativarMfa(factorId){
+  if(!confirm("Desativar a verificação em duas etapas?")) return;
+  sbComSessao().then(function(sb){ return sb.auth.mfa.unenroll({factorId:factorId}); }).then(function(r){
+    if(r.error) throw r.error;
+    abrirSeguranca();
+  }).catch(function(err){
+    MFA_ERRO=err.message||String(err);
+    pintarSeguranca(telaSeguranca());
+  });
 }
 
 /* ---------- quem já tem conta ---------- */
@@ -963,7 +1107,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.77";
+var VERSAO="versão 2.78";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -3093,6 +3237,10 @@ function gaveta(){
        '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20v-1.4A4.6 4.6 0 0 1 8.1 14h1.8a4.6 4.6 0 0 1 4.6 4.6V20"/>'+
        '<path d="M16.5 7.2a3 3 0 0 1 0 5.6"/><path d="M18 20v-1.6a4.3 4.3 0 0 0-2.3-3.8"/></svg>'+
        'Gerenciar equipe</button>';
+  h+='<button class="gav-acao" onclick="fecharMenu();abrirSeguranca()">'+
+     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">'+
+     '<rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>'+
+     'Segurança</button>';
   h+='<button class="gav-acao sair" onclick="sair()">'+
      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">'+
      '<path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 3H5v18h7"/></svg>'+
@@ -3165,6 +3313,32 @@ function viewLogin(erro){
     '</div></div>'+
   '</div>';
 }
+function viewCodigoMfa(erro){
+  return '<div class="auth">'+
+    '<div class="auth-side">'+
+      '<img src="'+LOGO_BRANCO+'" alt="'+EMPRESA.nome+'">'+
+      '<div class="auth-say"><div class="rule"></div>'+
+        '<h2>Apoiando famílias, planejando o futuro</h2>'+
+        '<p>'+EMPRESA.chamada+'</p>'+
+      '</div>'+
+      '<div class="auth-meta"><span>Acesso restrito</span><span>'+VERSAO+'</span></div>'+
+      '<div class="auth-copy">&copy; '+new Date().getFullYear()+' '+EMPRESA.nome+'. Todos os direitos reservados.</div>'+
+    '</div>'+
+    '<div class="auth-form"><div class="auth-card">'+
+      '<div class="rule"></div>'+
+      '<h1>Verificação em duas etapas</h1>'+
+      '<p class="hint">Abra o aplicativo autenticador e digite o código de 6 números.</p>'+
+      (erro?'<div class="erro">'+esc(erro)+'</div>':'')+
+      '<label for="mfaCodigo">Código</label>'+
+      '<div class="campo"><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" '+
+        'id="mfaCodigo" placeholder="000000" onkeydown="if(event.key===\'Enter\')confirmarCodigoMfa()"></div>'+
+      '<button class="entrar" id="mfaBtn" onclick="confirmarCodigoMfa()">Confirmar</button>'+
+      '<div class="pe-links">'+
+        '<button type="button" class="link" onclick="cancelarMfaLogin()">Cancelar e trocar de conta</button>'+
+      '</div>'+
+    '</div></div>'+
+  '</div>';
+}
 var MODO_LOGIN="entrar";
 function modoLogin(m){
   MODO_LOGIN=m;
@@ -3208,18 +3382,64 @@ function esqueciSenha(){
       document.getElementById("view").innerHTML=viewLogin(String(err.message||err));
     });
 }
+function prosseguirLogin(){
+  return carregar().then(function(){
+    if(db.clientes.length) S.cliente=db.clientes[0].id;
+    S.app=null; S.tab="preencher"; montarRascunho(); render();
+    registrar("entrou","","");
+    backupAutomatico();
+  });
+}
+/* Depois da senha, confere se a conta tem verificação em duas etapas ligada
+   antes de liberar a entrada. Quem nunca ativou passa direto, sem notar
+   diferença — é a mesma troca que MODO_DEMO fazia parecer opcional pra quem
+   não configurou nada. */
+var MFA_FATOR_LOGIN=null;
+function verificarSegundaEtapa(){
+  return sbComSessao().then(function(sb){ return sb.auth.mfa.listFactors(); }).then(function(r){
+    if(r.error) throw r.error;
+    var fator=(r.data.totp||[]).filter(function(f){ return f.status==='verified'; })[0];
+    if(!fator) return false;
+    MFA_FATOR_LOGIN=fator.id;
+    document.getElementById("view").innerHTML=viewCodigoMfa();
+    setTimeout(function(){ var i=document.getElementById("mfaCodigo"); if(i) i.focus(); },0);
+    return true;
+  });
+}
+function confirmarCodigoMfa(){
+  var codigo=(document.getElementById("mfaCodigo").value||"").trim();
+  if(codigo.length!==6){ document.getElementById("view").innerHTML=viewCodigoMfa("Digite os 6 números do aplicativo autenticador."); return; }
+  var b=document.getElementById("mfaBtn"); if(b){ b.disabled=true; b.textContent="Confirmando…"; }
+  var sb=sbAuth();
+  sb.auth.mfa.challenge({factorId:MFA_FATOR_LOGIN}).then(function(ch){
+    if(ch.error) throw ch.error;
+    return sb.auth.mfa.verify({factorId:MFA_FATOR_LOGIN,challengeId:ch.data.id,code:codigo});
+  }).then(function(v){
+    if(v.error) throw v.error;
+    return sb.auth.getSession();
+  }).then(function(s){
+    if(!s.data.session) throw new Error("Não foi possível confirmar a sessão.");
+    guardarSessao(s.data.session);
+    MFA_FATOR_LOGIN=null;
+    return prosseguirLogin();
+  }).catch(function(){
+    document.getElementById("view").innerHTML=viewCodigoMfa("Código inválido ou expirado. Tente de novo.");
+  });
+}
+function cancelarMfaLogin(){
+  MFA_FATOR_LOGIN=null; limparSessao();
+  MODO_LOGIN="entrar";
+  document.getElementById("view").innerHTML=viewLogin();
+}
 function fazerLogin(){
   var e=document.getElementById("lgEmail").value.trim();
   var p=document.getElementById("lgSenha").value;
   if(!e||!p){ document.getElementById("view").innerHTML=viewLogin("Preencha e-mail e senha."); return; }
   var b=document.getElementById("lgBtn"); b.disabled=true; b.textContent="Entrando…";
   entrar(e,p).then(function(){
-    return carregar().then(function(){
-      if(db.clientes.length) S.cliente=db.clientes[0].id;
-      S.app=null; S.tab="preencher"; montarRascunho(); render();
-      registrar("entrou","","");
-      backupAutomatico();
-    });
+    return verificarSegundaEtapa();
+  }).then(function(pendente){
+    if(!pendente) return prosseguirLogin();
   }).catch(function(err){
     document.getElementById("view").innerHTML=viewLogin(err.message);
   });
