@@ -2251,6 +2251,65 @@
     .kpi-section{padding:var(--space-4);border-radius:var(--radius-md);}
   }
 
+  /* ---------- Cockpit (Hoje) ---------- */
+  .cockpit{max-width:1180px;}
+  .cockpit-grupo{margin-bottom:var(--space-6);}
+  .cockpit-grupo-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-3);}
+  .cockpit-grupo-head h2{font-size:16px;font-weight:600;margin:0;color:var(--ink);letter-spacing:-.01em;}
+  .cockpit-grupo-head span{font-size:11.5px;color:var(--ink-faint);}
+  .cockpit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--space-3);}
+  .cockpit-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:var(--space-4) var(--space-5);text-align:left;cursor:pointer;
+    display:flex;flex-direction:column;gap:var(--space-2);min-width:0;
+    font:inherit;color:inherit;transition:border-color .15s var(--ease);
+  }
+  .cockpit-card:hover{border-color:var(--border-strong);}
+  .cockpit-card.aberto{border-color:var(--primary);}
+  .cockpit-card.disabled{cursor:default;opacity:.55;}
+  .cockpit-card.estatico{cursor:default;}
+  .cockpit-card .cockpit-label{
+    font-size:10.5px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.07em;font-weight:600;
+    display:flex;align-items:center;justify-content:space-between;gap:6px;
+  }
+  .cockpit-card .cockpit-num{
+    font-family:'IBM Plex Mono',Consolas,Menlo,'Courier New',monospace;font-size:26px;font-weight:500;color:var(--ink);
+    line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;
+  }
+  .cockpit-card.danger .cockpit-num{color:var(--danger);}
+  .cockpit-card.success .cockpit-num{color:var(--success);}
+  .cockpit-card.gold .cockpit-num{color:var(--gold);}
+  .cockpit-card .cockpit-sub{font-size:11.5px;color:var(--ink-faint);}
+  .cockpit-card .cockpit-chevron{transition:transform .15s var(--ease);color:var(--ink-faint);flex-shrink:0;}
+  .cockpit-card.aberto .cockpit-chevron{transform:rotate(180deg);}
+  .cockpit-lista{
+    background:var(--bg);border:1px solid var(--border);border-top:none;
+    border-radius:0 0 var(--radius-md) var(--radius-md);margin-top:-9px;padding:var(--space-2);
+  }
+  .cockpit-linha{
+    display:flex;align-items:center;justify-content:space-between;gap:var(--space-3);
+    padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);
+  }
+  .cockpit-linha:hover{background:var(--surface);}
+  .cockpit-linha-nome{font-size:12.5px;color:var(--ink);cursor:pointer;flex:1;min-width:0;background:none;border:none;text-align:left;padding:0;font-family:inherit;}
+  .cockpit-linha-nome:hover{text-decoration:underline;}
+  .cockpit-linha-meta{font-size:11px;color:var(--ink-faint);font-family:'IBM Plex Mono',Consolas,Menlo,'Courier New',monospace;white-space:nowrap;}
+  .cockpit-linha-atraso{color:var(--danger);font-weight:600;}
+  .cockpit-linha-acao{font-size:11px;color:var(--primary);background:none;border:none;cursor:pointer;font-weight:600;white-space:nowrap;padding:0;}
+  .cockpit-linha-acao:hover{text-decoration:underline;}
+  .cockpit-vazio{font-size:12px;color:var(--ink-faint);padding:var(--space-3);text-align:center;}
+  .cockpit-nota{display:flex;gap:6px;padding:6px var(--space-3) var(--space-2);}
+  .cockpit-nota input{flex:1;font-size:12px;padding:5px 8px;border:1px solid var(--border-strong);border-radius:var(--radius-sm);}
+  .cockpit-escolha{
+    background:var(--bg);border:1px dashed var(--border-strong);border-radius:var(--radius-lg);
+    padding:var(--space-6);text-align:center;color:var(--ink-muted);font-size:13px;
+  }
+  .cockpit-como{
+    display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--gold);
+    background:var(--gold-tint);border-radius:999px;padding:3px 10px;margin-bottom:var(--space-4);font-weight:600;
+  }
+  @media (max-width:720px){ .cockpit-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+
   /* ---------- Print report ---------- */
   .print-header{display:none;}
   .print-header .print-brand{display:flex;align-items:center;gap:9px;}
@@ -4285,6 +4344,7 @@ const IconLoader = (p)=>h(Icon,{...p,path:'M12 2v4M12 18v4M4.93 4.93l2.83 2.83M1
 const IconLogout = (p)=>h(Icon,{...p,path:'M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9'});
 const IconUsers = (p)=>h(Icon,{...p,path:'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75'});
 const IconShield = (p)=>h(Icon,{...p,path:'M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z'});
+const IconSun = (p)=>h(Icon,{...p,path:'M12 17a5 5 0 100-10 5 5 0 000 10zM12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42'});
 const IconBarChart = (p)=>h(Icon,{...p,path:'M18 20V10M12 20V4M6 20v-6'});
 const IconTrendUp = (p)=>h(Icon,{...p,path:'M23 6l-9.5 9.5-5-5L1 18M17 6h6v6'});
 const IconPrinter = (p)=>h(Icon,{...p,path:'M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z'});
@@ -9569,6 +9629,225 @@ function Board({ leads, onOpen, users, showOwner, onQuickAdd, onLose, onWin, onR
   );
 }
 
+/* ================= Cockpit (Hoje) =================
+   Tela de abertura do assessor: o que precisa de ação hoje, não a lista
+   inteira da carteira. Cada bloco lê dados que já existem em outro lugar do
+   sistema (alertas, movimentações, régua, negócios), filtrados para UM
+   assessor — o mesmo que o admin escolhe no seletor "Toda a equipe / <nome>"
+   no topo, ou o próprio usuário logado quando não é admin. Receita e
+   dinheiro parado em conta (PJ1, resgate provisionado/pago) ainda não têm
+   fonte de dado: entram como card desativado até a integração com o banco. */
+function computeCockpitStats(leads, users, assessorId, cotacao){
+  const vivos = ativos(leads);
+  const hoje = todayISO();
+  const jornada = vivos.filter(l => (l.funil || 'assessor') !== 'especialista' && l.responsavelId === assessorId);
+  const inicioMes = inicioDoPeriodo('mes');
+
+  const vencimentos = [];
+  jornada.forEach(l => {
+    alertasAbertos(l).filter(a => a.tipo === 'vencimento').forEach(a => {
+      const diasAtraso = a.data ? Math.round((new Date(hoje + 'T00:00:00') - new Date(a.data + 'T00:00:00')) / DIA_MS) : null;
+      vencimentos.push({ leadId:l.id, cliente:l.nome, alertaId:a.id, texto:a.texto, data:a.data, diasAtraso });
+    });
+  });
+  vencimentos.sort((x,y) => (y.diasAtraso===null?-999:y.diasAtraso) - (x.diasAtraso===null?-999:x.diasAtraso));
+
+  const aportes = [], resgates = [];
+  jornada.forEach(l => {
+    (l.movimentacoes || []).forEach(m => {
+      if(!m.data) return;
+      if(new Date(m.data + 'T12:00:00').getTime() < inicioMes) return;
+      const item = { leadId:l.id, cliente:l.nome, valor: parseValor(m.valor) || 0, data:m.data, custodia: m.custodia || 'onshore' };
+      if(m.tipo === 'aporte') aportes.push(item);
+      else if(m.tipo === 'retirada') resgates.push(item);
+    });
+  });
+  aportes.sort((a,b) => b.data.localeCompare(a.data));
+  resgates.sort((a,b) => b.data.localeCompare(a.data));
+
+  const regua = [];
+  jornada.forEach(l => {
+    reguaPendencias(l, hoje).forEach(r => {
+      regua.push({ leadId:l.id, cliente:l.nome, tipo:r.tipo, label:r.label, diasAtraso:r.diasAtraso });
+    });
+  });
+  regua.sort((a,b) => b.diasAtraso - a.diasAtraso);
+
+  const abertas = jornada.filter(l => naCarteira(l));
+  const semAtivar = abertas.filter(l => !(valorEmCarteira(l) > 0 || valorEmCarteiraOffshore(l) > 0))
+    .map(l => ({ leadId:l.id, cliente:l.nome, diasNaCarteira: l.criadoEm ? Math.round((Date.now() - l.criadoEm) / DIA_MS) : null }));
+  const ativadas = abertas.length - semAtivar.length;
+
+  const filtrosMes = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
+  const nnmStats = computeAssessoriaStats(jornada, users, filtrosMes, cotacao);
+
+  /* PJ2: receita do assessor sobre negócios de Consórcio e Seguro fechados
+     este mês — o mesmo vínculo de origem usado no ranking "Quem indicou". */
+  const porId = new Map(vivos.map(l => [l.id, l]));
+  const negociosPJ2 = vivos.filter(l => l.funil === 'especialista' && l.ganho && l.ganhoEm
+      && l.ganhoEm >= inicioMes
+      && l.origemLeadId && porId.has(l.origemLeadId) && porId.get(l.origemLeadId).responsavelId === assessorId)
+    .map(l => ({ leadId:l.id, cliente:l.nome, produto:l.produto,
+      valor: parseValor(l.valorFechado) || parseValor(l.valorPotencial) || 0 }));
+  const receitaPJ2 = negociosPJ2.reduce((s,l) => s + l.valor, 0);
+
+  return {
+    vencimentos, aportes, resgates, regua,
+    contas: { abertas: abertas.length, ativadas, semAtivar },
+    nnm: nnmStats.fluxo,
+    receitaPJ2: { valor: receitaPJ2, negocios: negociosPJ2 },
+  };
+}
+
+function CockpitCard({ tom, label, valor, sub, aberto, onClick, disabled }){
+  const clicavel = !!onClick;
+  return h('div',{
+    className:'cockpit-card' + (tom?' '+tom:'') + (aberto?' aberto':'') + (disabled?' disabled':'') + (!clicavel && !disabled ? ' estatico':''),
+    onClick: clicavel ? onClick : undefined,
+    role: clicavel ? 'button' : undefined, tabIndex: clicavel ? 0 : undefined,
+    onKeyDown: clicavel ? (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onClick(); } } : undefined,
+  },
+    h('div',{className:'cockpit-label'}, label, clicavel ? h('span',{className:'cockpit-chevron'}, h(IconChevron,{size:13})) : null),
+    h('div',{className:'cockpit-num'}, valor),
+    sub ? h('div',{className:'cockpit-sub'}, sub) : null
+  );
+}
+
+function CockpitLista({ itens, vazio, renderLinha }){
+  if(!itens.length) return h('div',{className:'cockpit-lista'}, h('div',{className:'cockpit-vazio'}, vazio));
+  return h('div',{className:'cockpit-lista'}, itens.map(renderLinha));
+}
+
+function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onResolverAlerta, onAddActivity }){
+  const cotacao = useCotacao();
+  const [abertoKey, setAbertoKey] = useState(null);
+  const [marcando, setMarcando] = useState(null);
+  const [notaTxt, setNotaTxt] = useState('');
+
+  const assessorId = isAdmin ? (vendorFilter === 'all' ? null : vendorFilter) : (currentUser && currentUser.id);
+  const assessorNome = assessorId ? ((users.find(u => u.id === assessorId) || {}).nome || '') : '';
+
+  const stats = useMemo(() => assessorId ? computeCockpitStats(leads, users, assessorId, cotacao) : null,
+    [leads, users, assessorId, cotacao]);
+
+  if(!assessorId){
+    return h('div',{className:'cockpit'},
+      h('div',{className:'cockpit-escolha'},
+        'Escolha um assessor em "Toda a equipe", no topo da tela, para ver a rotina do dia dele.')
+    );
+  }
+
+  const toggle = (key) => setAbertoKey(prev => prev === key ? null : key);
+  const abrir = (leadId) => { const l = leads.find(x => x.id === leadId); if(l) onOpen(l); };
+
+  const confirmarRegua = () => {
+    if(!notaTxt.trim() || !marcando) return;
+    onAddActivity(marcando.leadId, {
+      id: uid('a'), tipo: marcando.tipo, data: todayISO(),
+      nota: notaTxt.trim(), autor: currentUser.nome, criadoEm: Date.now(),
+    });
+    setMarcando(null); setNotaTxt('');
+  };
+
+  const linhaVencimento = (v) => h('div',{className:'cockpit-linha', key:v.alertaId},
+    h('button',{className:'cockpit-linha-nome', onClick:()=>abrir(v.leadId)}, v.cliente,
+      v.texto ? h('span',{style:{color:'var(--ink-faint)'}}, ' · ' + v.texto) : null),
+    h('span',{className:'cockpit-linha-meta' + (v.diasAtraso>0?' cockpit-linha-atraso':'')},
+      v.diasAtraso === null ? '—' : v.diasAtraso > 0 ? v.diasAtraso + 'd atrasado' : v.diasAtraso === 0 ? 'hoje' : 'em ' + (-v.diasAtraso) + 'd'),
+    h('button',{className:'cockpit-linha-acao', onClick:()=>onResolverAlerta(v.leadId, v.alertaId)}, 'Concluído')
+  );
+
+  const linhaMovimentacao = (m, key) => h('div',{className:'cockpit-linha', key},
+    h('button',{className:'cockpit-linha-nome', onClick:()=>abrir(m.leadId)}, m.cliente),
+    h('span',{className:'cockpit-linha-meta'},
+      (m.custodia==='offshore'?fmtUSD:fmtBRL)(m.valor) + ' · ' + new Date(m.data+'T12:00:00').toLocaleDateString('pt-BR'))
+  );
+
+  const linhaRegua = (r) => h(Fragment,{key:r.leadId+':'+r.tipo},
+    h('div',{className:'cockpit-linha'},
+      h('button',{className:'cockpit-linha-nome', onClick:()=>abrir(r.leadId)}, r.cliente,
+        h('span',{style:{color:'var(--ink-faint)'}}, ' · ' + r.label)),
+      h('span',{className:'cockpit-linha-meta cockpit-linha-atraso'}, r.diasAtraso + 'd atrasado'),
+      h('button',{className:'cockpit-linha-acao', onClick:()=>{ setMarcando({leadId:r.leadId, tipo:r.tipo}); setNotaTxt(''); }}, 'Marcar feito')
+    ),
+    marcando && marcando.leadId===r.leadId && marcando.tipo===r.tipo
+      ? h('div',{className:'cockpit-nota'},
+          h('input',{ placeholder:'O que foi conversado?', value:notaTxt, autoFocus:true,
+            onChange:e=>setNotaTxt(e.target.value),
+            onKeyDown:e=>{ if(e.key==='Enter') confirmarRegua(); } }),
+          h('button',{className:'btn btn-primary', onClick:confirmarRegua}, 'OK'),
+          h('button',{className:'btn btn-ghost', onClick:()=>setMarcando(null)}, h(IconX,{size:12}))
+        )
+      : null
+  );
+
+  const linhaSemAtivar = (c) => h('div',{className:'cockpit-linha', key:c.leadId},
+    h('button',{className:'cockpit-linha-nome', onClick:()=>abrir(c.leadId)}, c.cliente),
+    h('span',{className:'cockpit-linha-meta'}, c.diasNaCarteira===null?'—':'há ' + c.diasNaCarteira + 'd na carteira')
+  );
+
+  const linhaPJ2 = (n) => h('div',{className:'cockpit-linha', key:n.leadId},
+    h('button',{className:'cockpit-linha-nome', onClick:()=>abrir(n.leadId)}, n.cliente,
+      h('span',{style:{color:'var(--ink-faint)'}}, ' · ' + n.produto)),
+    h('span',{className:'cockpit-linha-meta'}, fmtBRLCompact(n.valor))
+  );
+
+  return h('div',{className:'cockpit'},
+    isAdmin ? h('div',{className:'cockpit-como'}, h(IconSun,{size:12}), 'Vendo como ' + assessorNome) : null,
+
+    h('div',{className:'cockpit-grupo'},
+      h('div',{className:'cockpit-grupo-head'}, h('h2',null,'Eventos'), h('span',null,'o que precisa de ação hoje')),
+      h('div',{className:'cockpit-grid'},
+        h(CockpitCard,{ tom: stats.vencimentos.length ? 'danger':'', label:'Vencimentos',
+          valor:stats.vencimentos.length, sub:'dia e mês', aberto:abertoKey==='vencimentos',
+          onClick:()=>toggle('vencimentos') }),
+        h(CockpitCard,{ tom:'success', label:'Aportes no mês', valor:stats.aportes.length,
+          sub: fmtBRLCompact(stats.aportes.reduce((s,a)=>s+a.valor,0)),
+          aberto:abertoKey==='aportes', onClick:()=>toggle('aportes') }),
+        h(CockpitCard,{ label:'Resgates no mês', valor:stats.resgates.length,
+          sub: fmtBRLCompact(stats.resgates.reduce((s,a)=>s+a.valor,0)),
+          aberto:abertoKey==='resgates', onClick:()=>toggle('resgates') }),
+        h(CockpitCard,{ label:'Dinheiro parado em conta', valor:'—',
+          sub:'chega com a integração do banco', disabled:true })
+      ),
+      abertoKey==='vencimentos' ? h(CockpitLista,{ itens:stats.vencimentos, vazio:'Nenhum vencimento em aberto.', renderLinha:linhaVencimento }) : null,
+      abertoKey==='aportes' ? h(CockpitLista,{ itens:stats.aportes, vazio:'Nenhum aporte lançado este mês.',
+        renderLinha:(m,i)=>linhaMovimentacao(m,'ap'+i) }) : null,
+      abertoKey==='resgates' ? h(CockpitLista,{ itens:stats.resgates, vazio:'Nenhum resgate lançado este mês.',
+        renderLinha:(m,i)=>linhaMovimentacao(m,'rs'+i) }) : null,
+      stats.resgates.length ? h('div',{className:'field-hint'}, 'Separar "provisionado" de "pago" chega com a integração da API do banco.') : null
+    ),
+
+    h('div',{className:'cockpit-grupo'},
+      h('div',{className:'cockpit-grupo-head'}, h('h2',null,'Receita'), h('span',null,'prévia do mês · zera todo dia 1')),
+      h('div',{className:'cockpit-grid'},
+        h(CockpitCard,{ tom:'gold', label:'PJ2 · Consórcio e Seguro', valor:fmtBRLCompact(stats.receitaPJ2.valor),
+          sub:stats.receitaPJ2.negocios.length + (stats.receitaPJ2.negocios.length===1?' negócio fechado':' negócios fechados'),
+          aberto:abertoKey==='pj2', onClick:()=>toggle('pj2') }),
+        h(CockpitCard,{ label:'PJ1', valor:'—', sub:'chega com a integração do banco', disabled:true })
+      ),
+      abertoKey==='pj2' ? h(CockpitLista,{ itens:stats.receitaPJ2.negocios, vazio:'Nenhum negócio fechado este mês.', renderLinha:linhaPJ2 }) : null
+    ),
+
+    h('div',{className:'cockpit-grupo'},
+      h('div',{className:'cockpit-grupo-head'}, h('h2',null,'Oportunidades'), h('span',null,'carteira e relacionamento')),
+      h('div',{className:'cockpit-grid'},
+        h(CockpitCard,{ tom: stats.nnm.liquido>=0?'success':'danger', label:'NNM no mês',
+          valor:(stats.nnm.liquido>=0?'+':'−')+fmtBRLCompact(Math.abs(stats.nnm.liquido)),
+          sub: fmtBRLCompact(stats.nnm.entrou)+' entrou · '+fmtBRLCompact(stats.nnm.retiradas)+' saiu' }),
+        h(CockpitCard,{ tom: stats.contas.semAtivar.length ? 'gold':'', label:'Contas abertas vs. ativadas',
+          valor: stats.contas.abertas + ' / ' + stats.contas.ativadas,
+          sub: stats.contas.semAtivar.length + ' ainda sem ativar',
+          aberto:abertoKey==='contas', onClick:()=>toggle('contas') }),
+        h(CockpitCard,{ tom: stats.regua.length ? 'danger':'', label:'Régua de relacionamento',
+          valor:stats.regua.length, sub:'contatos atrasados', aberto:abertoKey==='regua', onClick:()=>toggle('regua') })
+      ),
+      abertoKey==='contas' ? h(CockpitLista,{ itens:stats.contas.semAtivar, vazio:'Todas as contas abertas já estão ativadas.', renderLinha:linhaSemAtivar }) : null,
+      abertoKey==='regua' ? h(CockpitLista,{ itens:stats.regua, vazio:'Nenhuma régua atrasada.', renderLinha:linhaRegua }) : null
+    )
+  );
+}
+
 /* ================= App ================= */
 function App(){
   const [motivoBloqueio, setMotivoBloqueio] = useState('');
@@ -9585,6 +9864,15 @@ function App(){
   const [managingTeam, setManagingTeam] = useState(false);
   const [saveStatus, setSaveStatus] = useState('idle');
   const [view, setView] = useState('kanban'); // kanban | perdidos
+  /* Pousa em "Hoje" assim que a sessão carrega, uma vez só: depois disso a
+     navegação do usuário manda. Especialista não tem jornada de cliente,
+     então continua caindo no próprio quadro de negócios. */
+  const viewInicializada = useRef(false);
+  useEffect(() => {
+    if(!currentUser || viewInicializada.current) return;
+    viewInicializada.current = true;
+    if(currentUser.role !== 'especialista') setView('hoje');
+  }, [currentUser]);
   const [losingLead, setLosingLead] = useState(null);
   const [winningLead, setWinningLead] = useState(null);
   const [movingLead, setMovingLead] = useState(null);
@@ -10704,6 +10992,7 @@ function App(){
     : view==='kpis' ? (isAdmin ? 'Indicadores' : rotuloIndicadores(false, funil))
     : view==='offshore' ? 'Carteira offshore'
     : view==='importacao' ? 'Atualização da base'
+    : view==='hoje' ? 'Hoje'
     : especialistaView ? produtoFiltro + ' · negócios em andamento'
     : 'Jornada do cliente';
 
@@ -10728,6 +11017,12 @@ function App(){
            O recorte por responsável já acontece no cálculo, então o acesso
            não precisava ser restrito ao admin. */
         h('div',{className:'view-tabs'},
+          /* Cockpit é conceito de jornada: some junto com a aba "Jornada"
+             quando o funil aberto é o de Negócios. */
+          funil !== 'especialista'
+            ? h('button',{className:'view-tab' + (view==='hoje' ? ' active':''), onClick:()=>setView('hoje')},
+                h(IconSun,{size:12}), 'Hoje')
+            : null,
           h('button',{className:'view-tab' + (view==='kanban' ? ' active':''), onClick:()=>setView('kanban')}, 'Funil'),
           /* Só na Jornada, e só para o admin: o funil de produto não tem
              custódia, e a carteira do assessor é uma só — a leitura offshore
@@ -10793,10 +11088,10 @@ function App(){
         /* FERRAMENTAS — sempre nas mesmas posições. A busca reserva o
            espaço dela mesmo onde não se aplica, senão tudo à direita
            desliza ao trocar de tela. */
-        h('div',{className:'busca-slot' + (view === 'kpis' || view === 'offshore' ? ' oculta' : '')},
+        h('div',{className:'busca-slot' + (view === 'kpis' || view === 'offshore' || view === 'hoje' ? ' oculta' : '')},
           h('div',{className:'search-wrap'}, h(IconSearch,{size:15}),
             h('input',{ placeholder:'Buscar por nome, conta, telefone ou e-mail', value:query,
-              onChange:e=>setQuery(e.target.value), tabIndex: (view === 'kpis' || view === 'offshore') ? -1 : 0 }))
+              onChange:e=>setQuery(e.target.value), tabIndex: (view === 'kpis' || view === 'offshore' || view === 'hoje') ? -1 : 0 }))
         ),
         isAdmin ? h('select',{ className:'select-sm', value:vendorFilter, onChange:e=>setVendorFilter(e.target.value) },
           h('option',{value:'all'}, 'Toda a equipe'),
@@ -10813,6 +11108,8 @@ function App(){
         h('button',{className:'btn btn-ghost', onClick:handleLogout, title:'Sair'}, h(IconLogout,{size:14}))
       )
     ),
+    view==='hoje' ? h(Cockpit,{ leads, users, currentUser, isAdmin, vendorFilter,
+      onOpen:setOpenLead, onResolverAlerta:resolverAlerta, onAddActivity:addActivity }) :
     view==='kanban' ? h('div',{className: (overviewOpen && filtered.length > 0) ? '' : 'overview-fechada'},
       /* Em notebook a visão geral come altura do funil — dá para recolher. */
       filtered.length > 0 ? h('div',{className:'overview-toggle'},
@@ -11019,7 +11316,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.76";
+var VERSAO_CRM="versão 2.77";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
