@@ -2250,11 +2250,18 @@
 
   /* ---------- Cockpit (Hoje) ---------- */
   .cockpit{max-width:1180px;}
+  /* Abertura do dia: um título só, sem imagem nem animação — a mesma
+     serifa que já assina "Carteira"/"Negócios" no painel do admin, só que
+     em tamanho de manchete de uma linha, porque aqui é a única coisa na
+     tela até o assessor olhar para baixo. */
+  .cockpit-hero{margin-bottom:var(--space-6);}
+  .cockpit-hero h1{
+    font-family:'Fraunces',Georgia,'Times New Roman',serif;font-size:26px;font-weight:600;
+    color:var(--ink);margin:0 0 4px;letter-spacing:-.01em;
+  }
+  .cockpit-hero > span{font-size:12.5px;color:var(--ink-faint);}
   .cockpit-grupo{margin-bottom:var(--space-6);}
-  .cockpit-grupo-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-3);margin-bottom:var(--space-3);}
-  .cockpit-grupo-head h2{font-size:16px;font-weight:600;margin:0;color:var(--ink);letter-spacing:-.01em;}
-  .cockpit-grupo-head span{font-size:11.5px;color:var(--ink-faint);}
-  .cockpit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--space-3);}
+  .cockpit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:var(--space-3);}
   .cockpit-card{
     background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
     padding:var(--space-4) var(--space-5);text-align:left;cursor:pointer;
@@ -2273,10 +2280,16 @@
     font-family:'IBM Plex Mono',Consolas,Menlo,'Courier New',monospace;font-size:26px;font-weight:500;color:var(--ink);
     line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;
   }
+  /* Só o que pede ação hoje ganha peso de fundo — o resto do quadriculado
+     fica quieto de propósito, para o olho ir direto no que importa em vez
+     de tudo competir com a mesma cor de caixa. */
+  .cockpit-card.danger{background:var(--danger-tint);border-color:transparent;}
+  .cockpit-card.danger .cockpit-label{color:#8A4A42;}
   .cockpit-card.danger .cockpit-num{color:var(--danger);}
   .cockpit-card.success .cockpit-num{color:var(--success);}
   .cockpit-card.gold .cockpit-num{color:var(--gold);}
   .cockpit-card .cockpit-sub{font-size:11.5px;color:var(--ink-faint);}
+  .cockpit-card.danger .cockpit-sub{color:#9C5B52;}
   .cockpit-card .cockpit-chevron{transition:transform .15s var(--ease);color:var(--ink-faint);flex-shrink:0;}
   .cockpit-card.aberto .cockpit-chevron{transform:rotate(180deg);}
   .cockpit-lista{
@@ -9809,11 +9822,21 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
     h('span',{className:'cockpit-linha-meta cockpit-linha-atraso'}, c.diasAtraso + 'd atrasado')
   );
 
+  const agora = new Date();
+  const saudacao = agora.getHours() < 12 ? 'Bom dia' : agora.getHours() < 18 ? 'Boa tarde' : 'Boa noite';
+  const dataLonga = agora.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long' });
+  const heroTitulo = isAdmin ? 'Rotina de ' + (assessorNome.split(' ')[0] || assessorNome)
+    : saudacao + ', ' + ((currentUser.nome || '').split(' ')[0] || '');
+
   return h('div',{className:'cockpit'},
-    isAdmin ? h('div',{className:'cockpit-como'}, h(IconSun,{size:12}), 'Vendo como ' + assessorNome) : null,
+    h('div',{className:'cockpit-hero'},
+      isAdmin ? h('div',{className:'cockpit-como'}, h(IconSun,{size:12}), 'Vendo como ' + assessorNome) : null,
+      h('h1',null, heroTitulo),
+      h('span',null, dataLonga.charAt(0).toUpperCase() + dataLonga.slice(1))
+    ),
 
     h('div',{className:'cockpit-grupo'},
-      h('div',{className:'cockpit-grupo-head'}, h('h2',null,'Eventos'), h('span',null,'o que precisa de ação hoje')),
+      h('div',{className:'painel-secao'}, h('span',{className:'painel-secao-nome'},'Eventos'), h('span',{className:'painel-secao-desc'},'o que precisa de ação hoje')),
       h('div',{className:'cockpit-grid'},
         h(CockpitCard,{ tom: stats.contatosAtrasados.length ? 'danger':'', label:'Contato atrasado',
           valor:stats.contatosAtrasados.length, sub:'próximo contato já passou', aberto:abertoKey==='contatos',
@@ -9840,7 +9863,7 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
     ),
 
     h('div',{className:'cockpit-grupo'},
-      h('div',{className:'cockpit-grupo-head'}, h('h2',null,'Receita'), h('span',null,'prévia do mês · zera todo dia 1')),
+      h('div',{className:'painel-secao'}, h('span',{className:'painel-secao-nome'},'Receita'), h('span',{className:'painel-secao-desc'},'prévia do mês · zera todo dia 1')),
       h('div',{className:'cockpit-grid'},
         h(CockpitCard,{ tom:'gold', label:'PJ2 · Consórcio e Seguro', valor:fmtBRLCompact(stats.receitaPJ2.valor),
           sub:stats.receitaPJ2.negocios.length + (stats.receitaPJ2.negocios.length===1?' negócio fechado':' negócios fechados'),
@@ -9851,7 +9874,7 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
     ),
 
     h('div',{className:'cockpit-grupo'},
-      h('div',{className:'cockpit-grupo-head'}, h('h2',null,'Oportunidades'), h('span',null,'carteira e relacionamento')),
+      h('div',{className:'painel-secao'}, h('span',{className:'painel-secao-nome'},'Oportunidades'), h('span',{className:'painel-secao-desc'},'carteira e relacionamento')),
       h('div',{className:'cockpit-grid'},
         h(CockpitCard,{ tom: stats.nnm.liquido>=0?'success':'danger', label:'NNM no mês',
           valor:(stats.nnm.liquido>=0?'+':'−')+fmtBRLCompact(Math.abs(stats.nnm.liquido)),
@@ -11344,7 +11367,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.79";
+var VERSAO_CRM="versão 2.80";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
