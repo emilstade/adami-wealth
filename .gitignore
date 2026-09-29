@@ -5,3 +5,9 @@ dist
 *.local
 .vscode
 .idea
+
+# Skills instaladas para o Claude usar durante o trabalho (npx skills add).
+# Ferramenta de sessão, não faz parte do portal publicado.
+.agents
+.claude
+skills-lock.json
