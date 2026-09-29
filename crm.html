@@ -282,6 +282,13 @@
     border-radius:var(--radius);padding:10px 14px;font-size:12.5px;margin-bottom:16px;
   }
   .save-banner .btn{height:30px;padding:0 12px;font-size:12px;color:var(--danger);border-color:var(--danger);}
+  .simulando-banner{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    background:var(--gold-tint);border:1px solid var(--gold);color:#8A6A18;
+    border-radius:var(--radius);padding:10px 14px;font-size:12.5px;margin-bottom:16px;
+  }
+  .simulando-banner span{display:flex;align-items:center;gap:7px;}
+  .simulando-banner .btn{height:30px;padding:0 12px;font-size:12px;color:#8A6A18;border-color:var(--gold);}
 
   /* ---------- User / role chips ---------- */
   .user-chip{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border:1px solid var(--border);border-radius:24px;background:var(--surface);}
@@ -2313,10 +2320,6 @@
   .cockpit-escolha{
     background:var(--bg);border:1px dashed var(--border-strong);border-radius:var(--radius-lg);
     padding:var(--space-6);text-align:center;color:var(--ink-muted);font-size:13px;
-  }
-  .cockpit-como{
-    display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--gold);
-    background:var(--gold-tint);border-radius:999px;padding:3px 10px;margin-bottom:var(--space-4);font-weight:600;
   }
   @media (max-width:720px){ .cockpit-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
 
@@ -9830,7 +9833,6 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
 
   return h('div',{className:'cockpit'},
     h('div',{className:'cockpit-hero'},
-      isAdmin ? h('div',{className:'cockpit-como'}, h(IconSun,{size:12}), 'Vendo como ' + assessorNome) : null,
       h('h1',null, heroTitulo),
       h('span',null, dataLonga.charAt(0).toUpperCase() + dataLonga.slice(1))
     ),
@@ -10305,6 +10307,16 @@ function App(){
 
   const isAdmin = currentUser && currentUser.role === 'admin';
   const pendentes = users.filter(u => u.status === 'pendente');
+  /* Simular a visão do assessor: o admin escolhe alguém no seletor "Toda a
+     equipe" (que já existia só para filtrar dado) e a navegação passa a
+     esconder o que só o admin vê — Equipe, Atualizar base, Offshore — para
+     ele enxergar e preencher exatamente como aquela pessoa enxergaria.
+     Só a navegação muda; o que pode gravar continua sendo o admin de
+     verdade (podeEditar já libera admin em tudo), então nada aqui muda
+     permissão de escrita nem autoria do que for registrado. */
+  const simulando = isAdmin && vendorFilter !== 'all';
+  const isAdminChrome = isAdmin && !simulando;
+  const simulandoNome = simulando ? ((users.find(u => u.id === vendorFilter) || {}).nome || '') : '';
 
   /* Pinta a interface conforme o contexto aberto. Fica no body porque o
      cabeçalho é HTML estático, fora da árvore do React. */
@@ -11043,7 +11055,7 @@ function App(){
     : view==='kpis' ? (isAdmin ? 'Indicadores' : rotuloIndicadores(false, funil))
     : view==='offshore' ? 'Carteira offshore'
     : view==='importacao' ? 'Atualização da base'
-    : view==='hoje' ? 'Hoje'
+    : view==='hoje' ? 'Dashboard'
     : especialistaView ? produtoFiltro + ' · negócios em andamento'
     : 'Jornada do cliente';
 
@@ -11053,6 +11065,10 @@ function App(){
     saveStatus === 'error' ? h('div',{className:'save-banner'},
       h('span',null, 'Não foi possível gravar no banco. As alterações continuam nesta tela, mas se perdem se você fechar a aba antes de salvar.'),
       h('button',{className:'btn btn-ghost', onClick:retrySave}, 'Tentar salvar de novo')
+    ) : null,
+    simulando ? h('div',{className:'simulando-banner'},
+      h('span',null, h(IconSun,{size:13}), 'Simulando a visão de ', h('strong',null, simulandoNome)),
+      h('button',{className:'btn btn-ghost', onClick:()=>setVendorFilter('all')}, 'Sair da simulação')
     ) : null,
     h('div',{className:'topbar'},
       h('div',{className:'brand'}, h('span',{className:'brand-mark'}), h('h1',null, viewTitle)),
@@ -11072,13 +11088,13 @@ function App(){
              quando o funil aberto é o de Negócios. */
           funil !== 'especialista'
             ? h('button',{className:'view-tab' + (view==='hoje' ? ' active':''), onClick:()=>setView('hoje')},
-                h(IconSun,{size:12}), 'Hoje')
+                h(IconSun,{size:12}), 'Dashboard')
             : null,
-          h('button',{className:'view-tab' + (view==='kanban' ? ' active':''), onClick:()=>setView('kanban')}, 'Funil'),
+          h('button',{className:'view-tab' + (view==='kanban' ? ' active':''), onClick:()=>setView('kanban')}, 'Relacionamento'),
           /* Só na Jornada, e só para o admin: o funil de produto não tem
              custódia, e a carteira do assessor é uma só — a leitura offshore
              dele vive dentro de "Minha carteira", sem tela separada. */
-          (isAdmin && funil !== 'especialista')
+          (isAdminChrome && funil !== 'especialista')
             ? h('button',{className:'view-tab' + (view==='offshore' ? ' active':''), onClick:()=>setView('offshore')}, 'Offshore')
             : null,
           h('button',{className:'view-tab' + (view==='kpis' ? ' active':''), onClick:()=>setView('kpis')},
@@ -11129,7 +11145,7 @@ function App(){
            carteira inteira do escritório, e o funil de produto não tem conta
            no banco para reconciliar. Sendo o último item, sumir no funil de
            produto não desloca nada. */
-        (isAdmin && funil !== 'especialista')
+        (isAdminChrome && funil !== 'especialista')
           ? h('button',{className:'btn btn-ghost nav-importacao' + (view==='importacao' ? ' active':''),
               onClick:()=>setView('importacao')},
               h(IconUpload,{size:14}), 'Atualizar base')
@@ -11148,7 +11164,7 @@ function App(){
           h('option',{value:'all'}, 'Toda a equipe'),
           users.map(u => h('option',{ key:u.id, value:u.id }, u.nome))
         ) : null,
-        isAdmin ? h('button',{className:'btn btn-ghost', onClick:()=>setManagingTeam(true)},
+        isAdminChrome ? h('button',{className:'btn btn-ghost', onClick:()=>setManagingTeam(true)},
           h(IconUsers,{size:14}), 'Equipe',
           pendentes.length > 0 ? h('span',{className:'pending-dot', title:pendentes.length + ' conta(s) aguardando aprovação'}, pendentes.length) : null
         ) : null,
@@ -11367,7 +11383,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.80";
+var VERSAO_CRM="versão 2.81";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
