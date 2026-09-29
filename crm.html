@@ -5116,10 +5116,11 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
     ),
 
     /* Só na Jornada: conta é do banco, e o funil de produto não tem custódia.
-       Cliente cadastrado aqui nasce sem conta e é isso mesmo — ela chega
-       depois, quando o BTG abre. Preenchê-la é o que faz o cliente entrar na
-       atualização semanal da base. */
-    jornada ? h('div',{className:'field'},
+       E só depois do cadastro: quem está criando o card ainda não tem conta
+       nenhuma pra digitar (ela chega quando o BTG abre) — pedir isso na
+       criação era campo em branco garantido, rolagem sem função. Some daqui,
+       mas continua disponível em "Editar" assim que a conta existir. */
+    (jornada && !cadastro) ? h('div',{className:'field'},
       h('label',null,'Conta BTG'),
       h('input',{ value:initial.conta || '', onChange:set('conta'),
         inputMode:'numeric', placeholder:'Ex: 4417029' }),
@@ -5309,11 +5310,13 @@ function LeadForm({ initial, onChange, errors, users, currentUser, isAdmin, stag
             + ': ele muda por movimentação offshore ou pela importação do AuC.')
     ) : null,
 
-    /* Sempre visível para quem está na Jornada — não só para quem já tem
-       offshore. A importação do AuC do BTG preenche sozinha, pela conta
-       onshore; a da Pershing não tem essa ponte e depende de alguém colar o
-       número aqui uma vez, para a importação seguinte reconhecer sozinha. */
-    jornada ? h('div',{className:'field'},
+    /* Visível para quem está na Jornada — não só para quem já tem offshore —
+       mas só depois do cadastro, pelo mesmo motivo da Conta BTG acima: no
+       cadastro essa conta ainda não existe em lugar nenhum pra copiar.
+       A importação do AuC do BTG preenche sozinha, pela conta onshore; a da
+       Pershing não tem essa ponte e depende de alguém colar o número aqui
+       uma vez, para a importação seguinte reconhecer sozinha. */
+    (jornada && !cadastro) ? h('div',{className:'field'},
       h('label',null,'Conta offshore'),
       h('input',{ value:initial.contaOffshore || '', onChange:set('contaOffshore'),
         placeholder:'Ex: BPXX000123 (BTG) ou TL7032231 (Pershing)' }),
@@ -6415,11 +6418,11 @@ function WinModal({ lead, onClose, onConfirm }){
 function MoveModal({ lead, from, to, onClose, onConfirm }){
   useEsc(onClose);
   const [resumo, setResumo] = useState('');
-  const [error, setError] = useState('');
-  const confirm = () => {
-    if(!resumo.trim()){ setError('Descreva um resumo do que foi feito para mudar de etapa.'); return; }
-    onConfirm(lead.id, to, resumo.trim());
-  };
+  /* Resumo é opcional, como em Ganhar/Perder negócio: mover de etapa é a ação
+     mais repetida do funil, e travar a mais frequente atrás de um texto
+     obrigatório — quando as duas mais raras (ganhar, perder) não exigem —
+     era exatamente o que fazia o dia a dia "comer etapa". */
+  const confirm = () => onConfirm(lead.id, to, resumo.trim());
   return h('div',{className:'overlay', onClick:(e)=>{ if(e.target===e.currentTarget) onClose(); }},
     h('div',{className:'modal', style:{maxWidth:460}},
       h('div',{className:'modal-head'}, h('h2',null,'Mover de etapa — ', nomeCliente(lead) || 'lead'), h('button',{className:'modal-close', onClick:onClose}, h(IconX,{size:18}))),
@@ -6430,10 +6433,9 @@ function MoveModal({ lead, from, to, onClose, onConfirm }){
           h('div',{className:'stage-progress-info'}, h('strong',null, etapaLonga(to, lead.funil)))
         ),
         h('div',{className:'field', style:{marginTop:14}},
-          h('label',null, 'Resumo do que foi feito ', h('span',{className:'required'},'*')),
-          h('textarea',{ value:resumo, onChange:e=>{ setResumo(e.target.value); if(error) setError(''); }, placeholder:'Ex: Call de apresentação feita, cliente confirmou orçamento e pediu proposta formal.', autoFocus:true })
-        ),
-        error ? h('div',{className:'field-error'}, error) : null
+          h('label',null, 'Resumo do que foi feito (opcional)'),
+          h('textarea',{ value:resumo, onChange:e=>setResumo(e.target.value), placeholder:'Ex: Call de apresentação feita, cliente confirmou orçamento e pediu proposta formal.', autoFocus:true, onKeyDown:e=>{ if(e.key==='Enter' && (e.metaKey||e.ctrlKey)) confirm(); } })
+        )
       ),
       h('div',{className:'modal-foot'},
         h('button',{className:'btn btn-ghost', onClick:onClose}, 'Cancelar'),
@@ -9642,7 +9644,7 @@ function computeCockpitStats(leads, users, assessorId, cotacao){
   jornada.forEach(l => {
     alertasAbertos(l).filter(a => a.tipo === 'vencimento').forEach(a => {
       const diasAtraso = a.data ? Math.round((new Date(hoje + 'T00:00:00') - new Date(a.data + 'T00:00:00')) / DIA_MS) : null;
-      vencimentos.push({ leadId:l.id, cliente:l.nome, alertaId:a.id, texto:a.texto, data:a.data, diasAtraso });
+      vencimentos.push({ leadId:l.id, cliente:nomeCliente(l), alertaId:a.id, texto:a.texto, data:a.data, diasAtraso });
     });
   });
   vencimentos.sort((x,y) => (y.diasAtraso===null?-999:y.diasAtraso) - (x.diasAtraso===null?-999:x.diasAtraso));
@@ -9652,7 +9654,7 @@ function computeCockpitStats(leads, users, assessorId, cotacao){
     (l.movimentacoes || []).forEach(m => {
       if(!m.data) return;
       if(new Date(m.data + 'T12:00:00').getTime() < inicioMes) return;
-      const item = { leadId:l.id, cliente:l.nome, valor: parseValor(m.valor) || 0, data:m.data, custodia: m.custodia || 'onshore' };
+      const item = { leadId:l.id, cliente:nomeCliente(l), valor: parseValor(m.valor) || 0, data:m.data, custodia: m.custodia || 'onshore' };
       if(m.tipo === 'aporte') aportes.push(item);
       else if(m.tipo === 'retirada') resgates.push(item);
     });
@@ -9663,14 +9665,29 @@ function computeCockpitStats(leads, users, assessorId, cotacao){
   const regua = [];
   jornada.forEach(l => {
     reguaPendencias(l, hoje).forEach(r => {
-      regua.push({ leadId:l.id, cliente:l.nome, tipo:r.tipo, label:r.label, diasAtraso:r.diasAtraso });
+      regua.push({ leadId:l.id, cliente:nomeCliente(l), tipo:r.tipo, label:r.label, diasAtraso:r.diasAtraso });
     });
   });
   regua.sort((a,b) => b.diasAtraso - a.diasAtraso);
 
+  /* Contato atrasado: a mesma leitura da situação "atrasado" do quadro
+     (proximoContatoEfetivo), só que na tela de abertura do dia em vez de
+     enterrada 3 cliques dentro de Filtros. Desqualificado não entra —
+     ninguém precisa ligar de novo pra quem já foi perdido. */
+  const contatosAtrasados = [];
+  jornada.forEach(l => {
+    if(l.perdido) return;
+    const prox = proximoContatoEfetivo(l, hoje);
+    if(prox && prox < hoje){
+      const diasAtraso = Math.round((new Date(hoje + 'T00:00:00') - new Date(prox + 'T00:00:00')) / DIA_MS);
+      contatosAtrasados.push({ leadId:l.id, cliente:nomeCliente(l), diasAtraso });
+    }
+  });
+  contatosAtrasados.sort((a,b) => b.diasAtraso - a.diasAtraso);
+
   const abertas = jornada.filter(l => naCarteira(l));
   const semAtivar = abertas.filter(l => !(valorEmCarteira(l) > 0 || valorEmCarteiraOffshore(l) > 0))
-    .map(l => ({ leadId:l.id, cliente:l.nome, diasNaCarteira: l.criadoEm ? Math.round((Date.now() - l.criadoEm) / DIA_MS) : null }));
+    .map(l => ({ leadId:l.id, cliente:nomeCliente(l), diasNaCarteira: l.criadoEm ? Math.round((Date.now() - l.criadoEm) / DIA_MS) : null }));
   const ativadas = abertas.length - semAtivar.length;
 
   const filtrosMes = { periodo:'mes', de:'', ate:'', segmento:[], esteira:[], tipoPessoa:[], situacao:[], grupo:[], temperatura:[] };
@@ -9682,12 +9699,12 @@ function computeCockpitStats(leads, users, assessorId, cotacao){
   const negociosPJ2 = vivos.filter(l => l.funil === 'especialista' && l.ganho && l.ganhoEm
       && l.ganhoEm >= inicioMes
       && l.origemLeadId && porId.has(l.origemLeadId) && porId.get(l.origemLeadId).responsavelId === assessorId)
-    .map(l => ({ leadId:l.id, cliente:l.nome, produto:l.produto,
+    .map(l => ({ leadId:l.id, cliente:nomeCliente(l), produto:l.produto,
       valor: parseValor(l.valorFechado) || parseValor(l.valorPotencial) || 0 }));
   const receitaPJ2 = negociosPJ2.reduce((s,l) => s + l.valor, 0);
 
   return {
-    vencimentos, aportes, resgates, regua,
+    vencimentos, aportes, resgates, regua, contatosAtrasados,
     contas: { abertas: abertas.length, ativadas, semAtivar },
     nnm: nnmStats.fluxo,
     receitaPJ2: { valor: receitaPJ2, negocios: negociosPJ2 },
@@ -9787,12 +9804,20 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
     h('span',{className:'cockpit-linha-meta'}, fmtBRLCompact(n.valor))
   );
 
+  const linhaContatoAtrasado = (c) => h('div',{className:'cockpit-linha', key:c.leadId},
+    h('button',{className:'cockpit-linha-nome', onClick:()=>abrir(c.leadId)}, c.cliente),
+    h('span',{className:'cockpit-linha-meta cockpit-linha-atraso'}, c.diasAtraso + 'd atrasado')
+  );
+
   return h('div',{className:'cockpit'},
     isAdmin ? h('div',{className:'cockpit-como'}, h(IconSun,{size:12}), 'Vendo como ' + assessorNome) : null,
 
     h('div',{className:'cockpit-grupo'},
       h('div',{className:'cockpit-grupo-head'}, h('h2',null,'Eventos'), h('span',null,'o que precisa de ação hoje')),
       h('div',{className:'cockpit-grid'},
+        h(CockpitCard,{ tom: stats.contatosAtrasados.length ? 'danger':'', label:'Contato atrasado',
+          valor:stats.contatosAtrasados.length, sub:'próximo contato já passou', aberto:abertoKey==='contatos',
+          onClick:()=>toggle('contatos') }),
         h(CockpitCard,{ tom: stats.vencimentos.length ? 'danger':'', label:'Vencimentos',
           valor:stats.vencimentos.length, sub:'dia e mês', aberto:abertoKey==='vencimentos',
           onClick:()=>toggle('vencimentos') }),
@@ -9805,6 +9830,7 @@ function Cockpit({ leads, users, currentUser, isAdmin, vendorFilter, onOpen, onR
         h(CockpitCard,{ label:'Dinheiro parado em conta', valor:'—',
           sub:'chega com a integração do banco', disabled:true })
       ),
+      abertoKey==='contatos' ? h(CockpitLista,{ itens:stats.contatosAtrasados, vazio:'Nenhum contato atrasado.', renderLinha:linhaContatoAtrasado }) : null,
       abertoKey==='vencimentos' ? h(CockpitLista,{ itens:stats.vencimentos, vazio:'Nenhum vencimento em aberto.', renderLinha:linhaVencimento }) : null,
       abertoKey==='aportes' ? h(CockpitLista,{ itens:stats.aportes, vazio:'Nenhum aporte lançado este mês.',
         renderLinha:(m,i)=>linhaMovimentacao(m,'ap'+i) }) : null,
@@ -10901,13 +10927,20 @@ function App(){
       return { ...l, etapa: to, etapaDesde: Date.now(), historico: [...(l.historico||[]), entry] };
     });
     setMovingLead(null);
-    setOpenLead(null);
     pushToast('Movido para ' + to + '.', 'success');
     /* A R4 é a reunião de produto: ao chegar nela, o encaminhamento é o
        próximo passo natural, então o modal abre sem exigir um clique extra. */
     const alvo = leads.find(l => l.id === id);
     if(to === 'R4' && alvo && (alvo.funil || 'assessor') === 'assessor'){
+      setOpenLead(null);
       setEncaminhando({ ...alvo, etapa: 'R4' });
+    } else {
+      /* Mudar de etapa não é o fim da visita ao card: o assessor costuma
+         registrar atividade ou mexer na régua logo em seguida, na mesma
+         ficha. Só atualiza se a ficha já estava aberta para este lead —
+         mover pelo arrastar no quadro, sem ficha aberta, continua sem abrir
+         nada sozinho. */
+      setOpenLead(prev => (prev && prev.id === id) ? atualizado : prev);
     }
     /* Mover para Contato Futuro encerra a indicação; sair de lá a reabre. */
     sincronizarJornada(atualizado);
@@ -11311,7 +11344,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.78";
+var VERSAO_CRM="versão 2.79";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
