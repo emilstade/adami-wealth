@@ -1045,9 +1045,12 @@ function renderPatrimonyChart(seriesAccum, seriesPerp, seriesConsumo, goals, ano
 
   /* Objetivo recorrente (ex: educação dos filhos todo ano) gera um marco por
      ocorrência — projetar() empilha um em cada mês em que o evento acontece.
-     Rotular cada ocorrência escrevia o mesmo texto várias vezes, colado um no
-     outro. Agrupa por rótulo: um ponto por ocorrência (mostra quando cada uma
-     cai), um texto só por grupo, no meio das ocorrências, com a contagem. */
+     Escrever o rótulo em cada uma empilhava o mesmo texto várias vezes,
+     colado um no outro. Cor substitui o texto no gráfico: cada objetivo
+     (não cada ocorrência) ganha uma cor só sua, de uma paleta fixa na mesma
+     família discreta do resto do relatório; o nome completo de cada um vai
+     pra legenda, escrito uma vez só, com a contagem quando repete. */
+  const PALETA_OBJETIVOS = ['#8A5A44','#3C6E9E','#6B7F3E','#8A4A6B','#4F8A7A','#A67C3D','#5C5C8A','#9E5C3C'];
   const porLabel = new Map();
   goals.forEach(g => {
     const mClamped = Math.max(0, Math.min(mesesTotal, g.mesAlvo));
@@ -1057,34 +1060,22 @@ function renderPatrimonyChart(seriesAccum, seriesPerp, seriesConsumo, goals, ano
   });
 
   let goalMarkers = '';
-  const rotulos = [];
+  const legendItems = [];
+  let corIdx = 0;
   porLabel.forEach((meses, label) => {
+    const cor = PALETA_OBJETIVOS[corIdx % PALETA_OBJETIVOS.length]; corIdx++;
     meses.sort((a, b) => a - b);
     meses.forEach(mClamped => {
       const x = xForMonth(mClamped);
       const idx = Math.max(0, Math.min(seriesAccum.length - 1, Math.round(mClamped)));
       const y = yForSaldo(seriesAccum[idx].saldo);
-      goalMarkers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="#B5563A" stroke="white" stroke-width="1.5"/>`;
+      const ano = anoAtual + Math.round(mClamped / 12);
+      goalMarkers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="${cor}" stroke="white" stroke-width="1.5"><title>${escapeHtml(label)} — ${ano}</title></circle>`;
     });
-    const mRep = meses[Math.floor((meses.length - 1) / 2)];
-    const idx = Math.max(0, Math.min(seriesAccum.length - 1, Math.round(mRep)));
-    rotulos.push({
-      x: xForMonth(mRep), y: yForSaldo(seriesAccum[idx].saldo),
-      texto: escapeHtml(label) + (meses.length > 1 ? ' (×' + meses.length + ')' : ''),
-    });
+    legendItems.push(`<span><span class="dot" style="background:${cor};"></span>${escapeHtml(label)}${meses.length > 1 ? ' (×' + meses.length + ')' : ''}</span>`);
   });
-
-  /* Rótulos de objetivos diferentes ainda podem cair perto um do outro no
-     tempo. Ordena por x e alterna a altura quando dois ficam a menos de 70px
-     de distância, pra um não escrever em cima do outro. */
-  rotulos.sort((a, b) => a.x - b.x);
-  let nivel = 0, xAnterior = -Infinity;
-  rotulos.forEach(r => {
-    nivel = (r.x - xAnterior < 70) ? nivel + 1 : 0;
-    xAnterior = r.x;
-    const yRotulo = r.y - 10 - (nivel % 3) * 11;
-    goalMarkers += `<text x="${r.x.toFixed(1)}" y="${yRotulo.toFixed(1)}" font-size="9" fill="#B5563A" text-anchor="middle" font-weight="700">${r.texto}</text>`;
-  });
+  const goalLegend = legendItems.length
+    ? `<div class="chart-legend" style="margin-top:8px;">${legendItems.join('')}</div>` : '';
 
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;" preserveAspectRatio="xMidYMid meet">
     ${gridLines}
@@ -1096,7 +1087,7 @@ function renderPatrimonyChart(seriesAccum, seriesPerp, seriesConsumo, goals, ano
     ${aposLine}
     ${yLabels}${xLabels}${goalMarkers}
     <line x1="${padL}" y1="${(padT+plotH).toFixed(1)}" x2="${W - padR}" y2="${(padT+plotH).toFixed(1)}" stroke="#1B2A4A" stroke-width="1.5"/>
-  </svg>`;
+  </svg>${goalLegend}`;
 }
 
 function renderDonut(parts, centerLabel, centerValue) {
@@ -1748,7 +1739,7 @@ toggleSeguro();
 toggleSimConsorcio();
 render();
 /* selo de versao — serve para identificar cache antes de investigar bug */
-var VERSAO_DIAG = "versão 2.76";
+var VERSAO_DIAG = "versão 2.77";
 document.getElementById('selo').textContent = VERSAO_DIAG;
 </script>
 
