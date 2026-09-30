@@ -1043,15 +1043,47 @@ function renderPatrimonyChart(seriesAccum, seriesPerp, seriesConsumo, goals, ano
       <text x="${xApos.toFixed(1)}" y="${padT-10}" font-size="9" fill="#1B2A4A" text-anchor="middle" font-weight="700">Aposentadoria</text>`;
   }
 
-  let goalMarkers = '';
+  /* Objetivo recorrente (ex: educação dos filhos todo ano) gera um marco por
+     ocorrência — projetar() empilha um em cada mês em que o evento acontece.
+     Rotular cada ocorrência escrevia o mesmo texto várias vezes, colado um no
+     outro. Agrupa por rótulo: um ponto por ocorrência (mostra quando cada uma
+     cai), um texto só por grupo, no meio das ocorrências, com a contagem. */
+  const porLabel = new Map();
   goals.forEach(g => {
     const mClamped = Math.max(0, Math.min(mesesTotal, g.mesAlvo));
     if (mClamped > mesAposentadoria) return; // only show pre-retirement goals on accumulation line
-    const x = xForMonth(mClamped);
-    const idx = Math.max(0, Math.min(seriesAccum.length - 1, Math.round(mClamped)));
-    const y = yForSaldo(seriesAccum[idx].saldo);
-    goalMarkers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.5" fill="#B5563A" stroke="white" stroke-width="1.5"/>`;
-    goalMarkers += `<text x="${x.toFixed(1)}" y="${(y-10).toFixed(1)}" font-size="9" fill="#B5563A" text-anchor="middle" font-weight="700">${escapeHtml(g.label)}</text>`;
+    if (!porLabel.has(g.label)) porLabel.set(g.label, []);
+    porLabel.get(g.label).push(mClamped);
+  });
+
+  let goalMarkers = '';
+  const rotulos = [];
+  porLabel.forEach((meses, label) => {
+    meses.sort((a, b) => a - b);
+    meses.forEach(mClamped => {
+      const x = xForMonth(mClamped);
+      const idx = Math.max(0, Math.min(seriesAccum.length - 1, Math.round(mClamped)));
+      const y = yForSaldo(seriesAccum[idx].saldo);
+      goalMarkers += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="#B5563A" stroke="white" stroke-width="1.5"/>`;
+    });
+    const mRep = meses[Math.floor((meses.length - 1) / 2)];
+    const idx = Math.max(0, Math.min(seriesAccum.length - 1, Math.round(mRep)));
+    rotulos.push({
+      x: xForMonth(mRep), y: yForSaldo(seriesAccum[idx].saldo),
+      texto: escapeHtml(label) + (meses.length > 1 ? ' (×' + meses.length + ')' : ''),
+    });
+  });
+
+  /* Rótulos de objetivos diferentes ainda podem cair perto um do outro no
+     tempo. Ordena por x e alterna a altura quando dois ficam a menos de 70px
+     de distância, pra um não escrever em cima do outro. */
+  rotulos.sort((a, b) => a.x - b.x);
+  let nivel = 0, xAnterior = -Infinity;
+  rotulos.forEach(r => {
+    nivel = (r.x - xAnterior < 70) ? nivel + 1 : 0;
+    xAnterior = r.x;
+    const yRotulo = r.y - 10 - (nivel % 3) * 11;
+    goalMarkers += `<text x="${r.x.toFixed(1)}" y="${yRotulo.toFixed(1)}" font-size="9" fill="#B5563A" text-anchor="middle" font-weight="700">${r.texto}</text>`;
   });
 
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;" preserveAspectRatio="xMidYMid meet">
@@ -1716,7 +1748,7 @@ toggleSeguro();
 toggleSimConsorcio();
 render();
 /* selo de versao — serve para identificar cache antes de investigar bug */
-var VERSAO_DIAG = "versão 2.75";
+var VERSAO_DIAG = "versão 2.76";
 document.getElementById('selo').textContent = VERSAO_DIAG;
 </script>
 
