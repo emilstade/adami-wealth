@@ -49,7 +49,7 @@ input.num{text-align:right;font-variant-numeric:tabular-nums}
   font-weight:600}
 .bloco .val{font-family:var(--serif);font-size:25px;font-weight:700;color:var(--navy);
   margin-top:5px;font-variant-numeric:tabular-nums;letter-spacing:-.4px}
-.bloco .pe{font-size:11.5px;color:var(--muted);margin-top:3px}
+.pe{font-size:11.5px;color:var(--muted);margin-top:3px}
 .bloco.restante{border-color:rgba(192,162,101,.5);background:var(--gold-pale)}
 .bloco.restante .val{color:#7A6122}
 .bloco.zerado{border-color:rgba(10,115,68,.45);background:var(--green-pale)}
@@ -200,13 +200,37 @@ tr.vazia td{color:var(--muted);font-size:13px;text-align:center;padding:26px 8px
     </div>
   </div>
 
+  <div class="cartao">
+    <h2>Resgates a enviar</h2>
+    <p class="ajuda">Separado das compras de propósito: resgate não consome o disponível para
+      alocar acima, é outra ordem. Escreva o ativo, o valor e a observação.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36%">Ativo</th>
+          <th class="r" style="width:19%">Valor</th>
+          <th style="width:41%">Observação</th>
+          <th style="width:34px"></th>
+        </tr>
+      </thead>
+      <tbody id="corpoResgates"></tbody>
+    </table>
+
+    <p class="pe" id="peResgates" style="margin-top:10px">&nbsp;</p>
+
+    <div class="acoes">
+      <button class="btn" onclick="addLinhaResgate(true)">Adicionar resgate</button>
+    </div>
+  </div>
+
 </div>
 
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <div id="msg"></div>
 
 <script>
-var VERSAO_BOLETAS="versão 2.75";
+var VERSAO_BOLETAS="versão 2.76";
 document.getElementById("selo").textContent=VERSAO_BOLETAS;
 
 var CHAVE="aw_boletas";
@@ -249,7 +273,7 @@ function esc(s){ return String(s==null?"":s)
   .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
 /* ------------------------------------------------------------ estado */
-var EST={ cliente:"", disponivel:"", linhas:[] };
+var EST={ cliente:"", disponivel:"", linhas:[], resgates:[] };
 
 function linhaNova(){ return {ativo:"",valor:"",obs:""}; }
 
@@ -259,6 +283,11 @@ function carregar(){
     if(o && Object.prototype.toString.call(o.linhas)==="[object Array]") EST=o;
   }catch(e){}
   if(!EST.linhas.length) EST.linhas=[linhaNova()];
+  /* Campo novo numa tela que já tinha dado salvo antes dele existir: sem
+     isto, quem abria a página com um controle antigo em andamento via a
+     tabela de resgates quebrar, undefined.length. */
+  if(Object.prototype.toString.call(EST.resgates)!=="[object Array]") EST.resgates=[];
+  if(!EST.resgates.length) EST.resgates=[linhaNova()];
 }
 function salvar(){
   try{ localStorage.setItem(CHAVE, JSON.stringify(EST)); }catch(e){}
@@ -330,11 +359,72 @@ function remover(i){
   montar(); salvar();
 }
 function limpar(){
-  if(!confirm("Isto apaga o cliente, o valor disponível e todos os ativos lançados. Confirma?")) return;
-  EST={cliente:"",disponivel:"",linhas:[linhaNova()]};
+  if(!confirm("Isto apaga o cliente, o valor disponível e todos os ativos e resgates lançados. Confirma?")) return;
+  EST={cliente:"",disponivel:"",linhas:[linhaNova()],resgates:[linhaNova()]};
   document.getElementById("cliente").value="";
   document.getElementById("disponivel").value="";
-  montar(); salvar(); aviso("Tudo limpo.");
+  montar(); montarResgates(); salvar(); aviso("Tudo limpo.");
+}
+
+/* ------------------------------------------------------- resgates
+   Mesmo padrão da tabela de boletas acima (linha nova sozinha, sem redesenhar
+   a tabela inteira a cada tecla), só que numa lista própria: resgate não
+   disputa o mesmo "disponível para alocar" das compras, é outra ordem. */
+function linhaHTMLResgate(l,i){
+  return '<tr>'+
+    '<td><input value="'+esc(l.ativo)+'" placeholder="Ex.: CDB Banco Master 2029" '+
+      'oninput="setCampoResgate('+i+',\'ativo\',this.value)"></td>'+
+    '<td class="val"><input class="num" inputmode="numeric" value="'+esc(l.valor)+'" '+
+      'placeholder="R$ 0,00" oninput="setCampoResgate('+i+',\'valor\',this.value)" '+
+      'onblur="formatarResgate('+i+',this)"></td>'+
+    '<td><input value="'+esc(l.obs)+'" placeholder="Motivo, destino do valor" '+
+      'oninput="setCampoResgate('+i+',\'obs\',this.value)"></td>'+
+    '<td class="x"><button class="bt-x" onclick="removerResgate('+i+')" title="Remover">&times;</button></td>'+
+  '</tr>';
+}
+function montarResgates(){
+  var c=document.getElementById("corpoResgates");
+  c.innerHTML = EST.resgates.map(linhaHTMLResgate).join("");
+  if(!EST.resgates.length)
+    c.innerHTML='<tr class="vazia"><td colspan="4">Nenhum resgate lançado ainda.</td></tr>';
+  contasResgates();
+}
+function setCampoResgate(i,campo,valor){
+  if(!EST.resgates[i]) return;
+  EST.resgates[i][campo]=valor;
+  var ult=EST.resgates[EST.resgates.length-1];
+  if(i===EST.resgates.length-1 && (ult.ativo.trim()||n(ult.valor))){
+    EST.resgates.push(linhaNova());
+    document.getElementById("corpoResgates")
+      .insertAdjacentHTML("beforeend", linhaHTMLResgate(EST.resgates[EST.resgates.length-1], EST.resgates.length-1));
+  }
+  contasResgates(); salvar();
+}
+function formatarResgate(i,el){
+  var v=n(el.value);
+  if(v){ el.value=brl(v); EST.resgates[i].valor=el.value; salvar(); }
+}
+function addLinhaResgate(foco){
+  EST.resgates.push(linhaNova());
+  var c=document.getElementById("corpoResgates");
+  if(EST.resgates.length===1) montarResgates();
+  else c.insertAdjacentHTML("beforeend", linhaHTMLResgate(EST.resgates[EST.resgates.length-1], EST.resgates.length-1));
+  contasResgates(); salvar();
+  if(foco){
+    var inputs=document.querySelectorAll("#corpoResgates tr:last-child input");
+    if(inputs.length) inputs[0].focus();
+  }
+}
+function removerResgate(i){
+  EST.resgates.splice(i,1);
+  if(!EST.resgates.length) EST.resgates=[linhaNova()];
+  montarResgates(); salvar();
+}
+function contasResgates(){
+  var tot=0, qtd=0;
+  EST.resgates.forEach(function(l){ var v=n(l.valor); if(v){ tot+=v; qtd++; } });
+  var el=document.getElementById("peResgates");
+  el.textContent = qtd ? "Total a resgatar: "+brl(tot)+" · "+(qtd===1?"1 ativo":qtd+" ativos") : "nenhum resgate lançado";
 }
 
 /* ------------------------------------------------------------- contas */
@@ -420,6 +510,19 @@ function resumoTexto(){
   t.push("Boletado: "+brl(bol));
   t.push("Restante a boletar: "+brl(rest));
   if(rest<-0.005) t.push("ATENÇÃO: passou "+brl(Math.abs(rest))+" do disponível.");
+
+  var resg=(EST.resgates||[]).filter(function(l){ return l.ativo.trim()||n(l.valor); });
+  if(resg.length){
+    var totResg=0;
+    t.push("");
+    t.push("RESGATES");
+    resg.forEach(function(l){
+      totResg+=n(l.valor);
+      t.push("• "+(l.ativo.trim()||"(sem ativo)")+" — "+brl(l.valor)+
+        (l.obs.trim()?"  ("+l.obs.trim()+")":""));
+    });
+    t.push("Total a resgatar: "+brl(totResg));
+  }
   return t.join("\n");
 }
 function copiarResumo(){
@@ -462,6 +565,7 @@ document.getElementById("disponivel").addEventListener("blur",function(){
   contas();
 });
 montar();
+montarResgates();
 </script>
 </body>
 </html>
