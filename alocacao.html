@@ -225,7 +225,7 @@ input.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--m
 <div id="msg"></div>
 
 <script>
-var VERSAO_ALOC="versão 1.2";
+var VERSAO_ALOC="versão 1.3";
 document.getElementById("selo").textContent=VERSAO_ALOC;
 
 var CHAVE="aw_alocacao";
@@ -419,7 +419,15 @@ var EST=estadoPadrao();
 function carregar(){
   try{
     var o=JSON.parse(localStorage.getItem(CHAVE)||"null");
-    if(o && o.carteiras) EST=o;
+    if(o && o.carteiras){
+      /* um salvamento de uma versao anterior pode nao ter um campo que so
+         foi criado depois (ex: carteiraNotaBrasil) — sem isso o resto da
+         tela quebra sozinho ao tentar ler esse campo. Completa com o
+         padrao sem sobrescrever o que a pessoa ja preencheu. */
+      var base=estadoPadrao();
+      Object.keys(base).forEach(function(k){ if(o[k]===undefined) o[k]=base[k]; });
+      EST=o;
+    }
   }catch(e){}
 }
 function salvar(){
