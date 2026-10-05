@@ -95,8 +95,7 @@ input.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--m
   position:relative;overflow:hidden;display:flex;flex-direction:column}
 .folha .rodape-pag{margin-top:auto;background:var(--navy);color:#fff;font-size:10px;
   padding:8px 22px;display:flex;align-items:center;justify-content:space-between}
-.folha .rodape-pag .marca{display:flex;align-items:center;gap:6px;font-weight:600;letter-spacing:.4px}
-.folha .rodape-pag .marca svg{width:14px;height:14px}
+.folha .rodape-pag img.marca{height:13px;width:auto;display:block}
 
 .folha.capa{color:#fff;background:linear-gradient(165deg,#0A2347 0%,#05132A 55%,#081B38 100%);
   justify-content:flex-end;padding:0}
@@ -106,9 +105,8 @@ input.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--m
     repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0px, rgba(255,255,255,.035) 1px, transparent 1px, transparent 64px),
     repeating-linear-gradient(25deg, rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px, transparent 1px, transparent 64px);
   pointer-events:none}
-.folha.capa .marca-topo{position:relative;z-index:1;display:flex;align-items:center;gap:9px;padding:26mm 20mm 0}
-.folha.capa .marca-topo svg{width:26px;height:26px}
-.folha.capa .marca-topo span{font-family:var(--serif);font-weight:600;font-size:15px;letter-spacing:.3px}
+.folha.capa .marca-topo{position:absolute;z-index:1;top:16mm;right:16mm}
+.folha.capa .marca-topo img{height:34px;width:auto;display:block}
 .folha.capa .texto-capa{position:relative;z-index:1;padding:0 20mm 26mm}
 .folha.capa h1{font-family:var(--serif);font-style:italic;font-weight:600;font-size:46px;line-height:1.08;margin-bottom:10px}
 .folha.capa .mes{font-family:var(--serif);font-style:italic;font-size:18px;color:#D9C68E}
@@ -227,10 +225,13 @@ input.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--m
 <div id="msg"></div>
 
 <script>
-var VERSAO_ALOC="versão 1.1";
+var VERSAO_ALOC="versão 1.2";
 document.getElementById("selo").textContent=VERSAO_ALOC;
 
 var CHAVE="aw_alocacao";
+
+/* logo oficial (versao branca), a mesma usada no hub (index.html var LOGO_BRANCO) */
+var LOGO_BRANCO="data:image/png;base64,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";
 
 /* ---------------------------------------------------------- numeros
    Mesma regra pt-BR do resto do portal: virgula e decimal quando existe;
@@ -274,78 +275,137 @@ function diretrizesPadrao(){
 }
 function desempenhoPadrao(){
   return [
-    {nome:"Pós Fixado (CDI)", mes:"", ano:""},
-    {nome:"Prefixado (IRFM)", mes:"", ano:""},
-    {nome:"Inflação Curta (IMA-B5)", mes:"", ano:""},
-    {nome:"Inflação (IMA-B)", mes:"", ano:""},
-    {nome:"IFIX", mes:"", ano:""},
-    {nome:"Ações (Ibovespa)", mes:"", ano:""},
-    {nome:"Dólar", mes:"", ano:""},
-    {nome:"Ouro", mes:"", ano:""},
-    {nome:"Criptoativos (HASH11)", mes:"", ano:""},
+    {nome:"Pós Fixado (CDI)", mes:"1,09", ano:"9,39"},
+    {nome:"Prefixado (IRFM)", mes:"1,04", ano:"7,11"},
+    {nome:"Inflação Curta (IMA-B5)", mes:"1,28", ano:"9,23"},
+    {nome:"Inflação (IMA-B)", mes:"1,58", ano:"6,80"},
+    {nome:"IFIX", mes:"-1,46", ano:"-0,33"},
+    {nome:"Ações (Ibovespa)", mes:"-0,33", ano:"10,11"},
+    {nome:"Dólar", mes:"2,22", ano:"-5,29"},
+    {nome:"Ouro", mes:"0,67", ano:"2,26"},
+    {nome:"Criptoativos (HASH11)", mes:"28,54", ano:"6,01"},
   ];
 }
-/* Arvore fixa (taxonomia da politica, nao muda mes a mes) com linhas de
-   ativo vazias, que sao a parte que o comite preenche/troca todo mes. */
+function linhaAtivo(nome,c,cRoa,m,mRoa,s,sRoa){
+  return {nome:nome, c:c, cRoa:cRoa, m:m, mRoa:mRoa, s:s, sRoa:sRoa};
+}
+/* Arvore fixa (taxonomia da politica, nao muda mes a mes); as linhas de
+   ativo vem pre-preenchidas com a carteira de setembro/26 (ultimo comite),
+   que e a parte que o usuario troca/ajusta todo mes — editar as poucas
+   linhas que mudaram e bem mais rapido que montar a arvore inteira de novo. */
 function carteiraBrasilPadrao(){
   return [
     {nome:"Renda Fixa", filhos:[
       {nome:"Pós Fixado", filhos:[
-        {nome:"Liquidez", linhas:[]},
+        {nome:"Liquidez", linhas:[
+          linhaAtivo("Western Crédito Bancário Plus FIRF CrPr","15,00","0,14","15,00","0,14","15,00","0,14"),
+          linhaAtivo("BTG Hedge","15,00","0,25","15,00","0,25","15,00","0,25"),
+        ]},
         {nome:"Crédito Privado", linhas:[]},
-        {nome:"Crédito Bancário", linhas:[]},
-        {nome:"Crédito Estruturado", linhas:[]},
+        {nome:"Crédito Bancário", linhas:[
+          linhaAtivo("CDB Omni CFI 2028 (105% CDI)","7,00","1,29","1,00","1,29","0,50","1,29"),
+          linhaAtivo("LCI BTG Pactual 2027 (89% CDI)","7,20","0,15","1,00","0,15","0,50","0,15"),
+        ]},
+        {nome:"Crédito Estruturado", linhas:[
+          linhaAtivo("Monterrey FICFIDC*","10,00","2,00","10,00","2,00","10,00","2,00"),
+        ]},
       ]},
       {nome:"Inflação", filhos:[
-        {nome:"Curto Prazo", linhas:[]},
-        {nome:"Longo Prazo", linhas:[]},
+        {nome:"Curto Prazo", linhas:[
+          linhaAtivo("Fundos Cetipados","7,00","4,00","10,00","4,00","10,00","4,00"),
+          linhaAtivo("CDB Banco Agibank 2030 (IPCA+8,45%)","3,00","1,81","5,00","1,81","2,00","1,81"),
+        ]},
+        {nome:"Longo Prazo", linhas:[
+          linhaAtivo("CRA SEARA 2065 (IPCA+8,49%)","0,00","6,46","1,00","6,46","2,00","6,46"),
+          linhaAtivo("CRA BRF 2055 (IPCA+8,49%)","0,00","6,23","1,00","6,23","2,00","6,23"),
+          linhaAtivo("NTN-B 2045 (IPCA+7,23%)","5,00","2,99","6,00","2,99","5,00","2,99"),
+          linhaAtivo("NTN-B 2050 (IPCA+7,22%)","5,00","3,26","6,00","3,26","5,00","3,26"),
+          linhaAtivo("NTN-B 2055 (IPCA+7,14%)","5,00","3,53","6,20","3,53","5,00","3,53"),
+        ]},
       ]},
       {nome:"Pré-Fixado", filhos:[
         {nome:"Crédito Privado", linhas:[]},
-        {nome:"Crédito Bancário", linhas:[]},
+        {nome:"Crédito Bancário", linhas:[
+          linhaAtivo("CDB PicPay 2028 (14,59%)","15,00","0,89","12,50","0,89","10,00","0,89"),
+        ]},
       ]},
     ]},
-    {nome:"Multimercado", linhas:[]},
-    {nome:"Renda Variável", linhas:[]},
-    {nome:"Alternativos", linhas:[]},
+    {nome:"Multimercado", linhas:[
+      linhaAtivo("Armor Axe","1,25","0,53","2,50","0,53","3,75","0,53"),
+      linhaAtivo("Kapitalo K10","1,25","0,40","2,50","0,40","3,75","0,40"),
+    ]},
+    {nome:"Renda Variável", linhas:[
+      linhaAtivo("Op. Estruturadas","3,30","4,00","5,00","4,00","10,00","4,00"),
+    ]},
+    {nome:"Alternativos", linhas:[
+      linhaAtivo("HASH11","0,00","0,50","0,25","0,50","0,50","0,50"),
+    ]},
   ];
 }
 function carteiraInternacionalPadrao(){
   return [
-    {nome:"Mutual Funds Fixed Income", linhas:[]},
-    {nome:"Mutual Funds Equities", linhas:[]},
-    {nome:"Bonds", linhas:[]},
+    {nome:"Mutual Funds Fixed Income", linhas:[
+      linhaAtivo('BTG Pactual Sicav Global Fixed Income Fund Class A (Acc)',"35,00","0,72","15,00","0,72","10,00","0,72"),
+      linhaAtivo('Templeton Emerging Mkts Bond "A" (USD)',"5,00","0,72","10,00","0,72","10,00","0,72"),
+      linhaAtivo('Invesco US Dollar Liquidity Portfolio "RES" (USD) Acc',"30,00","0,50","30,00","0,50","30,00","0,50"),
+    ]},
+    {nome:"Mutual Funds Equities", linhas:[
+      linhaAtivo('BTG Pactual Global EQ "A" (USD)',"5,00","1,17","10,00","1,17","20,00","1,17"),
+      linhaAtivo('AB Sicav I - American Growth Portfolio "A" (USD) Acc',"5,00","0,75","20,00","0,75","20,00","0,75"),
+      linhaAtivo('JPM Emerging Markets Equity "A" Acc',"5,00","0,72","5,00","0,72","5,00","0,72"),
+    ]},
+    {nome:"Bonds", linhas:[
+      linhaAtivo("Morgan Stanley 04/2031 (4,70%)","5,00","1,50","3,30","1,50","1,70","1,50"),
+      linhaAtivo("IBM 02/2036 (5,22%)","5,00","1,50","3,30","1,50","1,70","1,50"),
+      linhaAtivo("UBS Group 09/2034 (5,14%)","5,00","1,50","3,30","1,50","1,70","1,50"),
+    ]},
   ];
 }
 function carteiraPrevidenciaPadrao(){
   return [
-    {nome:"Pós Fixado", linhas:[]},
-    {nome:"Multimercado", linhas:[]},
+    {nome:"Pós Fixado", linhas:[
+      linhaAtivo("Mag Prev Cash FICFIRF","50,00","0,21","30,00","0,21","10,00","0,21"),
+      linhaAtivo("Artesanal Multimercado Prev","35,00","0,59","40,00","0,59","45,00","0,59"),
+      linhaAtivo("Tyton Credito BTG Prev FIM","15,00","0,30","20,00","0,30","25,00","0,30"),
+    ]},
+    {nome:"Multimercado", linhas:[
+      linhaAtivo("Absolute Vertex Prev","0,00","0,52","5,00","0,52","10,00","0,52"),
+      linhaAtivo("Kapitalo K10 Global","0,00","0,50","5,00","0,50","10,00","0,50"),
+    ]},
   ];
 }
 function linhaAtivoNova(){ return {nome:"", c:"", cRoa:"", m:"", mRoa:"", s:"", sRoa:""}; }
 function tradeIdeaNova(){ return {titulo:"", texto:""}; }
+function tradeIdeasPadrao(){
+  return [
+    {titulo:"BTDI11 - Fundo Cetipado", texto:"Oferta pública de fundo cetipado, objetivo de retorno em CDI+1,5%, prazo esperado de 3,5 anos (podendo prorrogar por +2). ROA de 2,5%"},
+    {titulo:"Intermediações Cetipados", texto:"Intermediar posições de clientes com fundos cetipados, tanto entre clientes do escritório quanto pela plataforma do BTG"},
+    {titulo:"Carteiras de Swing Trade", texto:"Operações mais táticas, sempre com stop gain e stop loss"},
+    {titulo:"Carteiras de Stock our Coupon", texto:"2% de ROA sobre a estruturada (50% repasse escritório) + 1% corretagem sobre compra/venda (70% repasse escritório)"},
+    {titulo:"Lançamento de Opções", texto:"Para clientes com posição em ações"},
+    {titulo:"Troca de títulos com pouco deságio", texto:"Títulos com vencimento em 2027 estão com pouco deságio e em alguns casos ágio, vale a pena resgatarmos antecipadamente e alongar o vencimento através de títulos públicos ou crédito privado high grade"},
+  ];
+}
 
 function estadoPadrao(){
-  var agora=new Date();
-  var meses=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
   return {
-    mes: meses[agora.getMonth()], ano: String(agora.getFullYear()),
+    mes: "Setembro", ano: "2026",
     macro: {
-      selic:{a1ant:"",a1atu:"",a2ant:"",a2atu:""},
-      ipca:{a1ant:"",a1atu:"",a2ant:"",a2atu:""},
-      pib:{a1ant:"",a1atu:"",a2ant:"",a2atu:""},
+      selic:{a1ant:"13,75",a1atu:"13,75",a2ant:"12,50",a2atu:"12,50"},
+      ipca:{a1ant:"5,00",a1atu:"5,20",a2ant:"4,40",a2atu:"4,40"},
+      pib:{a1ant:"2,00",a1atu:"2,00",a2ant:"1,10",a2atu:"1,10"},
     },
-    desempMesRotulo: meses[(agora.getMonth()+11)%12],
+    desempMesRotulo: "Julho",
     desempenho: desempenhoPadrao(),
     governanca:{
       politica:"Esse relatório serve para filtrar todas as opções de produtos da plataforma e selecionar, através de uma curadoria rigorosa, apenas os ativos Best-in-Class (os melhores de cada classe).\n\nCentralizamos a inteligência no Comitê para garantir que todo cliente tenha acesso às melhores estratégias da casa, independente do seu assessor.",
       regua:"Para garantir essa qualidade técnica na ponta para o cliente, estabelecemos uma aderência sugerida de 70% ao Portfolio Modelo.\n\nIsso assegura que a carteira do cliente reflita a visão macroeconômica e a gestão de risco validadas pelo escritório.",
     },
     diretrizes: diretrizesPadrao(),
-    tradeIdeas: [tradeIdeaNova()],
+    tradeIdeas: tradeIdeasPadrao(),
     alteracoesTitulo:"Produtos (Conta Brasil)",
     alteracoesTexto:"Sem alterações no mês",
+    carteiraNotaBrasil: "* Fundo não aberto",
     carteiras:{
       brasil: carteiraBrasilPadrao(),
       internacional: carteiraInternacionalPadrao(),
@@ -535,6 +595,10 @@ function blocoAlteracoes(){
 function blocoCarteira(chave, titulo){
   var h='<details class="bloco-form"><summary>'+esc(titulo)+' '+setaSvg()+'</summary><div class="corpo">'+
     '<p class="ajuda">A estrutura de categorias é fixa (política do escritório). Adicione ou remova os ativos dentro de cada uma — % e ROA por perfil.</p>';
+  if(chave==='brasil'){
+    h+='<div class="campo"><label>Nota de rodapé da tabela (opcional)</label>'+
+      '<input value="'+esc(EST.carteiraNotaBrasil)+'" oninput="EST.carteiraNotaBrasil=this.value;montarTudo()"></div>';
+  }
   h+=renderGrupoForm(EST.carteiras[chave], chave, []);
   h+='</div></details>';
   return h;
@@ -631,17 +695,13 @@ function montarPreview(){
   document.getElementById('painelPreview').innerHTML=h;
 }
 
-function marcaSvg(branco){
-  var cor=branco?'#fff':'#05132A';
-  return '<svg viewBox="0 0 24 24" fill="none" stroke="'+cor+'" stroke-width="1.6"><path d="M4 19l7-13 7 13"/><path d="M7.5 13h7"/></svg>';
-}
 function rodape(numero){
-  return '<div class="rodape-pag"><div class="marca">'+marcaSvg(true)+'<span>ADAMI CAPTAL</span></div><div>'+numero+'</div></div>';
+  return '<div class="rodape-pag"><img class="marca" src="'+LOGO_BRANCO+'" alt="Adami Captal"><div>'+numero+'</div></div>';
 }
 
 function paginaCapa(){
   return '<div class="folha capa">'+
-    '<div class="marca-topo">'+marcaSvg(true)+'<span>ADAMI CAPTAL</span></div>'+
+    '<div class="marca-topo"><img src="'+LOGO_BRANCO+'" alt="Adami Captal"></div>'+
     '<div class="texto-capa"><h1>Política de<br>Alocação</h1>'+
     '<div class="mes">'+esc(EST.mes)+' '+esc(EST.ano)+'</div></div>'+
   '</div>';
@@ -788,6 +848,7 @@ function paginaCarteira(chave, tituloBase, subtitulo){
       '<td>'+pct2(totM)+'</td><td>'+pct2(roaM)+'</td>'+
       '<td>'+pct2(totS)+'</td><td>'+pct2(roaS)+'</td></tr>'+
     '</tbody></table>'+
+    (chave==='brasil' && EST.carteiraNotaBrasil.trim() ? '<div class="obs-rodape">'+esc(EST.carteiraNotaBrasil)+'</div>' : '')+
     '</div>'+rodape(pagNum)+'</div>';
 }
 
