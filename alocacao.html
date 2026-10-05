@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de Alocação — Adami Captal</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root{
+  --navy:#05132A; --navy-2:#0C2246;
+  --ink:#0C1626; --ink-muted:#5C6B7F; --ink-faint:#95A1B0;
+  --border:#E2E6ED; --border-strong:#CCD3DD;
+  --surface:#FFFFFF; --bg:#F4F6F9;
+  --gold:#B08A2E; --gold-tint:#F7F0DC;
+  --success:#2F7A56; --success-tint:#E6F1EC;
+  --danger:#B3403A; --danger-tint:#FBEBEA;
+  --serif:'Fraunces',Georgia,'Times New Roman',serif;
+  --mono:'IBM Plex Mono',Consolas,Menlo,'Courier New',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
+
+/* ---------- layout geral ---------- */
+.topo{display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:16px 24px;background:var(--surface);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:50;flex-wrap:wrap}
+.topo h1{font-family:var(--serif);font-size:19px;font-weight:600;color:var(--navy)}
+.topo .sub{font-size:11.5px;color:var(--ink-faint);margin-top:2px}
+.topo-acoes{display:flex;gap:8px;align-items:center}
+.selo{font-size:11px;color:var(--ink-faint)}
+
+.shell{display:grid;grid-template-columns:minmax(380px,460px) 1fr;gap:0;align-items:start}
+@media (max-width:1080px){.shell{grid-template-columns:1fr}}
+
+.painel-form{padding:22px;border-right:1px solid var(--border);background:var(--surface);
+  max-height:calc(100vh - 66px);overflow-y:auto;position:sticky;top:66px}
+@media (max-width:1080px){.painel-form{position:static;max-height:none}}
+.painel-preview{padding:28px;display:flex;flex-direction:column;align-items:center;gap:22px}
+
+/* ---------- form ---------- */
+.bloco-form{border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:14px}
+.bloco-form summary{cursor:pointer;font-family:var(--serif);font-size:15px;font-weight:600;
+  color:var(--navy);list-style:none;display:flex;align-items:center;justify-content:space-between}
+.bloco-form summary::-webkit-details-marker{display:none}
+.bloco-form summary .seta{color:var(--ink-faint);transition:transform .15s}
+.bloco-form[open] summary .seta{transform:rotate(90deg)}
+.bloco-form .corpo{margin-top:14px}
+.bloco-form .ajuda{font-size:11.5px;color:var(--ink-faint);margin-bottom:12px;line-height:1.5}
+
+.campo{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.campo label{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-muted);font-weight:600}
+.campo input,.campo textarea,.campo select{width:100%;padding:9px 10px;border:1px solid var(--border);
+  border-radius:7px;font-size:13.5px;font-family:inherit;background:#fff;color:var(--ink)}
+.campo input:focus,.campo textarea:focus,.campo select:focus{outline:0;border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(176,138,46,.14)}
+.campo textarea{resize:vertical;min-height:58px}
+.linha2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.linha3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+input.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:12.5px}
+
+.subtitulo-form{font-size:11.5px;font-weight:700;color:var(--navy);text-transform:uppercase;
+  letter-spacing:.4px;margin:14px 0 8px;padding-top:10px;border-top:1px dashed var(--border)}
+.subtitulo-form:first-child{margin-top:0;padding-top:0;border-top:none}
+
+.linha-tabela-form{display:grid;grid-template-columns:1fr 70px 70px;gap:8px;align-items:center;margin-bottom:6px}
+.linha-tabela-form span{font-size:12.5px;color:var(--ink)}
+.linha-tabela-form input{padding:7px 8px;font-size:12.5px}
+
+.item-add{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--bg)}
+.item-add .topo-item{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.item-add .topo-item b{font-size:11.5px;color:var(--navy)}
+.bt-x-item{background:none;border:0;color:#C3CBD6;font-size:17px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:5px}
+.bt-x-item:hover{color:var(--danger);background:var(--danger-tint)}
+
+.btn{background:var(--navy);color:#fff;border:0;border-radius:7px;padding:9px 15px;
+  font-size:12.5px;font-family:inherit;cursor:pointer;font-weight:500}
+.btn:hover{background:var(--navy-2)}
+.btn.claro{background:#fff;color:var(--ink);border:1px solid var(--border)}
+.btn.claro:hover{background:var(--bg)}
+.btn.ouro{background:var(--gold);color:#fff}
+.btn.ouro:hover{background:#967524}
+.btn.sm{padding:6px 11px;font-size:11.5px}
+
+/* grupo de carteira: arvore de categorias */
+.grupo-cart{border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden}
+.grupo-cart > .cab{background:var(--navy);color:#fff;padding:8px 12px;font-size:12px;font-weight:600}
+.subgrupo-cart{border-top:1px solid var(--border)}
+.subgrupo-cart > .cab{background:var(--gold-tint);color:#7A6122;padding:6px 12px;font-size:11.5px;font-weight:700}
+.folha-cart{padding:8px 12px 10px}
+
+/* ---------- PÁGINAS DO RELATÓRIO (preview + impressão) ---------- */
+.folha{width:210mm;min-height:297mm;background:#fff;box-shadow:0 2px 18px rgba(12,22,38,.12);
+  position:relative;overflow:hidden;display:flex;flex-direction:column}
+.folha .rodape-pag{margin-top:auto;background:var(--navy);color:#fff;font-size:10px;
+  padding:8px 22px;display:flex;align-items:center;justify-content:space-between}
+.folha .rodape-pag .marca{display:flex;align-items:center;gap:6px;font-weight:600;letter-spacing:.4px}
+.folha .rodape-pag .marca svg{width:14px;height:14px}
+
+.folha.capa{color:#fff;background:linear-gradient(165deg,#0A2347 0%,#05132A 55%,#081B38 100%);
+  justify-content:flex-end;padding:0}
+.folha.capa::before{content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 90% 60% at 85% 8%, rgba(176,138,46,.22) 0%, rgba(176,138,46,0) 60%),
+    repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0px, rgba(255,255,255,.035) 1px, transparent 1px, transparent 64px),
+    repeating-linear-gradient(25deg, rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px, transparent 1px, transparent 64px);
+  pointer-events:none}
+.folha.capa .marca-topo{position:relative;z-index:1;display:flex;align-items:center;gap:9px;padding:26mm 20mm 0}
+.folha.capa .marca-topo svg{width:26px;height:26px}
+.folha.capa .marca-topo span{font-family:var(--serif);font-weight:600;font-size:15px;letter-spacing:.3px}
+.folha.capa .texto-capa{position:relative;z-index:1;padding:0 20mm 26mm}
+.folha.capa h1{font-family:var(--serif);font-style:italic;font-weight:600;font-size:46px;line-height:1.08;margin-bottom:10px}
+.folha.capa .mes{font-family:var(--serif);font-style:italic;font-size:18px;color:#D9C68E}
+
+.folha.indice{background:var(--navy);color:#fff}
+.folha.indice .corpo-indice{padding:40mm 22mm;flex:1}
+.folha.indice h2{font-family:var(--serif);font-size:26px;font-weight:500;margin-bottom:30px}
+.folha.indice ol{list-style:none}
+.folha.indice li{font-family:var(--serif);font-style:italic;font-size:14px;color:#D7DEEA;
+  padding:7px 0;display:flex;gap:10px}
+.folha.indice li b{color:#fff;font-style:normal;min-width:20px}
+
+.faixa-titulo{background:var(--navy);color:#fff;padding:14px 20mm;display:flex;align-items:center;gap:10px}
+.faixa-titulo h2{font-family:var(--serif);font-size:19px;font-weight:600}
+.faixa-titulo.serif h2{font-style:italic;font-weight:500}
+.corpo-pag{padding:16mm 20mm;flex:1}
+
+/* macro */
+.macro-bloco{margin-bottom:22px}
+.macro-bloco h3{font-family:var(--serif);font-size:14px;font-weight:600;color:var(--navy);
+  text-align:center;margin-bottom:10px}
+.macro-tabela{width:100%;border-collapse:collapse}
+.macro-tabela td,.macro-tabela th{border:1px solid var(--border);text-align:center;padding:8px 6px;font-size:12px}
+.macro-tabela thead tr:first-child th{background:var(--navy);color:#fff;font-weight:600;font-family:var(--serif)}
+.macro-tabela thead tr:last-child th{background:var(--navy-2);color:#EAF0FA;font-weight:500;font-size:11px}
+.macro-tabela tbody td{font-weight:700;font-variant-numeric:tabular-nums}
+.macro-tabela .seta{display:inline-flex;vertical-align:middle;margin-left:4px}
+
+/* desempenho - barras */
+.barras-tit{font-family:var(--serif);font-size:14px;font-weight:600;color:var(--navy);
+  text-align:center;margin:4px 0 10px}
+
+/* texto / governanca */
+.texto-pag h3{font-size:15px;font-weight:700;color:var(--ink);margin:16px 0 6px}
+.texto-pag h3:first-child{margin-top:0}
+.texto-pag p{font-size:12.5px;line-height:1.6;color:var(--ink);white-space:pre-wrap}
+
+/* diretrizes */
+.diretriz{margin-bottom:14px}
+.diretriz b{font-size:12.5px;color:var(--ink);display:block;margin-bottom:3px}
+.diretriz p{font-size:12px;color:var(--ink-muted);line-height:1.55;white-space:pre-wrap}
+
+/* trade ideas */
+.trade-item{margin-bottom:14px}
+.trade-item .marcador{display:flex;align-items:baseline;gap:7px;margin-bottom:4px}
+.trade-item .marcador::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--gold);flex-shrink:0;
+  position:relative;top:-2px}
+.trade-item b{font-size:12.5px;color:var(--ink)}
+.trade-item p{font-size:12px;color:var(--ink-muted);line-height:1.55;margin-left:12px;white-space:pre-wrap}
+
+/* carteira recomendada */
+.cart-tabela{width:100%;border-collapse:collapse;font-size:11px}
+.cart-tabela th{background:var(--navy);color:#fff;font-weight:600;padding:7px 6px;text-align:right;white-space:nowrap}
+.cart-tabela th.nome-col{text-align:left;font-family:var(--serif);font-size:12.5px}
+.cart-tabela thead tr.sub th{background:var(--navy-2);font-size:9.5px;font-weight:500;padding:4px 6px}
+.cart-tabela td{padding:4px 6px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap}
+.cart-tabela td.nome{text-align:left}
+.cart-tabela tr.nivel1 td{font-weight:700;color:var(--ink)}
+.cart-tabela tr.nivel1{background:#EDEFF3}
+.cart-tabela tr.nivel2 td{font-weight:600;color:#3C6E9E}
+.cart-tabela tr.nivel2{background:#EBF1F8}
+.cart-tabela tr.linha-ativo td{color:var(--ink-muted);font-style:italic;font-size:10.5px}
+.cart-tabela tr.total td{font-weight:700;color:var(--navy);border-top:2px solid var(--navy);border-bottom:none}
+.cart-tabela .obs-rodape{font-size:9.5px;color:var(--ink-faint);font-style:italic;margin-top:6px}
+
+#awVoltar{position:fixed;bottom:18px;left:18px;z-index:9999;background:var(--navy);color:#fff;
+  border:0;border-radius:999px;padding:10px 18px;font:500 13px inherit;cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.22);opacity:.92}
+#awVoltar:hover{background:var(--navy-2);opacity:1}
+
+#msg{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(14px);
+  background:var(--navy);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:9999}
+#msg.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media print{
+  body{background:#fff}
+  .topo,.painel-form,#awVoltar,#msg,.no-print{display:none!important}
+  .shell{display:block}
+  .painel-preview{padding:0;gap:0}
+  .folha{box-shadow:none;width:210mm;height:297mm;min-height:297mm;page-break-after:always}
+  .folha:last-child{page-break-after:auto}
+  @page{size:A4;margin:0}
+}
+</style>
+</head>
+<body>
+
+<script>
+/* Acesso restrito: exige sessao iniciada no portal, igual aos outros modulos. */
+(function(){
+  var ok=false;
+  try{ var s=JSON.parse(localStorage.getItem("aw_sessao")||"null"); ok=!!(s&&s.access_token); }catch(e){}
+  if(!ok){ location.replace("index.html"); }
+})();
+</script>
+
+<div class="topo">
+  <div>
+    <h1>Política de Alocação</h1>
+    <div class="sub">Preencha ao final do comitê — o relatório do mês monta sozinho, pronto para imprimir em PDF.</div>
+  </div>
+  <div class="topo-acoes">
+    <span class="selo" id="selo"></span>
+    <button class="btn claro" onclick="novoMes()">Novo mês</button>
+    <button class="btn ouro" onclick="window.print()">Imprimir / gerar PDF</button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="painel-form" id="painelForm"></div>
+  <div class="painel-preview" id="painelPreview"></div>
+</div>
+
+<button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
+<div id="msg"></div>
+
+<script>
+var VERSAO_ALOC="versão 1.0";
+document.getElementById("selo").textContent=VERSAO_ALOC;
+
+var CHAVE="aw_alocacao";
+
+/* ---------------------------------------------------------- numeros
+   Mesma regra pt-BR do resto do portal: virgula e decimal quando existe;
+   sem virgula, ponto so e milhar com mais de um ponto ou 3 digitos no fim. */
+function n(v){
+  if(typeof v==="number") return isFinite(v)?v:0;
+  var s=String(v==null?"":v).replace(/[^\d,.-]/g,"");
+  if(!s) return 0;
+  if(s.indexOf(",")>-1){
+    s=s.replace(/\./g,"").replace(",",".");
+  } else {
+    var pontos=s.split(".").length-1;
+    if(pontos>1) s=s.replace(/\./g,"");
+    else if(pontos===1 && /\.\d{3}$/.test(s)) s=s.replace(".","");
+  }
+  var x=parseFloat(s);
+  return isFinite(x)?x:0;
+}
+function pct1(v){ return (Math.round(n(v)*10)/10).toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"; }
+function pct2(v){ return (Math.round(n(v)*100)/100).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%"; }
+function esc(s){ return String(s==null?"":s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function nl2br(s){ return esc(s).replace(/\n/g,"<br>"); }
+
+var ICON_A='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19l7-13 7 13"/><path d="M7.5 13h7"/></svg>';
+
+/* ------------------------------------------------------------ estado
+   Um relatorio por vez, salvo no navegador. "Novo mes" reseta os dados que
+   mudam todo mes mas preserva os textos de politica, que raramente mudam
+   (Objetivo e Governanca, Diretrizes) — reescrever isso toda reuniao seria
+   trabalho que o comite nao pediu. */
+function diretrizesPadrao(){
+  return [
+    {titulo:"1. Crédito Privado", texto:"Alvo recomendado de 2% do PL do cliente por emissor, alocação máxima de 5% do PL em um único emissor (Exceto Títulos Públicos e Bancos Top Tier 1)"},
+    {titulo:"2. Crédito Bancário", texto:"O valor aplicado somado à rentabilidade projetada não deve ultrapassar o limite do FGC no vencimento (Exceto Bancos Top Tier 1)"},
+    {titulo:"3. Diversificação Global", texto:"Seguimos a recomendação do BTG para uma alocação 70/30, onde 30% do portfólio do cliente alocado em dólar"},
+    {titulo:"4. Conta Internacional", texto:"Para proteger os clientes do Estate Tax, o limite para aplicações que não sejam via mutual funds é de U$70.000"},
+    {titulo:"5. COE", texto:"A alocação em COE foge da recomendação e política do escritório, não recomendamos a alocação nesse tipo de ativo"},
+    {titulo:"6. Cetipados", texto:"Recomendação de até 20% da carteira em cetipado, atentar a concentração de ativos e trabalhar a intermediação desses ativos dentro da carteira"},
+  ];
+}
+function desempenhoPadrao(){
+  return [
+    {nome:"Pós Fixado (CDI)", mes:"", ano:""},
+    {nome:"Prefixado (IRFM)", mes:"", ano:""},
+    {nome:"Inflação Curta (IMA-B5)", mes:"", ano:""},
+    {nome:"Inflação (IMA-B)", mes:"", ano:""},
+    {nome:"IFIX", mes:"", ano:""},
+    {nome:"Ações (Ibovespa)", mes:"", ano:""},
+    {nome:"Dólar", mes:"", ano:""},
+    {nome:"Ouro", mes:"", ano:""},
+    {nome:"Criptoativos (HASH11)", mes:"", ano:""},
+  ];
+}
+/* Arvore fixa (taxonomia da politica, nao muda mes a mes) com linhas de
+   ativo vazias, que sao a parte que o comite preenche/troca todo mes. */
+function carteiraBrasilPadrao(){
+  return [
+    {nome:"Renda Fixa", filhos:[
+      {nome:"Pós Fixado", filhos:[
+        {nome:"Liquidez", linhas:[]},
+        {nome:"Crédito Privado", linhas:[]},
+        {nome:"Crédito Bancário", linhas:[]},
+        {nome:"Crédito Estruturado", linhas:[]},
+      ]},
+      {nome:"Inflação", filhos:[
+        {nome:"Curto Prazo", linhas:[]},
+        {nome:"Longo Prazo", linhas:[]},
+      ]},
+      {nome:"Pré-Fixado", filhos:[
+        {nome:"Crédito Privado", linhas:[]},
+        {nome:"Crédito Bancário", linhas:[]},
+      ]},
+    ]},
+    {nome:"Multimercado", linhas:[]},
+    {nome:"Renda Variável", linhas:[]},
+    {nome:"Alternativos", linhas:[]},
+  ];
+}
+function carteiraInternacionalPadrao(){
+  return [
+    {nome:"Mutual Funds Fixed Income", linhas:[]},
+    {nome:"Mutual Funds Equities", linhas:[]},
+    {nome:"Bonds", linhas:[]},
+  ];
+}
+function carteiraPrevidenciaPadrao(){
+  return [
+    {nome:"Pós Fixado", linhas:[]},
+    {nome:"Multimercado", linhas:[]},
+  ];
+}
+function linhaAtivoNova(){ return {nome:"", c:"", cRoa:"", m:"", mRoa:"", s:"", sRoa:""}; }
+function tradeIdeaNova(){ return {titulo:"", texto:""}; }
+
+function estadoPadrao(){
+  var agora=new Date();
+  var meses=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  return {
+    mes: meses[agora.getMonth()], ano: String(agora.getFullYear()),
+    macro: {
+      selic:{a1ant:"",a1atu:"",a2ant:"",a2atu:""},
+      ipca:{a1ant:"",a1atu:"",a2ant:"",a2atu:""},
+      pib:{a1ant:"",a1atu:"",a2ant:"",a2atu:""},
+    },
+    desempMesRotulo: meses[(agora.getMonth()+11)%12],
+    desempenho: desempenhoPadrao(),
+    governanca:{
+      politica:"Esse relatório serve para filtrar todas as opções de produtos da plataforma e selecionar, através de uma curadoria rigorosa, apenas os ativos Best-in-Class (os melhores de cada classe).\n\nCentralizamos a inteligência no Comitê para garantir que todo cliente tenha acesso às melhores estratégias da casa, independente do seu assessor.",
+      regua:"Para garantir essa qualidade técnica na ponta para o cliente, estabelecemos uma aderência sugerida de 70% ao Portfolio Modelo.\n\nIsso assegura que a carteira do cliente reflita a visão macroeconômica e a gestão de risco validadas pelo escritório.",
+    },
+    diretrizes: diretrizesPadrao(),
+    tradeIdeas: [tradeIdeaNova()],
+    alteracoesTitulo:"Produtos (Conta Brasil)",
+    alteracoesTexto:"Sem alterações no mês",
+    carteiras:{
+      brasil: carteiraBrasilPadrao(),
+      internacional: carteiraInternacionalPadrao(),
+      previdencia: carteiraPrevidenciaPadrao(),
+    },
+  };
+}
+
+var EST=estadoPadrao();
+
+function carregar(){
+  try{
+    var o=JSON.parse(localStorage.getItem(CHAVE)||"null");
+    if(o && o.carteiras) EST=o;
+  }catch(e){}
+}
+function salvar(){
+  try{ localStorage.setItem(CHAVE, JSON.stringify(EST)); }catch(e){}
+}
+function novoMes(){
+  if(!confirm("Isto limpa os números do mês (macro, desempenho, carteiras, trade ideas) e mantém os textos de política (Objetivo, Governança, Diretrizes). Confirma?")) return;
+  var manterGovernanca=EST.governanca, manterDiretrizes=EST.diretrizes;
+  EST=estadoPadrao();
+  EST.governanca=manterGovernanca;
+  EST.diretrizes=manterDiretrizes;
+  salvar(); montarForm(); montarPreview();
+  aviso("Mês novo. Textos de política mantidos.");
+}
+function aviso(txt){
+  var m=document.getElementById("msg");
+  m.textContent=txt; m.className="on";
+  clearTimeout(aviso._t);
+  aviso._t=setTimeout(function(){ m.className=""; },2200);
+}
+
+/* ------------------------------------------------------------- calculo
+   Cada linha de ativo guarda % e ROA por perfil (Conservador/Moderado/
+   Sofisticado). O % de cada linha já é fração do total da carteira (não do
+   grupo que ela está dentro) — é assim que o comite preenche hoje na
+   planilha, e é o que faz o subtotal de cada categoria ser só a soma dos
+   filhos, sem regra de três. O ROA só aparece de verdade no TOTAL: é a
+   média ponderada pelo % de cada linha, não uma soma nem uma média simples. */
+function somaNo(categorias, campo){
+  var tot=0;
+  categorias.forEach(function(c){
+    if(c.filhos) tot+=somaNo(c.filhos, campo);
+    else (c.linhas||[]).forEach(function(l){ tot+=n(l[campo]); });
+  });
+  return tot;
+}
+/* media ponderada pelo % de cada linha, em qualquer profundidade da arvore */
+function roaPonderadoNo(categorias, campoPct, campoRoa){
+  var acc=0;
+  (function varre(cats){
+    cats.forEach(function(c){
+      if(c.filhos) varre(c.filhos);
+      else (c.linhas||[]).forEach(function(l){ acc += n(l[campoPct]) * n(l[campoRoa]) / 100; });
+    });
+  })(categorias);
+  return acc;
+}
+
+/* ---------------------------------------------------------------- form */
+function montarForm(){
+  var h='';
+
+  h+=blocoCapa();
+  h+=blocoMacro();
+  h+=blocoDesempenho();
+  h+=blocoGovernanca();
+  h+=blocoDiretrizes();
+  h+=blocoTradeIdeas();
+  h+=blocoAlteracoes();
+  h+=blocoCarteira('brasil','Carteira Recomendada — Brasil');
+  h+=blocoCarteira('internacional','Carteira Recomendada — Conta Internacional');
+  h+=blocoCarteira('previdencia','Carteira Recomendada — Previdência');
+
+  document.getElementById('painelForm').innerHTML=h;
+}
+
+function blocoCapa(){
+  return '<details class="bloco-form" open><summary>Capa '+setaSvg()+'</summary><div class="corpo">'+
+    '<div class="linha2">'+
+      campo('Mês', 'input', 'EST.mes', EST.mes, "montarTudo()") +
+      campo('Ano', 'input', 'EST.ano', EST.ano, "montarTudo()") +
+    '</div>'+
+  '</div></details>';
+}
+
+function blocoMacro(){
+  var anoRef=n(EST.ano)||new Date().getFullYear();
+  function linhaIndicador(rotulo, campo_){
+    var o=EST.macro[campo_];
+    return '<div class="subtitulo-form">'+esc(rotulo)+'</div>'+
+      '<div class="linha2">'+
+        '<div class="campo"><label>'+anoRef+' · anterior</label><input class="num" value="'+esc(o.a1ant)+'" oninput="EST.macro.'+campo_+'.a1ant=this.value;montarTudo()"></div>'+
+        '<div class="campo"><label>'+anoRef+' · atual</label><input class="num" value="'+esc(o.a1atu)+'" oninput="EST.macro.'+campo_+'.a1atu=this.value;montarTudo()"></div>'+
+      '</div>'+
+      '<div class="linha2">'+
+        '<div class="campo"><label>'+(anoRef+1)+' · anterior</label><input class="num" value="'+esc(o.a2ant)+'" oninput="EST.macro.'+campo_+'.a2ant=this.value;montarTudo()"></div>'+
+        '<div class="campo"><label>'+(anoRef+1)+' · atual</label><input class="num" value="'+esc(o.a2atu)+'" oninput="EST.macro.'+campo_+'.a2atu=this.value;montarTudo()"></div>'+
+      '</div>';
+  }
+  return '<details class="bloco-form"><summary>Projeções Macroeconômicas '+setaSvg()+'</summary><div class="corpo">'+
+    '<p class="ajuda">Taxa Selic, IPCA e PIB projetados, ano corrente e o seguinte. A seta no relatório compara "atual" com "anterior" sozinha.</p>'+
+    linhaIndicador('Taxa Selic (%)','selic')+
+    linhaIndicador('Inflação — IPCA (%)','ipca')+
+    linhaIndicador('PIB (%)','pib')+
+  '</div></details>';
+}
+
+function blocoDesempenho(){
+  var h='<details class="bloco-form"><summary>Desempenho das Classes de Ativos '+setaSvg()+'</summary><div class="corpo">'+
+    '<p class="ajuda">Rentabilidade do mês de referência e acumulada no ano, por classe. A lista é fixa — são os mesmos 9 índices todo mês.</p>'+
+    '<div class="campo"><label>Mês de referência (desempenho mensal)</label>'+
+    '<input value="'+esc(EST.desempMesRotulo)+'" oninput="EST.desempMesRotulo=this.value;montarTudo()"></div>'+
+    '<div class="subtitulo-form">Classe · desempenho no mês (%) · no ano (%)</div>';
+  EST.desempenho.forEach(function(l,i){
+    h+='<div class="linha-tabela-form"><span>'+esc(l.nome)+'</span>'+
+      '<input class="num" value="'+esc(l.mes)+'" oninput="EST.desempenho['+i+'].mes=this.value;montarTudo()">'+
+      '<input class="num" value="'+esc(l.ano)+'" oninput="EST.desempenho['+i+'].ano=this.value;montarTudo()"></div>';
+  });
+  h+='</div></details>';
+  return h;
+}
+
+function blocoGovernanca(){
+  return '<details class="bloco-form"><summary>Objetivo e Governança '+setaSvg()+'</summary><div class="corpo">'+
+    '<p class="ajuda">Texto de política — raramente muda. "Novo mês" preserva isto sozinho.</p>'+
+    '<div class="campo"><label>Política de Investimentos Adami Captal</label>'+
+    '<textarea oninput="EST.governanca.politica=this.value;montarTudo()" style="min-height:90px">'+esc(EST.governanca.politica)+'</textarea></div>'+
+    '<div class="campo"><label>Régua de Aderência</label>'+
+    '<textarea oninput="EST.governanca.regua=this.value;montarTudo()" style="min-height:90px">'+esc(EST.governanca.regua)+'</textarea></div>'+
+  '</div></details>';
+}
+
+function blocoDiretrizes(){
+  var h='<details class="bloco-form"><summary>Diretrizes e Risco '+setaSvg()+'</summary><div class="corpo">'+
+    '<p class="ajuda">Também texto de política, preservado em "Novo mês".</p>';
+  EST.diretrizes.forEach(function(d,i){
+    h+='<div class="campo"><label>'+esc(d.titulo)+'</label>'+
+      '<textarea oninput="EST.diretrizes['+i+'].texto=this.value;montarTudo()" style="min-height:56px">'+esc(d.texto)+'</textarea></div>';
+  });
+  h+='</div></details>';
+  return h;
+}
+
+function blocoTradeIdeas(){
+  var h='<details class="bloco-form" open><summary>Trade Ideas do Mês '+setaSvg()+'</summary><div class="corpo">'+
+    '<p class="ajuda">Uma ideia por bloco: um título curto e a explicação.</p>';
+  EST.tradeIdeas.forEach(function(t,i){
+    h+='<div class="item-add"><div class="topo-item"><b>Ideia '+(i+1)+'</b>'+
+      (EST.tradeIdeas.length>1?'<button class="bt-x-item" onclick="removerTradeIdea('+i+')" title="Remover">&times;</button>':'')+
+      '</div>'+
+      '<div class="campo" style="margin-bottom:8px"><input placeholder="Título (ex.: BTDI11 - Fundo Cetipado)" value="'+esc(t.titulo)+'" oninput="EST.tradeIdeas['+i+'].titulo=this.value;montarTudo()"></div>'+
+      '<div class="campo"><textarea placeholder="Explicação" oninput="EST.tradeIdeas['+i+'].texto=this.value;montarTudo()">'+esc(t.texto)+'</textarea></div>'+
+    '</div>';
+  });
+  h+='<button class="btn claro sm" onclick="addTradeIdea()">+ Adicionar ideia</button>'+
+  '</div></details>';
+  return h;
+}
+function addTradeIdea(){ EST.tradeIdeas.push(tradeIdeaNova()); montarTudo(); salvar(); }
+function removerTradeIdea(i){ EST.tradeIdeas.splice(i,1); montarTudo(); salvar(); }
+
+function blocoAlteracoes(){
+  return '<details class="bloco-form"><summary>Alterações no Mês '+setaSvg()+'</summary><div class="corpo">'+
+    '<div class="campo"><label>Título da seção</label>'+
+    '<input value="'+esc(EST.alteracoesTitulo)+'" oninput="EST.alteracoesTitulo=this.value;montarTudo()"></div>'+
+    '<div class="campo"><label>Texto</label>'+
+    '<textarea oninput="EST.alteracoesTexto=this.value;montarTudo()" style="min-height:90px">'+esc(EST.alteracoesTexto)+'</textarea></div>'+
+  '</div></details>';
+}
+
+/* --- carteira: arvore fixa de categorias, linhas de ativo editaveis --- */
+function blocoCarteira(chave, titulo){
+  var h='<details class="bloco-form"><summary>'+esc(titulo)+' '+setaSvg()+'</summary><div class="corpo">'+
+    '<p class="ajuda">A estrutura de categorias é fixa (política do escritório). Adicione ou remova os ativos dentro de cada uma — % e ROA por perfil.</p>';
+  h+=renderGrupoForm(EST.carteiras[chave], chave, []);
+  h+='</div></details>';
+  return h;
+}
+function caminhoStr(chave, caminho){
+  return 'EST.carteiras.'+chave+(caminho.length?('.'+caminho.map(function(p){return 'filhos['+p+']';}).join('.')):'');
+}
+function renderGrupoForm(categorias, chave, caminho){
+  var h='';
+  categorias.forEach(function(cat,i){
+    var meuCaminho=caminho.concat([i]);
+    h+='<div class="grupo-cart"><div class="cab">'+esc(cat.nome)+'</div>';
+    if(cat.filhos){
+      h+='<div>'+renderGrupoForm(cat.filhos, chave, meuCaminho)+'</div>';
+    } else {
+      h+='<div class="folha-cart">';
+      (cat.linhas||[]).forEach(function(l,li){
+        h+=linhaAtivoFormHTML(chave, meuCaminho, li, l);
+      });
+      h+='<button class="btn claro sm" onclick="addLinhaAtivo(\''+chave+'\', ['+meuCaminho.join(',')+'])">+ Adicionar ativo</button>';
+      h+='</div>';
+    }
+    h+='</div>';
+  });
+  return h;
+}
+function linhaAtivoFormHTML(chave, caminho, li, l){
+  var base='atualizarLinhaAtivo(\''+chave+'\', ['+caminho.join(',')+'], '+li+', ';
+  return '<div class="item-add">'+
+    '<div class="topo-item"><input placeholder="Nome do ativo" value="'+esc(l.nome)+'" '+
+      'style="border:none;background:none;padding:2px 0;font-size:12.5px;font-weight:600;flex:1" '+
+      'oninput="'+base+'\'nome\', this.value)">'+
+      '<button class="bt-x-item" onclick="removerLinhaAtivo(\''+chave+'\', ['+caminho.join(',')+'], '+li+')" title="Remover">&times;</button></div>'+
+    '<div class="linha3">'+
+      campoMini('Conserv. %', l.c, base+"'c', this.value)")+
+      campoMini('Moderado %', l.m, base+"'m', this.value)")+
+      campoMini('Sofist. %', l.s, base+"'s', this.value)")+
+    '</div>'+
+    '<div class="linha3">'+
+      campoMini('ROA cons.', l.cRoa, base+"'cRoa', this.value)")+
+      campoMini('ROA mod.', l.mRoa, base+"'mRoa', this.value)")+
+      campoMini('ROA sof.', l.sRoa, base+"'sRoa', this.value)")+
+    '</div>'+
+  '</div>';
+}
+function campoMini(label, valor, onInputExpr){
+  return '<div class="campo" style="margin-bottom:4px"><label style="font-size:9px">'+esc(label)+'</label>'+
+    '<input class="num" value="'+esc(valor)+'" oninput="'+onInputExpr+'"></div>';
+}
+function noNoCaminho(chave, caminho){
+  var arr=EST.carteiras[chave], alvo=null;
+  caminho.forEach(function(idx){ alvo = (alvo? alvo.filhos : arr)[idx]; });
+  return alvo;
+}
+function addLinhaAtivo(chave, caminho){
+  var no=noNoCaminho(chave, caminho);
+  if(!no.linhas) no.linhas=[];
+  no.linhas.push(linhaAtivoNova());
+  montarTudo(); salvar();
+}
+function removerLinhaAtivo(chave, caminho, li){
+  var no=noNoCaminho(chave, caminho);
+  no.linhas.splice(li,1);
+  montarTudo(); salvar();
+}
+function atualizarLinhaAtivo(chave, caminho, li, campo_, valor){
+  var no=noNoCaminho(chave, caminho);
+  no.linhas[li][campo_]=valor;
+  montarTudo(); salvar();
+}
+
+function setaSvg(){ return '<span class="seta">'+ICON_A+'</span>'; }
+function campo(label, tipo, bindExpr, valor, onInputCall){
+  return '<div class="campo"><label>'+esc(label)+'</label>'+
+    '<input value="'+esc(valor)+'" oninput="'+bindExpr+'=this.value;'+onInputCall+'"></div>';
+}
+
+/* ------------------------------------------------------------ preview */
+function montarTudo(){ montarPreview(); salvar(); }
+
+function montarPreview(){
+  var h='';
+  h+=paginaCapa();
+  h+=paginaIndice();
+  h+=paginaMacro();
+  h+=paginaDesempenho();
+  h+=paginaGovernanca();
+  h+=paginaDiretrizes();
+  h+=paginaTradeIdeas();
+  h+=paginaAlteracoes();
+  h+=paginaCarteira('brasil','Carteira Recomendada', null);
+  h+=paginaCarteira('internacional','Carteira Recomendada','Conta Internacional');
+  h+=paginaCarteira('previdencia','Carteira Recomendada','Previdência');
+  document.getElementById('painelPreview').innerHTML=h;
+}
+
+function marcaSvg(branco){
+  var cor=branco?'#fff':'#05132A';
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="'+cor+'" stroke-width="1.6"><path d="M4 19l7-13 7 13"/><path d="M7.5 13h7"/></svg>';
+}
+function rodape(numero){
+  return '<div class="rodape-pag"><div class="marca">'+marcaSvg(true)+'<span>ADAMI CAPTAL</span></div><div>'+numero+'</div></div>';
+}
+
+function paginaCapa(){
+  return '<div class="folha capa">'+
+    '<div class="marca-topo">'+marcaSvg(true)+'<span>ADAMI CAPTAL</span></div>'+
+    '<div class="texto-capa"><h1>Política de<br>Alocação</h1>'+
+    '<div class="mes">'+esc(EST.mes)+' '+esc(EST.ano)+'</div></div>'+
+  '</div>';
+}
+function paginaIndice(){
+  var itens=[
+    'Projeções Macroeconômicas','Desempenho das Classes de Ativos Locais','Objetivo e Governança',
+    'Diretrizes e Risco','Trade Ideas do Mês','Alterações no Mês','Carteira Recomendada',
+    'Carteira Recomendada / Conta Internacional','Carteira Recomendada / Previdência',
+  ];
+  var h='<div class="folha indice"><div class="corpo-indice"><h2>Índice</h2><ol>';
+  itens.forEach(function(t,i){ h+='<li><b>0'+(i+3<10?('0'+(i+3)).slice(-2):(i+3))+'</b>'+esc(t)+'</li>'; });
+  h+='</ol></div>'+rodape(2)+'</div>';
+  return h;
+}
+
+function setaIndicador(ant, atu){
+  var a=n(ant), b=n(atu);
+  if(ant==='' || atu==='') return '';
+  if(b>a) return '<span class="seta" style="color:var(--success)">▲</span>';
+  if(b<a) return '<span class="seta" style="color:var(--danger)">▼</span>';
+  return '<span class="seta" style="color:var(--ink-faint)">▬</span>';
+}
+function paginaMacro(){
+  var anoRef=n(EST.ano)||new Date().getFullYear();
+  function tabela(titulo, o){
+    return '<div class="macro-bloco"><h3>'+esc(titulo)+'</h3>'+
+      '<table class="macro-tabela"><thead><tr><th colspan="2">'+anoRef+'</th><th colspan="2">'+(anoRef+1)+'</th></tr>'+
+      '<tr><th>Anterior</th><th>Atual</th><th>Anterior</th><th>Atual</th></tr></thead><tbody><tr>'+
+      '<td>'+(o.a1ant!==''?pct2(o.a1ant):'—')+'</td>'+
+      '<td>'+(o.a1atu!==''?pct2(o.a1atu):'—')+setaIndicador(o.a1ant,o.a1atu)+'</td>'+
+      '<td>'+(o.a2ant!==''?pct2(o.a2ant):'—')+'</td>'+
+      '<td>'+(o.a2atu!==''?pct2(o.a2atu):'—')+setaIndicador(o.a2ant,o.a2atu)+'</td>'+
+      '</tr></tbody></table></div>';
+  }
+  return '<div class="folha"><div class="faixa-titulo"><h2>Projeções Macroeconômicas</h2></div>'+
+    '<div class="corpo-pag">'+
+      tabela('Taxa Selic', EST.macro.selic)+
+      tabela('Inflação (IPCA)', EST.macro.ipca)+
+      tabela('PIB', EST.macro.pib)+
+    '</div>'+rodape(3)+'</div>';
+}
+
+function barraSvg(titulo, linhas, campoValor){
+  var W=600,H=26*linhas.length+30,padL=200,padR=60,zeroX=padL+(W-padL-padR)/2;
+  var vals=linhas.map(function(l){ return n(l[campoValor]); });
+  var maxAbs=Math.max(1, Math.max.apply(null, vals.map(Math.abs)));
+  var escala=(W-padL-padR)/2/maxAbs*0.85;
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block">';
+  svg+='<line x1="'+zeroX+'" y1="4" x2="'+zeroX+'" y2="'+(H-16)+'" stroke="#CCD3DD" stroke-width="1"/>';
+  linhas.forEach(function(l,i){
+    var y=18+i*26, v=n(l[campoValor]), w=Math.abs(v)*escala;
+    var x = v>=0? zeroX : zeroX-w;
+    var cor = v>=0 ? '#05132A' : '#B3403A';
+    svg+='<text x="'+(padL-10)+'" y="'+(y+4)+'" font-size="10.5" fill="#3C4C60" text-anchor="end" font-family=\'Inter,sans-serif\'>'+esc(l.nome)+'</text>';
+    svg+='<rect x="'+x+'" y="'+(y-7)+'" width="'+Math.max(w,0)+'" height="14" fill="'+cor+'"/>';
+    var tx = v>=0? x+w+6 : x-6;
+    var anchor = v>=0? 'start':'end';
+    svg+='<text x="'+tx+'" y="'+(y+4)+'" font-size="10" fill="#3C4C60" text-anchor="'+anchor+'" font-family=\'IBM Plex Mono,monospace\'>'+(l[campoValor]!==''?pct2(l[campoValor]):'—')+'</text>';
+  });
+  svg+='</svg>';
+  return '<div class="barras-tit">'+esc(titulo)+'</div>'+svg;
+}
+function paginaDesempenho(){
+  return '<div class="folha"><div class="faixa-titulo"><h2>Desempenho das Classes de Ativos Locais</h2></div>'+
+    '<div class="corpo-pag">'+
+    barraSvg('Desempenho no mês de '+(EST.desempMesRotulo||''), EST.desempenho, 'mes')+
+    '<div style="height:26px"></div>'+
+    barraSvg('Desempenho em '+EST.ano, EST.desempenho, 'ano')+
+    '</div>'+rodape(4)+'</div>';
+}
+
+function paginaGovernanca(){
+  return '<div class="folha"><div class="faixa-titulo"><h2>Objetivo e Governança</h2></div>'+
+    '<div class="corpo-pag texto-pag">'+
+    '<h3>Política de Investimentos Adami Captal</h3><p>'+nl2br(EST.governanca.politica)+'</p>'+
+    '<h3>Régua de Aderência</h3><p>'+nl2br(EST.governanca.regua)+'</p>'+
+    '</div>'+rodape(5)+'</div>';
+}
+function paginaDiretrizes(){
+  var h='<div class="folha"><div class="faixa-titulo serif"><h2>Diretrizes e Risco</h2></div>'+
+    '<div class="corpo-pag"><p style="font-size:12.5px;font-weight:700;margin-bottom:12px">Diretrizes de alocação</p>';
+  EST.diretrizes.forEach(function(d){
+    h+='<div class="diretriz"><b>'+esc(d.titulo)+'</b><p>'+nl2br(d.texto)+'</p></div>';
+  });
+  h+='</div>'+rodape(6)+'</div>';
+  return h;
+}
+function paginaTradeIdeas(){
+  var h='<div class="folha"><div class="faixa-titulo serif"><h2>Trade Ideas do Mês</h2></div><div class="corpo-pag">';
+  EST.tradeIdeas.forEach(function(t){
+    if(!t.titulo.trim() && !t.texto.trim()) return;
+    h+='<div class="trade-item"><div class="marcador"><b>'+esc(t.titulo)+'</b></div><p>'+nl2br(t.texto)+'</p></div>';
+  });
+  h+='</div>'+rodape(7)+'</div>';
+  return h;
+}
+function paginaAlteracoes(){
+  return '<div class="folha"><div class="faixa-titulo serif"><h2>Alterações no Mês</h2></div>'+
+    '<div class="corpo-pag texto-pag"><h3>'+esc(EST.alteracoesTitulo)+':</h3><p>'+nl2br(EST.alteracoesTexto)+'</p></div>'+
+    rodape(8)+'</div>';
+}
+
+/* --------- renderiza a tabela de carteira (recursiva) + totais --------- */
+function linhasTabela(categorias, nivel){
+  var h='';
+  categorias.forEach(function(cat){
+    if(cat.filhos){
+      var pc=somaNo([cat],'c'), pm=somaNo([cat],'m'), ps=somaNo([cat],'s');
+      h+='<tr class="nivel'+nivel+'"><td class="nome">'+esc(cat.nome)+'</td>'+
+        '<td>'+pct2(pc)+'</td><td></td><td>'+pct2(pm)+'</td><td></td><td>'+pct2(ps)+'</td><td></td></tr>';
+      h+=linhasTabela(cat.filhos, nivel+1);
+    } else {
+      var pc2=somaNo([cat],'c'), pm2=somaNo([cat],'m'), ps2=somaNo([cat],'s');
+      h+='<tr class="nivel'+nivel+'"><td class="nome">'+esc(cat.nome)+'</td>'+
+        '<td>'+pct2(pc2)+'</td><td></td><td>'+pct2(pm2)+'</td><td></td><td>'+pct2(ps2)+'</td><td></td></tr>';
+      (cat.linhas||[]).forEach(function(l){
+        if(!l.nome.trim()) return;
+        h+='<tr class="linha-ativo"><td class="nome">'+esc(l.nome)+'</td>'+
+          '<td>'+pct2(l.c)+'</td><td>'+(l.cRoa!==''?pct2(l.cRoa):'')+'</td>'+
+          '<td>'+pct2(l.m)+'</td><td>'+(l.mRoa!==''?pct2(l.mRoa):'')+'</td>'+
+          '<td>'+pct2(l.s)+'</td><td>'+(l.sRoa!==''?pct2(l.sRoa):'')+'</td></tr>';
+      });
+    }
+  });
+  return h;
+}
+function paginaCarteira(chave, tituloBase, subtitulo){
+  var cats=EST.carteiras[chave];
+  var totC=somaNo(cats,'c'), totM=somaNo(cats,'m'), totS=somaNo(cats,'s');
+  var roaC=roaPonderadoNo(cats,'c','cRoa'), roaM=roaPonderadoNo(cats,'m','mRoa'), roaS=roaPonderadoNo(cats,'s','sRoa');
+  var titulo=tituloBase+(subtitulo?' / '+subtitulo:'');
+  var pagNum = chave==='brasil'?9:(chave==='internacional'?10:11);
+  return '<div class="folha"><div class="faixa-titulo serif"><h2>'+esc(titulo)+'</h2></div>'+
+    '<div class="corpo-pag">'+
+    '<table class="cart-tabela"><thead><tr>'+
+      '<th class="nome-col">Alocação Asset Strategy</th>'+
+      '<th>Conservador</th><th>ROA</th><th>Moderado</th><th>ROA</th><th>Sofisticado</th><th>ROA</th>'+
+    '</tr><tr class="sub"><th></th><th>%</th><th>%</th><th>%</th><th>%</th><th>%</th><th>%</th></tr></thead>'+
+    '<tbody>'+
+    linhasTabela(cats,1)+
+    '<tr class="total"><td class="nome">TOTAL</td>'+
+      '<td>'+pct2(totC)+'</td><td>'+pct2(roaC)+'</td>'+
+      '<td>'+pct2(totM)+'</td><td>'+pct2(roaM)+'</td>'+
+      '<td>'+pct2(totS)+'</td><td>'+pct2(roaS)+'</td></tr>'+
+    '</tbody></table>'+
+    '</div>'+rodape(pagNum)+'</div>';
+}
+
+/* ------------------------------------------------------------ inicio */
+carregar();
+montarForm();
+montarPreview();
+</script>
+</body>
+</html>
