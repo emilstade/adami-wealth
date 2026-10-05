@@ -227,7 +227,7 @@ input.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--m
 <div id="msg"></div>
 
 <script>
-var VERSAO_ALOC="versão 1.0";
+var VERSAO_ALOC="versão 1.1";
 document.getElementById("selo").textContent=VERSAO_ALOC;
 
 var CHAVE="aw_alocacao";
@@ -426,6 +426,17 @@ function montarForm(){
   document.getElementById('painelForm').innerHTML=h;
 }
 
+/* Adicionar/remover ativo ou ideia muda a QUANTIDADE de campos no
+   formulario, entao precisa redesenhar o painel esquerdo (nao so a
+   previa). Preserva quais secoes estavam abertas, senao cada clique em
+   "+ Adicionar" fecharia de volta a secao em que o usuario estava. */
+function montarFormPreservandoAbertos(){
+  var abertos=Array.prototype.map.call(document.querySelectorAll('#painelForm details'), function(d){ return d.open; });
+  montarForm();
+  var novos=document.querySelectorAll('#painelForm details');
+  for(var i=0;i<novos.length && i<abertos.length;i++){ novos[i].open=abertos[i]; }
+}
+
 function blocoCapa(){
   return '<details class="bloco-form" open><summary>Capa '+setaSvg()+'</summary><div class="corpo">'+
     '<div class="linha2">'+
@@ -508,8 +519,8 @@ function blocoTradeIdeas(){
   '</div></details>';
   return h;
 }
-function addTradeIdea(){ EST.tradeIdeas.push(tradeIdeaNova()); montarTudo(); salvar(); }
-function removerTradeIdea(i){ EST.tradeIdeas.splice(i,1); montarTudo(); salvar(); }
+function addTradeIdea(){ EST.tradeIdeas.push(tradeIdeaNova()); montarFormPreservandoAbertos(); montarTudo(); }
+function removerTradeIdea(i){ EST.tradeIdeas.splice(i,1); montarFormPreservandoAbertos(); montarTudo(); }
 
 function blocoAlteracoes(){
   return '<details class="bloco-form"><summary>Alterações no Mês '+setaSvg()+'</summary><div class="corpo">'+
@@ -582,12 +593,12 @@ function addLinhaAtivo(chave, caminho){
   var no=noNoCaminho(chave, caminho);
   if(!no.linhas) no.linhas=[];
   no.linhas.push(linhaAtivoNova());
-  montarTudo(); salvar();
+  montarFormPreservandoAbertos(); montarTudo();
 }
 function removerLinhaAtivo(chave, caminho, li){
   var no=noNoCaminho(chave, caminho);
   no.linhas.splice(li,1);
-  montarTudo(); salvar();
+  montarFormPreservandoAbertos(); montarTudo();
 }
 function atualizarLinhaAtivo(chave, caminho, li, campo_, valor){
   var no=noNoCaminho(chave, caminho);
