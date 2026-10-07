@@ -697,8 +697,19 @@
   .history-item-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;}
   .history-item-move{font-size:12.5px;font-weight:600;color:var(--ink);}
   .history-item-date{font-size:10.5px;color:var(--ink-faint);font-family:'IBM Plex Mono',Consolas,Menlo,'Courier New',monospace;flex-shrink:0;}
-  .history-item-resumo{font-size:12.5px;color:var(--ink-muted);margin-top:2px;}
-  .history-item-autor{font-size:10.5px;color:var(--ink-faint);margin-top:3px;}
+  .history-item-resumo{font-size:12.5px;color:var(--ink-muted);margin-top:2px;white-space:pre-wrap;}
+  .history-item-rodape{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:3px;}
+  .history-item-autor{font-size:10.5px;color:var(--ink-faint);}
+  .history-item-acoes{display:flex;gap:10px;flex-shrink:0;opacity:0;transition:opacity .12s;}
+  .history-item:hover .history-item-acoes, .history-item-acoes:focus-within{opacity:1;}
+  .history-item-acoes .link-btn{font-size:11px;}
+  .history-item-edicao{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+  .history-item-edicao textarea{
+    width:100%;border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;
+    font-size:12.5px;font-family:inherit;color:var(--ink);background:var(--surface);outline:none;
+    resize:vertical;min-height:52px;
+  }
+  .history-item-edicao textarea:focus{border-color:var(--primary);}
   .history-empty{font-size:12px;color:var(--ink-faint);}
 
   .csv-dump{
@@ -5480,18 +5491,31 @@ function linhaDoTempo(lead){
    lateral que deveria ser sobretudo o comentário do assessor, não um extrato
    técnico de saldo e cadastro competindo em destaque com isso. Um clique
    abre a entrada inteira; o resto da timeline não muda de comportamento. */
-function Timeline({ itens }){
+function Timeline({ itens, onEditar, onRemover, somenteLeitura }){
   const [abertos, setAbertos] = useState(() => new Set());
+  const [editando, setEditando] = useState(null);
+  const [rascunho, setRascunho] = useState('');
   if(itens.length === 0) return h('div',{className:'history-empty'}, 'Nada registrado ainda.');
   const toggle = (id) => setAbertos(s => {
     const n = new Set(s);
     n.has(id) ? n.delete(id) : n.add(id);
     return n;
   });
+  const iniciarEdicao = (item) => { setEditando(item.id); setRascunho(item.corpo); };
+  const salvarEdicao = (item) => {
+    if(!rascunho.trim()) return;
+    onEditar(item.id, rascunho.trim());
+    setEditando(null);
+  };
   return h('div',{className:'history-list'},
     itens.map(item => {
       const sistema = item.marcador === 'sistema';
       const aberto = !sistema || abertos.has(item.id);
+      /* Só a atividade que o próprio assessor escreveu tem o que corrigir —
+         etapa, correção e diferença de importação são fatos do sistema,
+         não um texto para reescrever ou apagar por engano. */
+      const editavel = item.marcador === 'atividade' && !somenteLeitura && !!onEditar && !!onRemover;
+      const emEdicao = editando === item.id;
       return h('div',{key:item.id, className:'history-item' + (sistema ? ' history-item-sistema' : '')},
         h('span',{className:'history-item-dot ' + item.marcador}),
         h('div',{className:'history-item-body'},
@@ -5506,8 +5530,20 @@ function Timeline({ itens }){
               sistema ? h('span',{className:'history-item-chevron'}, aberto ? '▲' : '▼') : null),
             h('span',{className:'history-item-date'}, item.dataLabel || new Date(item.quando).toLocaleDateString('pt-BR'))
           ),
-          aberto ? h('div',{className:'history-item-resumo'}, item.corpo) : null,
-          aberto ? h('div',{className:'history-item-autor'}, 'por ', item.autor) : null
+          (aberto && emEdicao) ? h('div',{className:'history-item-edicao'},
+            h('textarea',{ value:rascunho, autoFocus:true, onChange:e=>setRascunho(e.target.value) }),
+            h('div',{style:{display:'flex',gap:8}},
+              h('button',{className:'btn btn-ghost', style:{height:28,fontSize:12}, onClick:()=>salvarEdicao(item)}, 'Salvar'),
+              h('button',{className:'link-btn', onClick:()=>setEditando(null)}, 'Cancelar')
+            )
+          ) : aberto ? h('div',{className:'history-item-resumo'}, item.corpo) : null,
+          (aberto && !emEdicao) ? h('div',{className:'history-item-rodape'},
+            h('div',{className:'history-item-autor'}, 'por ', item.autor),
+            editavel ? h('div',{className:'history-item-acoes'},
+              h('button',{className:'link-btn', onClick:()=>iniciarEdicao(item)}, 'Editar'),
+              h('button',{className:'link-btn danger', onClick:()=>onRemover(item.id)}, 'Excluir')
+            ) : null
+          ) : null
         )
       );
     })
@@ -5716,7 +5752,7 @@ function Ficha({ lead, users, grupo, onSetPipe, onSetValorPipe, onSetValorNegoci
   );
 }
 
-function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAdmin, onLose, onWin, onMove, onAddActivity, onCorrectStage, somenteLeitura, onEncaminhar, onTogglePauta, onAddAlerta, onResolverAlerta, onRemoverAlerta, grupos, grupo, pendenteIndicacao, onAddMov, onRemoverMov, onIniciarCaptacao, onConfirmarCaptacao, onEncerrarCaptacao, onSetPipe, onSetValorPipe, onSetValorNegociacaoPipe }){
+function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAdmin, onLose, onWin, onMove, onAddActivity, onEditarAtividade, onRemoverAtividade, onCorrectStage, somenteLeitura, onEncaminhar, onTogglePauta, onAddAlerta, onResolverAlerta, onRemoverAlerta, grupos, grupo, pendenteIndicacao, onAddMov, onRemoverMov, onIniciarCaptacao, onConfirmarCaptacao, onEncerrarCaptacao, onSetPipe, onSetValorPipe, onSetValorNegociacaoPipe }){
   useEsc(onClose);
   const [draft, setDraft] = useState(lead);
   const [errors, setErrors] = useState({});
@@ -5841,6 +5877,15 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
     if(atualizado) setDraft(atualizado);
     setNovaAtiv({ tipo:'ligacao', data: todayISO(), nota:'' });
     setAtivErro('');
+  };
+
+  const editarAtividade = (atividadeId, nota) => {
+    const atualizado = onEditarAtividade(draft.id, atividadeId, nota);
+    if(atualizado) setDraft(atualizado);
+  };
+  const removerAtividade = (atividadeId) => {
+    const atualizado = onRemoverAtividade(draft.id, atividadeId);
+    if(atualizado) setDraft(atualizado);
   };
 
   /* Marcar a régua é registrar a mesma atividade que o formulário de baixo
@@ -6346,7 +6391,9 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
             h('button',{className:'btn btn-ghost', style:{height:32,fontSize:12.5,alignSelf:'flex-start'}, onClick:registrarAtividade}, h(IconPlus,{size:13}), 'Registrar atividade')
           ),
 
-          h(Timeline,{ itens: timeline })
+          h(Timeline,{ itens: timeline, somenteLeitura,
+            onEditar: somenteLeitura ? null : editarAtividade,
+            onRemover: somenteLeitura ? null : removerAtividade })
         )
       )
       ),
@@ -10937,6 +10984,23 @@ function App(){
     return atualizado;
   };
 
+  /* Corrigir o que foi escrito errado, sem apagar e registrar de novo
+     (o que trocaria autor e data pelo de quem corrigiu). */
+  const editarAtividade = (leadId, atividadeId, nota) => {
+    const lead = leads.find(l => l.id === leadId);
+    if(!lead) return null;
+    return mutate(leadId, l => ({
+      ...l,
+      atividades: (l.atividades || []).map(a => a.id === atividadeId ? { ...a, nota } : a),
+    }));
+  };
+
+  const removerAtividade = (leadId, atividadeId) => {
+    const lead = leads.find(l => l.id === leadId);
+    if(!lead) return null;
+    return mutate(leadId, l => ({ ...l, atividades: (l.atividades || []).filter(a => a.id !== atividadeId) }));
+  };
+
   /* Válvula de escape da trava de trajeto: o admin corrige um movimento errado,
      e a correção fica registrada na linha do tempo como tal. */
   const correctStage = (leadId, para, motivo) => {
@@ -11375,7 +11439,7 @@ function App(){
     : null,
     creating ? h(CreateModal,{ funil, grupos, produto: produtoFiltro, onClose:()=>{ setCreating(false); setQuickAddStage(null); }, onCreate:createLead, users, currentUser, isAdmin, initialStage:quickAddStage }) : null,
     openLead ? h(DetailModal,{ lead:openLead, grupos, grupo: grupoDe(leads, openLead, cotacao),
-      pendenteIndicacao: pendentesIndicacao.has(openLead.id), somenteLeitura: !podeEditar(openLead), onEncaminhar:(l)=>setEncaminhando(l), onClose:()=>setOpenLead(null), onSave:saveLead, onDelete:deleteLead, users, currentUser, isAdmin, onLose:(lead)=>{ setOpenLead(null); setLosingLead(lead); }, onWin:(lead)=>{ setOpenLead(null); setWinningLead(lead); }, onMove:(lead, to)=>requestMove(lead.id, to), onAddActivity:addActivity, onCorrectStage:correctStage, onTogglePauta:toggleOnboarding, onAddAlerta:addAlerta, onResolverAlerta:resolverAlerta, onRemoverAlerta:removerAlerta, onAddMov:addMovimentacao, onRemoverMov:removerMovimentacao,
+      pendenteIndicacao: pendentesIndicacao.has(openLead.id), somenteLeitura: !podeEditar(openLead), onEncaminhar:(l)=>setEncaminhando(l), onClose:()=>setOpenLead(null), onSave:saveLead, onDelete:deleteLead, users, currentUser, isAdmin, onLose:(lead)=>{ setOpenLead(null); setLosingLead(lead); }, onWin:(lead)=>{ setOpenLead(null); setWinningLead(lead); }, onMove:(lead, to)=>requestMove(lead.id, to), onAddActivity:addActivity, onEditarAtividade:editarAtividade, onRemoverAtividade:removerAtividade, onCorrectStage:correctStage, onTogglePauta:toggleOnboarding, onAddAlerta:addAlerta, onResolverAlerta:resolverAlerta, onRemoverAlerta:removerAlerta, onAddMov:addMovimentacao, onRemoverMov:removerMovimentacao,
       onIniciarCaptacao:iniciarCaptacaoLead, onConfirmarCaptacao:confirmarCaptacaoLead, onEncerrarCaptacao:encerrarCaptacaoLead, onSetPipe:setPipe, onSetValorPipe:setValorPipe, onSetValorNegociacaoPipe:setValorNegociacaoPipe }) : null,
     managingTeam ? h(TeamModal,{ onClose:()=>setManagingTeam(false), users, leads, onDefinirRole:definirRole, onDefinirProdutos:definirProdutos, onApprove:approveUser, onRemove:removeUser, onResetPin:resetPin, onSetPadrao:definirPadrao, currentUser,
       convites, onConvidar:criarConvite, onCancelarConvite:cancelarConvite }) : null,
@@ -11450,7 +11514,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.85";
+var VERSAO_CRM="versão 2.86";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
