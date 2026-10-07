@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Pipeline — CRM Comercial</title>
+<title>CRM Comercial</title>
 <style>
   /* As fontes vem do Google como melhoria: se a rede bloquear, o CRM
    cai na tipografia do proprio portal, nao em Times e Arial. */
@@ -913,6 +913,11 @@
 
   .history-item-dot.atividade{background:var(--ink-faint);}
   .history-item-dot.correcao{background:var(--gold);}
+  .history-item-dot.sistema{background:var(--border-strong);}
+  .history-item-sistema .history-item-move{color:var(--ink-muted);font-weight:500;}
+  .history-item-top.como-botao{cursor:pointer;}
+  .history-item-top.como-botao:hover .history-item-move{color:var(--ink);}
+  .history-item-chevron{display:inline-block;margin-left:6px;font-size:8px;color:var(--ink-faint);}
 
   /* ---------- Correção de etapa (admin) ---------- */
   .admin-fix{
@@ -2507,7 +2512,7 @@
 </script>
 <div class="masthead">
   <div class="masthead-inner">
-    <span class="wordmark">Pipeline</span>
+    <span class="wordmark">CRM</span>
     <span class="tagline">Gestão comercial</span>
     <span class="contexto" id="contexto-atual"></span>
   </div>
@@ -4933,7 +4938,7 @@ function LoginScreen({ onLogin, onRegister, onReset, demo, onEntrarDemo }){
 
   return h('div',{className:'login-screen'},
     h('div',{className:'login-card'},
-      h('div',{className:'login-logo'}, h('span',{className:'brand-mark'}), h('h2',null,'Entrar no Pipeline')),
+      h('div',{className:'login-logo'}, h('span',{className:'brand-mark'}), h('h2',null,'Entrar no CRM')),
       h('p',{className:'sub'},'Use o e-mail e a senha da sua conta.'),
       campo('E-mail',{ type:'email', value:email, autoComplete:'email', onChange:e=>{ setEmail(e.target.value); setError(''); }, placeholder:'nome@empresa.com', autoFocus:true }),
       campo('Senha',{ type:'password', value:senha, autoComplete:'current-password', onChange:e=>{ setSenha(e.target.value); setError(''); },
@@ -5456,9 +5461,11 @@ function linhaDoTempo(lead){
   return [
     ...historico.map(item => ({
       id: item.id, quando: item.data, ordem: item.data,
-      titulo: item.de ? (etapaCurta(item.de, lead.funil) + ' → ' + etapaCurta(item.para, lead.funil))
-                      : ('Lead criado em ' + etapaCurta(item.para, lead.funil)),
-      corpo: item.resumo, autor: item.autor, marcador: item.correcao ? 'correcao' : 'etapa',
+      titulo: item.reconciliacao ? 'Alteração de cadastro'
+        : item.de ? (etapaCurta(item.de, lead.funil) + ' → ' + etapaCurta(item.para, lead.funil))
+                  : ('Lead criado em ' + etapaCurta(item.para, lead.funil)),
+      corpo: item.resumo, autor: item.autor,
+      marcador: item.correcao ? 'correcao' : item.reconciliacao ? 'sistema' : 'etapa',
     })),
     ...atividades.map(a => ({
       id: a.id, quando: a.criadoEm, ordem: new Date(a.data + 'T12:00:00').getTime(),
@@ -5468,22 +5475,42 @@ function linhaDoTempo(lead){
   ].sort((a,b) => b.ordem - a.ordem);
 }
 
-/* Lista de registros, sem edição. Usada no modal e na tela de encerrados. */
+/* Lista de registros, sem edição. Usada no modal e na tela de encerrados.
+   Diferença de importação (marcador 'sistema') nasce recolhida — é a coluna
+   lateral que deveria ser sobretudo o comentário do assessor, não um extrato
+   técnico de saldo e cadastro competindo em destaque com isso. Um clique
+   abre a entrada inteira; o resto da timeline não muda de comportamento. */
 function Timeline({ itens }){
+  const [abertos, setAbertos] = useState(() => new Set());
   if(itens.length === 0) return h('div',{className:'history-empty'}, 'Nada registrado ainda.');
+  const toggle = (id) => setAbertos(s => {
+    const n = new Set(s);
+    n.has(id) ? n.delete(id) : n.add(id);
+    return n;
+  });
   return h('div',{className:'history-list'},
-    itens.map(item => h('div',{key:item.id, className:'history-item'},
-      h('span',{className:'history-item-dot ' + item.marcador}),
-      h('div',{className:'history-item-body'},
-        h('div',{className:'history-item-top'},
-          h('span',{className:'history-item-move'},
-            item.marcador === 'correcao' ? 'Correção · ' + item.titulo : item.titulo),
-          h('span',{className:'history-item-date'}, item.dataLabel || new Date(item.quando).toLocaleDateString('pt-BR'))
-        ),
-        h('div',{className:'history-item-resumo'}, item.corpo),
-        h('div',{className:'history-item-autor'}, 'por ', item.autor)
-      )
-    ))
+    itens.map(item => {
+      const sistema = item.marcador === 'sistema';
+      const aberto = !sistema || abertos.has(item.id);
+      return h('div',{key:item.id, className:'history-item' + (sistema ? ' history-item-sistema' : '')},
+        h('span',{className:'history-item-dot ' + item.marcador}),
+        h('div',{className:'history-item-body'},
+          h('div',{
+            className:'history-item-top' + (sistema ? ' como-botao' : ''),
+            onClick: sistema ? () => toggle(item.id) : undefined,
+            role: sistema ? 'button' : undefined, tabIndex: sistema ? 0 : undefined,
+            onKeyDown: sistema ? (e) => { if(e.key === 'Enter') toggle(item.id); } : undefined,
+          },
+            h('span',{className:'history-item-move'},
+              item.marcador === 'correcao' ? 'Correção · ' + item.titulo : item.titulo,
+              sistema ? h('span',{className:'history-item-chevron'}, aberto ? '▲' : '▼') : null),
+            h('span',{className:'history-item-date'}, item.dataLabel || new Date(item.quando).toLocaleDateString('pt-BR'))
+          ),
+          aberto ? h('div',{className:'history-item-resumo'}, item.corpo) : null,
+          aberto ? h('div',{className:'history-item-autor'}, 'por ', item.autor) : null
+        )
+      );
+    })
   );
 }
 
@@ -7745,7 +7772,7 @@ function generateKpiPdf(stats, meta){
       y = 20;
       setText(PDF_COLOR.inkFaint);
       doc.setFont('helvetica','normal'); doc.setFontSize(8);
-      doc.text('Pipeline — Relatório de Indicadores Comerciais (continuação)', margin, 12);
+      doc.text('CRM — Relatório de Indicadores Comerciais (continuação)', margin, 12);
     }
   }
 
@@ -7753,7 +7780,7 @@ function generateKpiPdf(stats, meta){
     setFill(PDF_COLOR.navy); doc.rect(0,0,pageW,30,'F');
     setFill(PDF_COLOR.gold); doc.rect(0,30,pageW,1.4,'F');
     setText(PDF_COLOR.white); doc.setFont('helvetica','bold'); doc.setFontSize(16);
-    doc.text('PIPELINE', margin, 14);
+    doc.text('CRM', margin, 14);
     doc.setFont('helvetica','normal'); doc.setFontSize(9); setText([170,190,220]);
     doc.text('CRM Comercial', margin, 20);
 
@@ -7894,7 +7921,7 @@ function generateKpiPdf(stats, meta){
   for(let p=1;p<=totalPages;p++){
     doc.setPage(p);
     setText(PDF_COLOR.inkFaint); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
-    doc.text('Pipeline CRM · gerado em ' + meta.generatedAt, margin, pageH-9);
+    doc.text('CRM · gerado em ' + meta.generatedAt, margin, pageH-9);
     doc.text('Página ' + p + ' de ' + totalPages, pageW-margin, pageH-9, {align:'right'});
   }
 
@@ -8150,7 +8177,7 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
 
   return h('div',{className:'painel'},
     h('div',{className:'print-header'},
-      h('div',{className:'print-brand'}, h('span',{className:'brand-mark'}), h('span',null,'Pipeline')),
+      h('div',{className:'print-brand'}, h('span',{className:'brand-mark'}), h('span',null,'CRM')),
       h('h1',null,'Panorama do escritório'),
       /* O papel precisa dizer sobre o que ele fala: sem os filtros escritos,
          dois relatórios do mesmo dia ficam indistinguíveis. */
@@ -8761,7 +8788,7 @@ function OffshoreView({ leads, users, filtros, currentUser, isAdmin, onOpen, onS
 
   return h('div',{className:'painel offshore'},
     h('div',{className:'print-header'},
-      h('div',{className:'print-brand'}, h('span',{className:'brand-mark'}), h('span',null,'Pipeline')),
+      h('div',{className:'print-brand'}, h('span',{className:'brand-mark'}), h('span',null,'CRM')),
       h('h1',null,'Carteira offshore'),
       h('div',{className:'print-meta'}, descreverRecorte(filtros, users),
         ' · Gerado em ', new Date().toLocaleString('pt-BR'), ' por ', currentUser.nome),
@@ -9266,7 +9293,7 @@ function KpisView({ scopedLeads, allLeads, users, vendorFilter, currentUser, per
 
   return h(Fragment, null,
     h('div',{className:'print-header'},
-      h('div',{className:'print-brand'}, h('span',{className:'brand-mark'}), h('span',null,'Pipeline')),
+      h('div',{className:'print-brand'}, h('span',{className:'brand-mark'}), h('span',null,'CRM')),
       h('h1',null,'Relatório de indicadores comerciais'),
       h('div',{className:'print-meta'}, 'Escopo: ', scopeLabel, ' · ', periodoLabel(periodo), ' · Gerado em ', generatedAt, ' por ', currentUser.nome),
       h('hr')
@@ -10616,6 +10643,11 @@ function App(){
           id: uid('h'), de: l.etapa, para: l.etapa, data: agora,
           resumo: (off ? 'Base BTG offshore · ' : 'Base BTG · ') + notas.join(' · ') + (a.alerta ? ' · fora da faixa de rendimento' : ''),
           autor: currentUser.nome,
+          /* Marca como reconciliação pra timeline poder recolher esta
+             entrada: é diferença de importação, não um fato que alguém
+             contou — não deve competir em destaque com o que o assessor
+             de fato escreveu. */
+          reconciliacao: true,
         }];
       }
 
@@ -11418,7 +11450,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.84";
+var VERSAO_CRM="versão 2.85";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
