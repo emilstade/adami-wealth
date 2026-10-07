@@ -626,6 +626,30 @@
      direita nas duas situações, e a ação primária não muda de lugar. */
   .modal-foot > *:last-child{margin-left:auto;}
 
+  /* Ficha do cliente: modal maior, com "Atividades e histórico" fixo numa
+     coluna ao lado, igual ao card do Trello que o Emil pediu pra copiar —
+     comentário sempre visível, sem precisar descer a tela toda pra ver ou
+     registrar um contato. Só esta tela ganha o tratamento: as outras nove
+     que usam .modal (confirmações, mover, convidar, etc.) continuam do
+     tamanho de sempre. Em telas estreitas cai pra uma coluna só, como já
+     era antes. */
+  .modal-detail{max-width:520px;}
+  @media (min-width:900px){
+    .modal-detail{max-width:980px;}
+    .modal-detail .modal-body{
+      display:grid;grid-template-columns:minmax(0,1fr) 330px;
+      padding:0;max-height:72vh;align-items:start;
+    }
+    .modal-detail .modal-col-main{padding:20px 22px;overflow-y:auto;max-height:72vh;min-width:0;}
+    .modal-detail .modal-col-side{
+      padding:18px;overflow-y:auto;max-height:72vh;min-width:0;
+      border-left:1px solid var(--border);background:var(--bg);
+      display:flex;flex-direction:column;
+    }
+    .modal-detail .modal-col-side .history-section{margin:0;}
+    .modal-detail .modal-col-side .history-section h3{margin-top:0;}
+  }
+
   .field{margin-bottom:14px;}
   .field label{
     display:block;font-size:12px;font-weight:600;color:var(--ink-muted);margin-bottom:5px;
@@ -5820,7 +5844,7 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
 
   const timeline = linhaDoTempo(draft);
   return h('div',{className:'overlay', onClick:(e)=>{ if(e.target===e.currentTarget) onClose(); }},
-    h('div',{className:'modal'},
+    h('div',{className:'modal modal-detail'},
       h('div',{className:'modal-head'},
         h('h2',null, editando ? 'Editar cadastro' : (nomeCliente(draft) || 'Cliente')),
         h('div',{style:{display:'flex',alignItems:'center',gap:10}},
@@ -5831,6 +5855,7 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
         )
       ),
       h('div',{className:'modal-body'},
+      h('div',{className:'modal-col-main'},
         editando
           ? h('fieldset',{className:'form-lock', disabled: somenteLeitura },
               h(LeadForm, { grupos, initial: draft, onChange:(v)=>{ setDraft(v); if(errors.cliente && v.cliente.trim()) setErrors({}); }, errors, users, currentUser, isAdmin, stageEditable:false })
@@ -6174,32 +6199,6 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
           );
         })() : null,
 
-        h('div',{className:'history-section'},
-          h('h3',null,'Atividades e histórico'),
-
-          somenteLeitura ? null : h('div',{className:'activity-form'},
-            h('div',{className:'activity-form-row'},
-              h('select',{
-                className:'select-sm', value:novaAtiv.tipo, 'aria-label':'Tipo de atividade',
-                onChange:e=>setNovaAtiv({ ...novaAtiv, tipo:e.target.value }),
-              }, TIPOS_ATIVIDADE.map(t => h('option',{key:t.key, value:t.key}, t.label))),
-              h('input',{
-                className:'select-sm', type:'date', value:novaAtiv.data, 'aria-label':'Data da atividade',
-                max: todayISO(),
-                onChange:e=>setNovaAtiv({ ...novaAtiv, data:e.target.value }),
-              })
-            ),
-            h('textarea',{
-              value:novaAtiv.nota, placeholder:'O que foi conversado? Qual o próximo passo?',
-              onChange:e=>{ setNovaAtiv({ ...novaAtiv, nota:e.target.value }); if(ativErro) setAtivErro(''); },
-            }),
-            ativErro ? h('div',{className:'field-error'}, ativErro) : null,
-            h('button',{className:'btn btn-ghost', style:{height:32,fontSize:12.5,alignSelf:'flex-start'}, onClick:registrarAtividade}, h(IconPlus,{size:13}), 'Registrar atividade')
-          ),
-
-          h(Timeline,{ itens: timeline })
-        ),
-
         /* A pauta da reunião atual: o que esta etapa exige, para este
            segmento e esta esteira. */
         pauta.length > 0 ? h('div',{className:'pauta'},
@@ -6295,6 +6294,34 @@ function DetailModal({ lead, onClose, onSave, onDelete, users, currentUser, isAd
                 h('button',{className:'link-btn', onClick:()=>setCorrigindo(true)}, 'Corrigir etapa')
               )
         ) : null
+      ),
+      h('div',{className:'modal-col-side'},
+        h('div',{className:'history-section'},
+          h('h3',null,'Atividades e histórico'),
+
+          somenteLeitura ? null : h('div',{className:'activity-form'},
+            h('div',{className:'activity-form-row'},
+              h('select',{
+                className:'select-sm', value:novaAtiv.tipo, 'aria-label':'Tipo de atividade',
+                onChange:e=>setNovaAtiv({ ...novaAtiv, tipo:e.target.value }),
+              }, TIPOS_ATIVIDADE.map(t => h('option',{key:t.key, value:t.key}, t.label))),
+              h('input',{
+                className:'select-sm', type:'date', value:novaAtiv.data, 'aria-label':'Data da atividade',
+                max: todayISO(),
+                onChange:e=>setNovaAtiv({ ...novaAtiv, data:e.target.value }),
+              })
+            ),
+            h('textarea',{
+              value:novaAtiv.nota, placeholder:'O que foi conversado? Qual o próximo passo?',
+              onChange:e=>{ setNovaAtiv({ ...novaAtiv, nota:e.target.value }); if(ativErro) setAtivErro(''); },
+            }),
+            ativErro ? h('div',{className:'field-error'}, ativErro) : null,
+            h('button',{className:'btn btn-ghost', style:{height:32,fontSize:12.5,alignSelf:'flex-start'}, onClick:registrarAtividade}, h(IconPlus,{size:13}), 'Registrar atividade')
+          ),
+
+          h(Timeline,{ itens: timeline })
+        )
+      )
       ),
       /* Quem só acompanha não vê nenhuma ação de escrita: nem salvar,
          nem desqualificar, nem marcar venda. Só a saída. */
@@ -11391,7 +11418,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.83";
+var VERSAO_CRM="versão 2.84";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
