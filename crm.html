@@ -2189,7 +2189,7 @@
     color:var(--ink-faint);background:var(--bg);border-radius:4px;
     padding:2px 5px;flex-shrink:0;align-self:center;
   }
-  .bar-row-label .stage-dot{align-self:center;}
+  .bar-row-label .stage-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;align-self:center;}
   .bar-row-value{display:flex;align-items:baseline;gap:8px;flex-shrink:0;}
   .bar-row-num{
     font-family:'IBM Plex Mono',Consolas,Menlo,'Courier New',monospace;font-size:14px;font-weight:500;
@@ -8243,17 +8243,23 @@ function AdminKpis({ jornada, negocios, users, currentUser, filtros, onFiltros, 
                   color:'var(--gold)' }))
               ),
               h('div',{className:'painel-caixa'},
-                h('div',{className:'painel-caixa-titulo'},'Captações em andamento',
+                h('div',{className:'painel-caixa-titulo'},'Lista de Pipe',
                   h('span',null,'quentes primeiro')),
                 captacaoTemp.captacoes.slice(0,12).map((c,i) => {
-                  const cor = (temperaturaInfo(c.temperatura) || { cor:'#C9D1DC' }).cor;
+                  const tempInfo = temperaturaInfo(c.temperatura);
+                  const cor = tempInfo ? tempInfo.cor : '#C9D1DC';
+                  /* A barra colorida sozinha some quando o valor é pequeno —
+                     a palavra ao lado garante que dá pra ler quente/frio sem
+                     depender da cor. */
+                  const tempLabel = tempInfo ? tempInfo.label : 'Sem classificação';
                   return h(BarRow,{
                     key:c.id, label:c.cliente, value:c.valor, posicao:i+1, dotColor:cor, color:cor,
                     max: Math.max(1, ...captacaoTemp.captacoes.map(x => x.valor)),
                     /* Na moeda da negociação: o dólar é o número que o assessor combinou. */
                     display: c.valorMoeda > 0 ? (c.custodia === 'offshore' ? fmtUSDCompact : fmtBRLCompact)(c.valorMoeda) : 'sem valor',
                     semDados: c.valorMoeda === 0,
-                    secundario: (c.tipo === 'novo' ? 'novo' : c.custodia === 'offshore' ? 'base · offshore' : 'base')
+                    secundario: tempLabel + ' · '
+                      + (c.tipo === 'novo' ? 'novo' : c.custodia === 'offshore' ? 'base · offshore' : 'base')
                       + ' · ' + nomeCurto(c.responsavelId) });
                 })
               )
@@ -9018,14 +9024,16 @@ function AssessoriaKpis({ scopedLeads, users, vendorFilter, currentUser, periodo
           secundario: t.novos + (t.novos === 1 ? ' novo' : ' novos') + ' · ' + t.base + ' da base' }))
       ),
       h('div',{className:'kpi-section'},
-        h('div',{className:'kpi-section-head'}, h('h2',null,'Captações em andamento'), h('span',null,'quentes primeiro')),
+        h('div',{className:'kpi-section-head'}, h('h2',null,'Lista de Pipe'), h('span',null,'quentes primeiro')),
         captacaoTemp.captacoes.slice(0,10).map((c,i) => {
-          const cor = (temperaturaInfo(c.temperatura) || { cor:'#C9D1DC' }).cor;
+          const tempInfo = temperaturaInfo(c.temperatura);
+          const cor = tempInfo ? tempInfo.cor : '#C9D1DC';
+          const tempLabel = tempInfo ? tempInfo.label : 'Sem classificação';
           return h(BarRow,{ key:c.id, label:c.cliente, value:c.valor, posicao:i+1, dotColor:cor, color:cor,
             max: Math.max(1, ...captacaoTemp.captacoes.map(x => x.valor)),
             display: c.valorMoeda > 0 ? (c.custodia === 'offshore' ? fmtUSDCompact : fmtBRLCompact)(c.valorMoeda) : 'sem valor',
             semDados: c.valorMoeda === 0,
-            secundario: c.tipo === 'novo' ? 'novo' : c.custodia === 'offshore' ? 'da base · offshore' : 'da base' });
+            secundario: tempLabel + ' · ' + (c.tipo === 'novo' ? 'novo' : c.custodia === 'offshore' ? 'da base · offshore' : 'da base') });
         })
       )
     ),
@@ -11383,7 +11391,7 @@ root.render(h(ErrorBoundary, null, h(App)));
 </script>
 <button id="awVoltar" onclick="location.href='index.html'">&#8592; Início</button>
 <script>
-var VERSAO_CRM="versão 2.81";
+var VERSAO_CRM="versão 2.82";
 try{ document.getElementById("selCrm").textContent=VERSAO_CRM; }catch(e){}
 </script>
 </body>
