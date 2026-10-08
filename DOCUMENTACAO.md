@@ -391,6 +391,10 @@ Gerador de Planos Patrimoniais com aba imobiliária e liquidez; Ferramenta Wealt
 reescrita com motor de linha do tempo, objetivos recorrentes, grade de sensibilidade e
 planejamento sucessório; integração do CRM com login único; consolidação de cinco
 scripts SQL num só · **2.51 código do assessor e correção da impressão do Wealth Planning**.
+**Outubro** Política de Alocação; cores por etapa e contraste do Painel no CRM; modal de
+detalhe do CRM em duas colunas; edição/exclusão na timeline do CRM · **2.80 "Importar de
+PDF" na lista de ativos das Carteiras — lê o Relatório de Performance (BTG/Necton) e o
+Extrato de cliente (Sinosserra) direto do PDF, sem precisar digitar nem montar planilha**.
 
 ---
 

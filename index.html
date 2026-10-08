@@ -591,6 +591,7 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
 </main>
 
 <script src="vendor/xlsx-0.18.5.full.min.js"></script>
+<script src="vendor/pdfjs-3.11.174.min.js"></script>
 <script src="vendor/supabase-js-2.min.js"></script>
 <script>
 /* ============ conexão e sessão ============ */
@@ -1107,7 +1108,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.79";
+var VERSAO="versão 2.80";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -1805,6 +1806,289 @@ function importarAtivosArquivo(input){
   fr.onerror=function(){ alert("Não consegui ler o arquivo."); input.value=""; };
   fr.readAsArrayBuffer(f);
 }
+
+/* ---- Importar ativos de PDF (Relatório de Performance BTG/Necton, Extrato Sinosserra) ---- */
+function pdfParseMoeda(s){
+  if(!s) return 0;
+  var t=String(s).replace(/^R\$\s*/,"").replace(/\s+/g,"");
+  var neg=/^-/.test(t); t=t.replace(/^-/,"");
+  if(!t || t==="-") return 0;
+  t=t.replace(/\./g,"").replace(",",".");
+  var x=parseFloat(t);
+  return isNaN(x)?0:(neg?-x:x);
+}
+function pdfDataParaISO(s){
+  var m=String(s||"").match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  return m? (m[3]+"-"+m[2]+"-"+m[1]) : "";
+}
+var SECOES_VALIDAS_BTG={
+  "Pós-fixado": {categoria:"Renda Fixa", subcategoria:"Pós-fixado"},
+  "Pré-fixado": {categoria:"Renda Fixa", subcategoria:"Pré-fixado"},
+  "Inflação": {categoria:"Renda Fixa", subcategoria:"Inflação"},
+  "Alternativo": {categoria:"Fundos", subcategoria:"Alternativo"},
+  "Renda Variável": {categoria:"Renda Variável", subcategoria:""},
+  "Retorno Absoluto (MM)": {categoria:"Fundos", subcategoria:"Multimercado"},
+};
+/* O pdf.js as vezes nao consegue decodificar um glifo (ligadura "fi", "ç")
+   e devolve um caractere nulo no lugar -- "Pós-fixado" chega como
+   "Pós-\u0000xado". Normaliza tirando acento, nulo e espaco antes de
+   comparar, e usa "e subsequencia de" em vez de igualdade: como so FALTA
+   caractere (nunca sobra), o nome normalizado sempre cabe dentro do nome
+   oficial, na mesma ordem. */
+function pdfNormalizarTexto(s){
+  return String(s||"")
+    .replace(/\u0000/g,"")
+    .normalize("NFD").replace(/[̀-ͯ]/g,"")
+    .replace(/[^a-zA-Z0-9]/g,"")
+    .toLowerCase();
+}
+function pdfEhSubsequencia(pequena, grande){
+  if(!pequena) return false;
+  var i=0;
+  for(var j=0;j<grande.length && i<pequena.length;j++){
+    if(grande[j]===pequena[i]) i++;
+  }
+  return i===pequena.length;
+}
+function pdfIdentificarSecao(textoAntesDeEmCarteira){
+  var alvo=pdfNormalizarTexto(textoAntesDeEmCarteira);
+  if(!alvo) return null;
+  var nomes=Object.keys(SECOES_VALIDAS_BTG);
+  for(var i=0;i<nomes.length;i++){
+    if(pdfEhSubsequencia(pdfNormalizarTexto(nomes[i]), alvo) || pdfEhSubsequencia(alvo, pdfNormalizarTexto(nomes[i]))) return nomes[i];
+  }
+  return null;
+}
+function pdfDetectarFormato(todasLinhas){
+  var texto=todasLinhas.join('\n');
+  if(/Detalhamento dos Ativos/i.test(texto) && /necton|BTG Pactual/i.test(texto)) return "btg";
+  if(/SINOSSERRA FINANCEIRA/i.test(texto) || /Extrato de cliente/i.test(texto)) return "sinosserra";
+  return null;
+}
+function pdfParseBtgDetalhamento(todasLinhas){
+  var inicio=-1;
+  for(var i=0;i<todasLinhas.length;i++){
+    if(/Detalhamento dos Ativos/i.test(todasLinhas[i])){ inicio=i; break; }
+  }
+  if(inicio===-1) return {ativos:[], erro:'Não encontrei a seção "Detalhamento dos Ativos" neste PDF.'};
+  var secaoAtual=null;
+  var ativos=[];
+  var DATA_RE=/\d{2}\/\d{2}\/\d{4}/g;
+  var MOEDA_RE=/R\$\s*-?[\d.]*\d,\d{2}/g;
+  var EM_CARTEIRA_RE=/Em\s*cart\s*eir\s*a?\b/i;
+  for(var li=inicio+1; li<todasLinhas.length; li++){
+    var linha=todasLinhas[li].trim();
+    if(!linha) continue;
+    if(/^Relat[óo]rio de Performance$/i.test(linha) || /^Per[íi]odo de /i.test(linha) || /^P[áa]gina \d+/i.test(linha)) continue;
+
+    var posEmCarteira=linha.search(EM_CARTEIRA_RE);
+    if(posEmCarteira!==-1){
+      secaoAtual=pdfIdentificarSecao(linha.slice(0,posEmCarteira));
+      continue;
+    }
+    if(!secaoAtual) continue;
+    if(/^TOTAL\b/i.test(linha)) continue;
+    /* "Distribuição por classe de ativos" se repete como resumo em varias
+       paginas do relatorio -- sem este corte, "Em Fundo de Investimento
+       48,65% do Total" vira um "ativo" fantasma na ultima secao aberta. */
+    if(/^Em\s+\S.*%\s*do\s*Tot/i.test(linha)) continue;
+
+    var datas=linha.match(DATA_RE)||[];
+    var moedas=linha.match(MOEDA_RE)||[];
+    if(!moedas.length) continue; // pula a linha de cabecalho da tabela (nao tem R$ nenhum)
+
+    var nome;
+    if(datas.length){
+      nome=linha.slice(0, linha.indexOf(datas[0])).trim();
+    } else {
+      var primeiroEspaco=linha.indexOf(' ');
+      var candidato=primeiroEspaco===-1?linha:linha.slice(0,primeiroEspaco);
+      nome=/^[A-Z]{3,6}\d{1,2}$/.test(candidato) ? candidato : linha.slice(0, linha.indexOf(moedas[0])).trim();
+      // sem data, a "Quantidade" fica colada no fim do nome (ex: "XBT BITCOIN (XBT) 0,01") -- tira.
+      nome=nome.replace(/\s+[\d.,]+\s*$/,"");
+    }
+    if(!nome) continue;
+
+    var vencimento=datas.length>=2?pdfDataParaISO(datas[1]):"";
+    /* So existe taxa de verdade quando tem as DUAS datas (inicial e
+       vencimento): o texto entre elas e o "R$" e a taxa, sem mais nada no
+       meio. Com uma data so (fundo/CrPr), o que vem depois e Quantidade e
+       a janela de resgate (D+N) -- nunca taxa, por isso fica em branco. */
+    var taxa="";
+    if(datas.length>=2){
+      var finalPrefixo=linha.indexOf(datas[1])+datas[1].length;
+      var inicioMoeda=linha.indexOf(moedas[0]);
+      taxa=linha.slice(finalPrefixo,inicioMoeda).trim().replace(/\s+/g," ");
+    }
+    var saldoBruto=pdfParseMoeda(moedas[0]);
+    var info=SECOES_VALIDAS_BTG[secaoAtual];
+    ativos.push({nome:nome, categoria:info.categoria, subcategoria:info.subcategoria, inst:"", taxa:taxa,
+      vencimento:vencimento, posicao:saldoBruto,
+      rentMes:0, rent3m:0, rent6m:0, rentAno:0, rent12m:0, rentInicio:0});
+  }
+  return {ativos:ativos, erro: ativos.length?null:"Não encontrei nenhuma linha de ativo na seção Detalhamento dos Ativos."};
+}
+/* Esse extrato não dá pra reconstruir por LINHA como o BTG: cada campo
+   (coluna visual) fica numa faixa de Y própria espalhada pela página toda, e
+   os 5 valores de um mesmo campo (um por ativo) ficam em X fixo (um "slot"
+   por ativo) mas deslocados do rótulo do campo em Y por uma quantidade que
+   varia campo a campo (Cód. B3: ~20 abaixo do rótulo; Vlr. aplicado: ~0-9
+   acima). A janela -22/+13 em volta de cada rótulo cobre todo deslocamento
+   visto nos PDFs reais sem nunca alcançar o rótulo vizinho (menor
+   espaçamento entre dois rótulos consecutivos: ~26). Por isso essa função
+   recebe os ITENS da página (com x/y), não linhas já montadas. */
+function pdfAcharRotulo(itens, re){ return itens.filter(function(it){ return re.test(it.str); })[0] || null; }
+function pdfParseSinosserraPorItens(itensPagina){
+  if(!itensPagina.some(function(it){ return /SINOSSERRA FINANCEIRA|Extrato de cliente/i.test(it.str); })) return [];
+  var rPapel=pdfAcharRotulo(itensPagina, /^Papel\b/);
+  if(!rPapel) return [];
+  // "Papel" é o único rótulo cujos valores ficam exatamente no mesmo Y dele -- usa pra achar os slots de X com segurança.
+  var slotsX=itensPagina.filter(function(it){
+    return it!==rPapel && it.x>rPapel.x && Math.abs(it.y-rPapel.y)<=2 && !/^Total/i.test(it.str) && !/^geral:?$/i.test(it.str);
+  }).sort(function(a,b){ return a.x-b.x; }).map(function(it){ return it.x; });
+  var n=slotsX.length;
+  if(!n) return [];
+
+  function slotMaisProximo(x){
+    var melhor=0, menorDist=Infinity;
+    for(var i=0;i<slotsX.length;i++){
+      var d=Math.abs(x-slotsX[i]);
+      if(d<menorDist){ menorDist=d; melhor=i; }
+    }
+    return melhor;
+  }
+  function valoresPorSlot(rotuloItem, filtro){
+    if(!rotuloItem) return new Array(n).fill("");
+    var cand=itensPagina.filter(function(it){
+      return it!==rotuloItem && it.y>=rotuloItem.y-22 && it.y<=rotuloItem.y+13 && filtro(it.str);
+    });
+    var porSlot=new Array(n).fill(null).map(function(){ return []; });
+    cand.forEach(function(it){
+      var s=slotMaisProximo(it.x);
+      var distSlot=Math.abs(it.x-slotsX[s]);
+      if(distSlot<=15) porSlot[s].push(it);
+    });
+    porSlot.forEach(function(lista){ lista.sort(function(a,b){ return a.x-b.x; }); });
+    return porSlot.map(function(lista){ return lista.map(function(it){ return it.str; }).join(' ').trim(); });
+  }
+
+  var papel=valoresPorSlot(rPapel, function(s){ return !/^Total$/i.test(s) && !/^geral:?$/i.test(s); });
+  var rCodB3=pdfAcharRotulo(itensPagina, /^C[óo]d\.?\s*B3/i);
+  var codB3=valoresPorSlot(rCodB3, function(s){ return /^[A-Z0-9]{6,}$/.test(s); });
+  var rDtVcto=pdfAcharRotulo(itensPagina, /^Dt\.?\s*vcto/i);
+  var dtVcto=valoresPorSlot(rDtVcto, function(s){ return /^\d{2}\/\d{2}\/\d{4}$/.test(s); });
+  var rTaxa=pdfAcharRotulo(itensPagina, /^Tx\.?\s*\(aa\)/i);
+  var taxa=valoresPorSlot(rTaxa, function(s){ return /%/.test(s) || /^[A-Z]{2,5}$/.test(s); });
+  var rVlrResp=pdfAcharRotulo(itensPagina, /^Vlr\.?\s*resg\.?\s*bruto/i);
+  var vlrResp=valoresPorSlot(rVlrResp, function(s){ return /^[\d.]+,\d{2}$/.test(s); });
+  var rVlrAplic=pdfAcharRotulo(itensPagina, /^Vlr\.?\s*aplicado/i);
+  var vlrAplic=valoresPorSlot(rVlrAplic, function(s){ return /^[\d.]+,\d{2}$/.test(s); });
+
+  var ativos=[];
+  for(var k=0;k<n;k++){
+    var p=(papel[k]||'').trim();
+    if(!p && !codB3[k]) continue;
+    var sub=(/PRE/.test(p) && !/PREV/.test(p)) ? "Pré-fixado" : /POS|CDI/.test(p) ? "Pós-fixado" : /IPCA|INFLA/.test(p) ? "Inflação" : "";
+    var posicao = vlrResp[k] ? pdfParseMoeda(vlrResp[k]) : (vlrAplic[k] ? pdfParseMoeda(vlrAplic[k]) : 0);
+    ativos.push({
+      nome: (p+' '+(codB3[k]||'')).trim(), categoria:"Renda Fixa", subcategoria:sub, inst:"Sinosserra",
+      taxa: taxa[k]||"", vencimento: pdfDataParaISO(dtVcto[k]||""), posicao: posicao,
+      rentMes:0, rent3m:0, rent6m:0, rentAno:0, rent12m:0, rentInicio:0,
+    });
+  }
+  return ativos;
+}
+function pdfParseSinosserra(paginasDeItens){
+  var ativos=[];
+  paginasDeItens.forEach(function(itensPagina){ ativos=ativos.concat(pdfParseSinosserraPorItens(itensPagina)); });
+  return {ativos:ativos, erro: ativos.length?null:"Não consegui reconhecer nenhum ativo nesse extrato."};
+}
+/* Junta os itens de texto do pdf.js em linhas visuais (por Y, com tolerancia
+   de 2) na ordem de leitura. So insere espaco entre dois itens quando o
+   vao real em X e maior que 1 -- o pdf.js quebra uma palavra em varios
+   itens por causa de ligadura/kerning (ex: "Pós-" + [glifo ilegivel] +
+   "xado"), e juntar tudo com espaco fixo colaria "Pos- xado" em vez de
+   "Pós-fixado". */
+function pdfAgruparLinhas(textContent){
+  var itens=textContent.items.filter(function(it){ return it.str && it.str.trim(); });
+  var linhas=[];
+  itens.forEach(function(it){
+    var y=Math.round(it.transform[5]);
+    var linha=null;
+    for(var i=0;i<linhas.length;i++){ if(Math.abs(linhas[i].y-y)<=2){ linha=linhas[i]; break; } }
+    if(!linha){ linha={y:y,itens:[]}; linhas.push(linha); }
+    linha.itens.push({x:it.transform[4], str:it.str, width:it.width||0});
+  });
+  linhas.sort(function(a,b){ return b.y-a.y; });
+  return linhas.map(function(l){
+    l.itens.sort(function(a,b){ return a.x-b.x; });
+    var partes=[]; var anterior=null;
+    l.itens.forEach(function(it){
+      if(anterior){
+        var gap=it.x-(anterior.x+anterior.width);
+        if(gap>1) partes.push(' ');
+      }
+      partes.push(it.str);
+      anterior=it;
+    });
+    return partes.join('').replace(/\u0000/g,'').replace(/\s+/g,' ').trim();
+  }).filter(function(s){return s;});
+}
+function importarAtivosPdf(input){
+  var f=input.files[0]; if(!f) return;
+  if(typeof pdfjsLib==="undefined"){ alert("O leitor de PDF ainda não carregou. Recarregue a página (Cmd+Shift+R) e tente de novo."); input.value=""; return; }
+  pdfjsLib.GlobalWorkerOptions.workerSrc="vendor/pdfjs-3.11.174.worker.min.js";
+  var botao=document.getElementById("btnImportarPdf");
+  var textoOriginal=botao?botao.textContent:"";
+  if(botao){ botao.disabled=true; botao.textContent="Lendo PDF…"; }
+  function falhar(msg){
+    alert(msg);
+    input.value="";
+    if(botao){ botao.disabled=false; botao.textContent=textoOriginal; }
+  }
+  var fr=new FileReader();
+  fr.onload=function(){
+    var dados=new Uint8Array(fr.result);
+    pdfjsLib.getDocument({data:dados}).promise.then(function(pdf){
+      var todasLinhas=[], paginasDeItens=[], i=1;
+      function proximaPagina(){
+        if(i>pdf.numPages){
+          var formato=pdfDetectarFormato(todasLinhas);
+          var resultado;
+          if(formato==="btg") resultado=pdfParseBtgDetalhamento(todasLinhas);
+          else if(formato==="sinosserra") resultado=pdfParseSinosserra(paginasDeItens);
+          else { falhar("Não reconheci o formato desse PDF. Por enquanto importo o Relatório de Performance (BTG/Necton) e o Extrato de cliente (Sinosserra)."); return; }
+          if(resultado.erro){ falhar(resultado.erro); return; }
+          if(!confirm("Importar "+resultado.ativos.length+" ativo(s) desse PDF?\n\nIsso substitui a lista de ativos que está na tela agora, mas nada é gravado até você clicar em \"Salvar mês e ver relatório\". Confira a categoria, a subcategoria e a taxa de cada um — a separação automática é uma aproximação.")){
+            input.value="";
+            if(botao){ botao.disabled=false; botao.textContent=textoOriginal; }
+            return;
+          }
+          S.rasc.ind.ativos=resultado.ativos;
+          render(true);
+          input.value="";
+          if(botao){ botao.disabled=false; botao.textContent=textoOriginal; }
+          return;
+        }
+        pdf.getPage(i).then(function(pagina){
+          return pagina.getTextContent().then(function(tc){
+            todasLinhas=todasLinhas.concat(pdfAgruparLinhas(tc));
+            var itens=tc.items.filter(function(it){ return it.str && it.str.trim(); })
+              .map(function(it){ return {str:it.str.replace(/\u0000/g,"").trim(), x:it.transform[4], y:it.transform[5]}; })
+              .filter(function(it){ return it.str; });
+            paginasDeItens.push(itens);
+            i++;
+            proximaPagina();
+          });
+        }).catch(function(e){ falhar("Não consegui ler a página "+i+" do PDF.\n\n"+e.message); });
+      }
+      proximaPagina();
+    }).catch(function(e){ falhar("Não consegui abrir esse PDF. Confira se o arquivo não está corrompido.\n\n"+e.message); });
+  };
+  fr.onerror=function(){ falhar("Não consegui ler o arquivo."); };
+  fr.readAsArrayBuffer(f);
+}
+
 function salvarCarta(){
   var ed=document.getElementById("edCarta"); if(!ed) return;
   var conteudo=ed.innerHTML.trim();
@@ -2105,9 +2389,12 @@ function viewPreencher(){
      '<button class="btn" onclick="baixarModeloAtivos()">Baixar planilha (modelo)</button>'+
      '<button class="btn" onclick="document.getElementById(\'arqImportAtivos\').click()">Importar planilha</button>'+
      '<input type="file" id="arqImportAtivos" accept=".xlsx,.xls" style="display:none" onchange="importarAtivosArquivo(this)">'+
+     '<button class="btn" id="btnImportarPdf" onclick="document.getElementById(\'arqImportAtivosPdf\').click()">Importar de PDF</button>'+
+     '<input type="file" id="arqImportAtivosPdf" accept=".pdf" style="display:none" onchange="importarAtivosPdf(this)">'+
      '</div>'+
      '<div class="sec-sub" style="margin-top:8px">Baixe a planilha para editar no Excel (ela já sai preenchida com os ativos atuais, ou com uma linha modelo se a lista estiver vazia). '+
-     'Depois de editar, use "Importar planilha" para trazer de volta — a tabela acima é atualizada para você conferir, e só grava de verdade quando clicar em "Salvar mês e ver relatório".</div></div>';
+     'Depois de editar, use "Importar planilha" para trazer de volta — a tabela acima é atualizada para você conferir, e só grava de verdade quando clicar em "Salvar mês e ver relatório". '+
+     '"Importar de PDF" lê o Relatório de Performance (BTG/Necton) ou o Extrato de cliente (Sinosserra) e separa os ativos automaticamente — confira a categoria e a taxa de cada um antes de salvar, porque a separação é uma aproximação.</div></div>';
 
   h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="btnSalvar" onclick="salvarMes()">Salvar mês e ver relatório</button>'+
      '<span style="font-size:12.5px;color:var(--muted)" id="resumoMini">Onshore: '+pct(t.rendPct)+' • '+brl2(t.rendRs)+'</span></div>';
