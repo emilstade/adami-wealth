@@ -394,7 +394,10 @@ scripts SQL num só · **2.51 código do assessor e correção da impressão do 
 **Outubro** Política de Alocação; cores por etapa e contraste do Painel no CRM; modal de
 detalhe do CRM em duas colunas; edição/exclusão na timeline do CRM · **2.80 "Importar de
 PDF" na lista de ativos das Carteiras — lê o Relatório de Performance (BTG/Necton) e o
-Extrato de cliente (Sinosserra) direto do PDF, sem precisar digitar nem montar planilha**.
+Extrato de cliente (Sinosserra) direto do PDF, sem precisar digitar nem montar planilha** ·
+**2.81 tira as janelas de 3 e 6 meses da lista de ativos (planilha, PDF e relatório
+impresso) — nenhuma fonte de dado usada na importação informa essas duas janelas por
+ativo, só mês/ano/12 meses/desde o início**.
 
 ---
 

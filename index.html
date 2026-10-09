@@ -457,25 +457,23 @@ textarea.inp{min-height:150px;line-height:1.6;resize:vertical}
    navegador afunilava Ativo e Taxa até quebrar palavra por letra. Largura
    fixa por coluna, só aqui, para não mexer nas outras tabelas .rt. */
 .rt.ativos-rf{table-layout:fixed}
-.rt.ativos-rf th:nth-child(1),.rt.ativos-rf td:nth-child(1){width:11%}
-.rt.ativos-rf th:nth-child(2),.rt.ativos-rf td:nth-child(2){width:10%}
-.rt.ativos-rf th:nth-child(3),.rt.ativos-rf td:nth-child(3){width:9%}
+.rt.ativos-rf th:nth-child(1),.rt.ativos-rf td:nth-child(1){width:13%}
+.rt.ativos-rf th:nth-child(2),.rt.ativos-rf td:nth-child(2){width:11%}
+.rt.ativos-rf th:nth-child(3),.rt.ativos-rf td:nth-child(3){width:10%}
 /* Vencimento e Posição são células numéricas (.rt td.n), que nunca quebram
    linha — precisam de largura que caiba "15/03/2027" e "R$ 1.230.450"
    inteiros numa linha só, senão uma estoura por cima da outra. */
-.rt.ativos-rf th:nth-child(4),.rt.ativos-rf td:nth-child(4){width:12%}
-.rt.ativos-rf th:nth-child(5),.rt.ativos-rf td:nth-child(5){width:14%}
+.rt.ativos-rf th:nth-child(4),.rt.ativos-rf td:nth-child(4){width:13%}
+.rt.ativos-rf th:nth-child(5),.rt.ativos-rf td:nth-child(5){width:15%}
 .rt.ativos-rf th:nth-child(6),.rt.ativos-rf td:nth-child(6),
 .rt.ativos-rf th:nth-child(7),.rt.ativos-rf td:nth-child(7),
 .rt.ativos-rf th:nth-child(8),.rt.ativos-rf td:nth-child(8),
-.rt.ativos-rf th:nth-child(9),.rt.ativos-rf td:nth-child(9),
-.rt.ativos-rf th:nth-child(10),.rt.ativos-rf td:nth-child(10){width:7%}
-.rt.ativos-rf th:nth-child(11),.rt.ativos-rf td:nth-child(11){width:9%}
+.rt.ativos-rf th:nth-child(9),.rt.ativos-rf td:nth-child(9){width:9.5%}
 .rt.ativos-out{table-layout:fixed}
 .rt.ativos-out th:nth-child(1),.rt.ativos-out td:nth-child(1){width:22%}
 .rt.ativos-out th:nth-child(2),.rt.ativos-out td:nth-child(2){width:15%}
 .rt.ativos-out th:nth-child(3),.rt.ativos-out td:nth-child(3){width:13%}
-.rt.ativos-out th:nth-child(n+4),.rt.ativos-out td:nth-child(n+4){width:8.33%}
+.rt.ativos-out th:nth-child(n+4),.rt.ativos-out td:nth-child(n+4){width:12.5%}
 /* Cabeçalho numérico normalmente não quebra linha (.rt th.n); nesta tabela,
    com coluna estreita, isso fazia um cabeçalho comprido atropelar o
    vizinho em vez de simplesmente quebrar. */
@@ -1108,7 +1106,7 @@ function status(estado,txt){
 }
 
 /* ============ base ============ */
-var VERSAO="versão 2.80";
+var VERSAO="versão 2.81";
 /* o selo da lateral era fixo no HTML e ficou parado na 2.8; agora segue a variavel */
 try{ document.getElementById("railVersao").textContent=VERSAO; }catch(e){}
 var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -1240,7 +1238,7 @@ function alturaTabelaSimples(nLinhas){ return 160+nLinhas*82; }
 function alturaPizzaComLista(nItens){ return 530+nItens*50; }
 function alturaPizzaComTabela(nItens){ return 640+nItens*12; }
 var ALTURA_DISCLAIMER=550;
-function ativoVazio(){ return {nome:"",categoria:CATEGORIAS_ATIVO[0],subcategoria:"",inst:"",taxa:"",vencimento:"",posicao:0,rentMes:0,rent3m:0,rent6m:0,rentAno:0,rent12m:0,rentInicio:0}; }
+function ativoVazio(){ return {nome:"",categoria:CATEGORIAS_ATIVO[0],subcategoria:"",inst:"",taxa:"",vencimento:"",posicao:0,rentMes:0,rentAno:0,rent12m:0,rentInicio:0}; }
 /* Distribuição por categoria: mesma soma por posição de listaEstrat, só que
    agrupando pela categoria do ativo (Renda Fixa, COE, Fundos...) em vez da
    subcategoria. */
@@ -1365,7 +1363,7 @@ function montarRascunho(){
         .map(function(x){
           return {nome:x.nome,categoria:x.categoria,subcategoria:x.subcategoria,inst:x.inst,
             taxa:x.taxa,vencimento:x.vencimento,posicao:x.posicao,
-            rentMes:0,rent3m:0,rent6m:0,rentAno:0,rent12m:0,rentInicio:0};
+            rentMes:0,rentAno:0,rent12m:0,rentInicio:0};
         });
       if(ativosTrazidos.length){
         S.rasc.ind.ativos=ativosTrazidos;
@@ -1695,7 +1693,7 @@ function addVenc(){
   S.rasc.ind.vencimentos.push(vencVazio()); render(true);
 }
 function delVenc(i){ S.rasc.ind.vencimentos.splice(i,1); render(true); }
-var CAMPOS_NUM_ATIVO={posicao:1,rentMes:1,rent3m:1,rent6m:1,rentAno:1,rent12m:1,rentInicio:1};
+var CAMPOS_NUM_ATIVO={posicao:1,rentMes:1,rentAno:1,rent12m:1,rentInicio:1};
 function setAtivo(i,campo,v){
   if(!S.rasc.ind.ativos) S.rasc.ind.ativos=[];
   S.rasc.ind.ativos[i][campo]=CAMPOS_NUM_ATIVO[campo]?n(v):v;
@@ -1707,14 +1705,14 @@ function addAtivo(){
 function delAtivo(i){ S.rasc.ind.ativos.splice(i,1); render(true); }
 function baixarModeloAtivos(){
   if(typeof XLSX==="undefined"){ alert("A planilha ainda não carregou. Recarregue a página (Cmd+Shift+R) e tente de novo."); return; }
-  var HEAD=["Categoria","Subcategoria","Ativo","Instituição","Taxa (RF/COE)","Vencimento (AAAA-MM-DD)","Posição (R$)","Mês (%)","3 meses (%)","6 meses (%)","Ano (%)","12 meses (%)","Desde o início (%)"];
+  var HEAD=["Categoria","Subcategoria","Ativo","Instituição","Taxa (RF/COE)","Vencimento (AAAA-MM-DD)","Posição (R$)","Mês (%)","Ano (%)","12 meses (%)","Desde o início (%)"];
   var ativos=S.rasc.ind.ativos||[];
   var linhas=ativos.length?ativos.map(function(x){
-    return [x.categoria||"",x.subcategoria||"",x.nome||"",x.inst||"",x.taxa||"",x.vencimento||"",x.posicao||0,x.rentMes||0,x.rent3m||0,x.rent6m||0,x.rentAno||0,x.rent12m||0,x.rentInicio||0];
-  }):[["","","","","","",0,0,0,0,0,0,0]];
+    return [x.categoria||"",x.subcategoria||"",x.nome||"",x.inst||"",x.taxa||"",x.vencimento||"",x.posicao||0,x.rentMes||0,x.rentAno||0,x.rent12m||0,x.rentInicio||0];
+  }):[["","","","","","",0,0,0,0,0]];
   var wb=XLSX.utils.book_new();
   var ws=XLSX.utils.aoa_to_sheet([HEAD].concat(linhas));
-  ws['!cols']=[{wch:13},{wch:14},{wch:28},{wch:16},{wch:18},{wch:22},{wch:14},{wch:8},{wch:9},{wch:9},{wch:8},{wch:9},{wch:14}];
+  ws['!cols']=[{wch:13},{wch:14},{wch:28},{wch:16},{wch:18},{wch:22},{wch:14},{wch:8},{wch:8},{wch:9},{wch:14}];
   XLSX.utils.book_append_sheet(wb,ws,"Ativos");
   var instr=[["Como preencher"],
     ["Uma linha por ativo. Categoria e Subcategoria precisam ser exatamente uma das opções abaixo (copie e cole para não errar a digitação)."],
@@ -1781,8 +1779,8 @@ function importarAtivosArquivo(input){
       var taxa=String(l[4]||"").trim();
       var vencimento=parseVencPlanilha(l[5]);
       var posicao=parseNumPlanilha(l[6]);
-      var rentMes=parseNumPlanilha(l[7]), rent3m=parseNumPlanilha(l[8]), rent6m=parseNumPlanilha(l[9]),
-          rentAno=parseNumPlanilha(l[10]), rent12m=parseNumPlanilha(l[11]), rentInicio=parseNumPlanilha(l[12]);
+      var rentMes=parseNumPlanilha(l[7]),
+          rentAno=parseNumPlanilha(l[8]), rent12m=parseNumPlanilha(l[9]), rentInicio=parseNumPlanilha(l[10]);
       if(!nome && !categoria && !posicao) continue;
       var linhaNum=i+1;
       if(!nome){ erros.push("Linha "+linhaNum+": falta o nome do ativo."); continue; }
@@ -1791,7 +1789,7 @@ function importarAtivosArquivo(input){
       var subcategoriaOk=subcategoria?matchOpcaoAtivo(subcategoria,SUBCATEGORIAS_ATIVO):"";
       if(subcategoria && subcategoriaOk===null){ erros.push("Linha "+linhaNum+" (\""+nome+"\"): subcategoria \""+subcategoria+"\" não é válida. Use: "+SUBCATEGORIAS_ATIVO.join(", ")+" ou deixe em branco."); continue; }
       novos.push({nome:nome,categoria:categoriaOk,subcategoria:subcategoriaOk||"",inst:inst,taxa:taxa,vencimento:vencimento,
-        posicao:posicao,rentMes:rentMes,rent3m:rent3m,rent6m:rent6m,rentAno:rentAno,rent12m:rent12m,rentInicio:rentInicio});
+        posicao:posicao,rentMes:rentMes,rentAno:rentAno,rent12m:rent12m,rentInicio:rentInicio});
     }
     if(erros.length){
       alert("A planilha tem "+erros.length+" linha(s) com problema, então nada foi importado — corrija e tente de novo:\n\n"+erros.slice(0,12).join("\n")+(erros.length>12?"\n… e mais "+(erros.length-12)+".":""));
@@ -1924,7 +1922,7 @@ function pdfParseBtgDetalhamento(todasLinhas){
     var info=SECOES_VALIDAS_BTG[secaoAtual];
     ativos.push({nome:nome, categoria:info.categoria, subcategoria:info.subcategoria, inst:"", taxa:taxa,
       vencimento:vencimento, posicao:saldoBruto,
-      rentMes:0, rent3m:0, rent6m:0, rentAno:0, rent12m:0, rentInicio:0});
+      rentMes:0, rentAno:0, rent12m:0, rentInicio:0});
   }
   return {ativos:ativos, erro: ativos.length?null:"Não encontrei nenhuma linha de ativo na seção Detalhamento dos Ativos."};
 }
@@ -1993,7 +1991,7 @@ function pdfParseSinosserraPorItens(itensPagina){
     ativos.push({
       nome: (p+' '+(codB3[k]||'')).trim(), categoria:"Renda Fixa", subcategoria:sub, inst:"Sinosserra",
       taxa: taxa[k]||"", vencimento: pdfDataParaISO(dtVcto[k]||""), posicao: posicao,
-      rentMes:0, rent3m:0, rent6m:0, rentAno:0, rent12m:0, rentInicio:0,
+      rentMes:0, rentAno:0, rent12m:0, rentInicio:0,
     });
   }
   return ativos;
@@ -2359,7 +2357,7 @@ function viewPreencher(){
      '<th style="min-width:130px">Categoria</th><th style="min-width:140px">Subcategoria</th><th style="min-width:170px">Ativo</th>'+
      '<th style="min-width:130px">Instituição</th><th style="min-width:110px">Taxa (RF/COE)</th>'+
      '<th style="min-width:140px">Vencimento (RF/COE)</th><th class="num" style="min-width:130px">Posição (R$)</th>'+
-     '<th class="num">Mês</th><th class="num">3 meses</th><th class="num">6 meses</th>'+
+     '<th class="num">Mês</th>'+
      '<th class="num">Ano</th><th class="num">12 meses</th><th class="num">Desde o início</th><th></th></tr></thead><tbody>'+
      (ativos.length?ativos.map(function(x,i){
        return '<tr>'+
@@ -2376,13 +2374,11 @@ function viewPreencher(){
        '<td><input class="inp" type="date" value="'+esc(x.vencimento)+'" oninput="setAtivo('+i+',\'vencimento\',this.value)"></td>'+
        '<td><input class="inp num" type="text" inputmode="decimal" value="'+moedaFmt(x.posicao)+'" oninput="onMoeda(this,function(v){setAtivo('+i+',\'posicao\',v);})"></td>'+
        '<td><input class="inp num" type="number" step="0.01" value="'+(x.rentMes||"")+'" oninput="setAtivo('+i+',\'rentMes\',this.value)"></td>'+
-       '<td><input class="inp num" type="number" step="0.01" value="'+(x.rent3m||"")+'" oninput="setAtivo('+i+',\'rent3m\',this.value)"></td>'+
-       '<td><input class="inp num" type="number" step="0.01" value="'+(x.rent6m||"")+'" oninput="setAtivo('+i+',\'rent6m\',this.value)"></td>'+
        '<td><input class="inp num" type="number" step="0.01" value="'+(x.rentAno||"")+'" oninput="setAtivo('+i+',\'rentAno\',this.value)"></td>'+
        '<td><input class="inp num" type="number" step="0.01" value="'+(x.rent12m||"")+'" oninput="setAtivo('+i+',\'rent12m\',this.value)"></td>'+
        '<td><input class="inp num" type="number" step="0.01" value="'+(x.rentInicio||"")+'" oninput="setAtivo('+i+',\'rentInicio\',this.value)"></td>'+
        '<td><button class="xbtn" onclick="delAtivo('+i+')" title="Remover">&times;</button></td></tr>';
-     }).join(""):'<tr><td colspan="14" style="color:var(--muted);font-size:12.5px">Nenhum ativo informado.</td></tr>')+
+     }).join(""):'<tr><td colspan="12" style="color:var(--muted);font-size:12.5px">Nenhum ativo informado.</td></tr>')+
      '</tbody></table></div>'+
      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">'+
      '<button class="btn" onclick="addAtivo()">+ Adicionar ativo</button>'+
@@ -3148,18 +3144,17 @@ function viewRelatorio(){
         '<th>Ativo</th><th>Instit.</th>'+
         (comRF?'<th>Taxa</th><th class="n">Venc.</th>':'')+
         '<th class="n">Posição</th>'+
-        '<th class="n">Mês</th><th class="n">3m</th><th class="n">6m</th><th class="n">Ano</th>'+
+        '<th class="n">Mês</th><th class="n">Ano</th>'+
         '<th class="n">12m</th><th class="n">Iníc.</th></tr></thead><tbody>'+
         lista.map(function(x){
           return '<tr><td>'+esc(x.nome||"—")+'</td><td>'+esc(x.inst||"—")+'</td>'+
           (comRF?'<td>'+esc(x.taxa||"—")+'</td><td class="n">'+(x.vencimento?dataBR(x.vencimento):"—")+'</td>':'')+
           '<td class="n">'+(n(x.posicao)?brl(n(x.posicao)):"—")+'</td>'+
-          '<td class="n">'+rp(x.rentMes)+'</td><td class="n">'+rp(x.rent3m)+'</td>'+
-          '<td class="n">'+rp(x.rent6m)+'</td><td class="n">'+rp(x.rentAno)+'</td>'+
+          '<td class="n">'+rp(x.rentMes)+'</td><td class="n">'+rp(x.rentAno)+'</td>'+
           '<td class="n">'+rp(x.rent12m)+'</td><td class="n">'+rp(x.rentInicio)+'</td></tr>';
         }).join("")+
         (subtotalCompleto==null?"":'<tr class="tot"><td colspan="'+(comRF?4:2)+'">Subtotal</td><td class="n">'+brl(subtotalCompleto)+'</td>'+
-        '<td colspan="6"></td></tr>')+
+        '<td colspan="4"></td></tr>')+
         '</tbody></table>';
     };
     /* Dentro de cada categoria, quanto está em cada subcategoria (a mesma
